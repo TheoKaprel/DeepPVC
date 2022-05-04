@@ -6,6 +6,7 @@ from torchvision.utils import make_grid
 from data.dataset import load_data
 from options import base_options
 from models import networks
+from utils import plots
 
 
 
@@ -28,22 +29,7 @@ lr = 0.0002
 device = 'cpu'
 
 
-def show_tensor_images(images):
-    images_unflat = images.detach().cpu()
-    batch_size = images_unflat.shape[0]
 
-    fig,ax = plt.subplots(3,batch_size, squeeze=False)
-
-    for k in range(batch_size):
-        maxc = torch.max(images_unflat[k,0:2,:,:])
-        minc = torch.min(images_unflat[k,0:2,:,:])
-        ax[0,k].imshow(images_unflat[k,0,:,:], vmin = minc, vmax= maxc)
-        ax[0,k].set_title('PVE')
-        ax[1,k].imshow(images_unflat[k,1,:,:], vmin = minc, vmax= maxc)
-        ax[1, k].set_title('PVfree')
-        ax[2,k].imshow(images_unflat[k,2,:,:])
-        ax[2, k].set_title('fakePVfree')
-    plt.show()
 
 train_dataloader,test_dataloader = load_data(dataset_path=dataset_path,batchsize=batch_size,prct_train=prct_train)
 
@@ -142,7 +128,7 @@ def train():
 
                 print(f"Epoch {epoch}: Step {step}: Generator loss: {mean_generator_loss}, Discriminator loss: {mean_discriminator_loss}")
 
-                show_tensor_images(torch.cat((truePVE,truePVfree,fakePVfree), 1))
+                plots.show_tensor_images(torch.cat((truePVE,truePVfree,fakePVfree), 1))
 
                 mean_generator_loss = 0
                 mean_discriminator_loss = 0
@@ -157,11 +143,10 @@ def train():
                 'disc_losses':discriminator_losses
                 }, f"pix2pix_{n_epochs}.pth")
 
-#
+
+
+
 # train()
 #
+# plots.plot_losses(discriminator_losses,generator_losses)
 #
-# plt.plot(discriminator_losses, label = 'Disc')
-# plt.plot(generator_losses, label = 'Gen')
-# plt.show()
-

@@ -7,7 +7,6 @@ import glob
 
 def load_data(dataset_path, batchsize,prct_train):
 
-    # dataset = np.empty((1,2,128,128))
     first = True
     for filename_ in glob.glob(f'{dataset_path}/?????.mhd'):
         filename_PVE = f'{filename_[:-4]}_PVE.mhd'
