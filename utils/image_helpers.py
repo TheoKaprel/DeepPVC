@@ -15,11 +15,3 @@ def show_tensor_images(image_tensor, num_images=25):
     plt.imshow(image_grid.permute(1, 2, 0).squeeze())
     plt.show()
 
-
-
-def open_image_to_tensor(list_images):
-
-
-    img = itk.imread('../PVE_data/Analytical_data/dataset/WVQNF_PVE.mhd')
-    img_np = itk.array_from_image(img)
-    input = torch.from_numpy(img_np)

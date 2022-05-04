@@ -1,3 +1,2 @@
-from data import train_dataloader, test_dataloader
-
-
+# [[ 8.196723  8.196727]
+#  [34.303356 34.753326]]

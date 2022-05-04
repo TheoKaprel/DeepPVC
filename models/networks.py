@@ -178,7 +178,7 @@ def plot_img(img):
 def test():
 
     # img = itk.imread('../Gate_PVE/garf_simu/output/projection.mhd')
-    img = itk.imread('../PVE_data/Analytical_data/dataset/WVQNF_PVE.mhd')
+    img = itk.imread('../../PVE_data/Analytical_data/dataset/WVQNF_PVE.mhd')
     img_np = itk.array_from_image(img)
     input = torch.from_numpy(img_np)
     print(input.shape[:])
@@ -215,9 +215,3 @@ def test_G_D():
     R = Disc.get_receptive_field()
     print('Receptive field : ', R)
 
-
-
-test()
-
-
-# test_G_D()
