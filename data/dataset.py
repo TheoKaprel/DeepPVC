@@ -6,9 +6,27 @@ import glob
 
 
 def load_data(dataset_path, batchsize,prct_train):
+    '''
+    - Loads the dataset from a folder containing source (ref.mhd), projPVE (ref_PVE.mhd) and projPVfree (ref_PVfree.mhd)
+    - Converts datas in ITK images and then in numpy arrays concatenated in an array (dataset) of shape (size_dataset, 2, 128,128)
+    with dimension 1 contains in position   [0] PVE projection
+                                            [1] PVfree projection
+    - Normalizes data according to the maximum of each (128,128) image  --> [0,1] images
+    - FIXME : no normalisation wrt mean/std
+    - Converts the numpy array into torch tensor
+    - Devides the dataset into training/test dataset
+    - FIXME : no validation dataset yet
+    - return the associated DataLoaders
+
+    :param dataset_path: path to the data
+    :param batchsize: number of couples (PVE,PVfree) per batch
+    :param prct_train: percentage of the dataset going into the training dataset. The remaining goes into test dataset for now
+    :return: train_dataloader,test_dataloader
+    '''
+
 
     first = True
-    for filename_ in glob.glob(f'{dataset_path}/?????.mhd'):
+    for filename_ in glob.glob(f'{dataset_path}/?????.mhd'): # selects files having exactly 5 characters before the .mhd
         filename_PVE = f'{filename_[:-4]}_PVE.mhd'
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
 
@@ -32,9 +50,9 @@ def load_data(dataset_path, batchsize,prct_train):
     dataset = dataset/data_max
 
 
-    mean = np.mean(dataset,axis=(0,2,3))
-    std = np.std(dataset,axis=(0,2,3))
-    mean_std = np.concatenate((mean[None,:], std[None,:]), axis=0)
+    # mean = np.mean(dataset,axis=(0,2,3))
+    # std = np.std(dataset,axis=(0,2,3))
+    # mean_std = np.concatenate((mean[None,:], std[None,:]), axis=0)
     # dataset = (dataset - mean[None, :,None, None])/std[None, :,None, None]
 
 

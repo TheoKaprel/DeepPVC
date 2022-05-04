@@ -19,7 +19,7 @@ adv_criterion = nn.BCEWithLogitsLoss()
 recon_criterion = nn.L1Loss()
 lambda_recon = 200
 
-n_epochs = 50
+n_epochs = 1
 input_channels = 1
 hidden_channels_gen = 64
 hidden_channels_disc = 9
@@ -32,9 +32,6 @@ device = 'cpu'
 
 
 train_dataloader,test_dataloader = load_data(dataset_path=dataset_path,batchsize=batch_size,prct_train=prct_train)
-
-print(len(train_dataloader))
-print(len(test_dataloader))
 
 
 Gen = networks.UNetGenerator(input_channel=input_channels, ngc=hidden_channels_gen, output_channel=input_channels)
@@ -145,8 +142,7 @@ def train():
 
 
 
+if __name__ == '__main__':
+    train()
+    plots.plot_losses(discriminator_losses,generator_losses)
 
-# train()
-#
-# plots.plot_losses(discriminator_losses,generator_losses)
-#
