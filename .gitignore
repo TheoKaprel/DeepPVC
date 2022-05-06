@@ -1,2 +1,3 @@
 *.pth
-
+.idea/*
+__pycache__/*

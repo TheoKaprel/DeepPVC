@@ -55,6 +55,7 @@ for (batch,test_data) in enumerate(train_dataloader):
         ax[0, 1].hlines(center_i, 0, 127, color='blue')
         ax[0, 1].vlines(center_j, 0, 127, color='orange')
         ax[0, 1].set_title(f'PVE projection')
+        ax[0, 1].legend()
 
         ax[1, 0].plot(np_PVfree[center_i, :], label='PVfree', color='blue', linestyle='dashed')
         ax[1, 0].plot(np_PVE[center_i, :], label='PVE', color='blue')
@@ -63,6 +64,7 @@ for (batch,test_data) in enumerate(train_dataloader):
         ax[1, 1].plot(np_PVfree[:, center_j], label='PVfree', color='orange', linestyle='dashed')
         ax[1, 1].plot(np_PVE[:, center_j], label='PVE', color='orange')
         ax[1, 1].plot(maxc * (np_PVfree[:, center_j] > 0), color='black', linewidth=1)
+        ax[1, 1].legend()
 
         plt.show()
 
