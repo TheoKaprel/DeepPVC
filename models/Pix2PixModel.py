@@ -1,11 +1,31 @@
 import torch
 from torch import optim
 from . import networks
+from functions import losses
 from utils import plots
 
 
 class PVEPix2PixModel():
-    def __init__(self, training_params, losses):
+    def __init__(self, training_params=None, losses_params=None, load_pth=None):
+        if not load_pth:
+            if training_params and (not losses_params):
+                raise ValueError("You have to specify training and loss parameters (losses_params is missing)")
+            if (not training_params) and (losses_params):
+                raise ValueError("You have to specify training and loss parameters (training_params is missing)")
+            if (not training_params) and (not losses_params):
+                raise ValueError("You have to specify either training and loss parameters (training_params and losses_params) either a pth file to load")
+        else:
+            if training_params or losses_params:
+                print(f"WARNING : The training and loss parameters will be infered from the given load_pth : {load_pth} and not from the given training_params nor losses_params")
+
+
+        if load_pth:
+            checkpoint = torch.load(load_pth)
+            training_params = checkpoint['training_params']
+            losses_params = checkpoint['losses_params']
+
+        self.training_params = training_params
+        self.losses_params = losses_params
 
         self.n_epochs = training_params['n_epochs']
         self.learning_rate = training_params['learning_rate']
@@ -19,8 +39,6 @@ class PVEPix2PixModel():
 
         self.training_device = training_params['training_device']
 
-
-
         self.Generator = networks.UNetGenerator(input_channel=self.input_channels,
                                                 ngc = self.hidden_channels_gen,
                                                 output_channel=self.input_channels)
@@ -29,20 +47,22 @@ class PVEPix2PixModel():
                                                           ndc = self.hidden_channels_disc,
                                                           output_channel=self.input_channels)
 
-        if self.optimizer=='Adam':
-            self.generator_optimizer =optim.Adam(self.Generator.parameters(), lr=self.learning_rate)
-            self.discriminator_optimizer =optim.Adam(self.Discriminator.parameters(), lr=self.learning_rate)
+        self.losses = losses.Pix2PixLosses(self.losses_params)
 
-        self.losses = losses
-
-        self.generator_losses = []
-        self.discriminator_losses = []
-
-        self.current_epoch = 0
         self.current_iteration = 0
-
         self.mean_discriminator_loss = 0
         self.mean_generator_loss = 0
+
+        if load_pth:
+            self.load_model(load_pth)
+        else:
+            self.generator_losses = []
+            self.discriminator_losses = []
+            self.current_epoch = 0
+
+            if self.optimizer == 'Adam':
+                self.generator_optimizer = optim.Adam(self.Generator.parameters(), lr=self.learning_rate)
+                self.discriminator_optimizer = optim.Adam(self.Discriminator.parameters(), lr=self.learning_rate)
 
     def input_data(self, batch):
         self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.training_device)
@@ -116,5 +136,24 @@ class PVEPix2PixModel():
                     'disc': self.Discriminator.state_dict(),
                     'disc_opt': self.discriminator_optimizer.state_dict(),
                     'gen_losses': self.generator_losses,
-                    'disc_losses': self.discriminator_losses
+                    'disc_losses': self.discriminator_losses,
+                    'training_params':self.training_params,
+                    'losses_params': self.losses_params
                     }, f"pix2pix_{self.current_epoch}.pth")
+
+    def load_model(self,pth_path):
+        checkpoint = torch.load(pth_path)
+        self.Generator.load_state_dict(checkpoint['gen'])
+        self.Discriminator.load_state_dict(checkpoint['disc'])
+
+        self.current_epoch = checkpoint['epoch']
+        self.generator_optimizer = checkpoint['gen_opt']
+        self.discriminator_optimizer = checkpoint['disc_opt']
+
+        self.generator_losses = checkpoint['gen_losses']
+        self.discriminator_losses = checkpoint['disc_losses']
+
+    def swith_eval(self):
+        self.Generator.eval()
+        self.Discriminator.eval()
+
