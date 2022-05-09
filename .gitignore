@@ -1,4 +1,4 @@
 *.pth
 .idea/*
-__pycache__/*
+**/__pycache__/
 Pix2Pix_coursera.py
