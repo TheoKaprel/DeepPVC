@@ -39,7 +39,7 @@ def plot_losses(discriminator_losses,generator_losses):
 
     ax2 = ax1.twinx()
     p2 = ax2.plot(discriminator_losses,color = 'blue', label= 'Discriminator Loss')
-    ax2.set_ylabel("Discriminator Loss", color = p1[0].get_color(),fontsize=14)
+    ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=14)
     ax2.legend(loc=1) #upper right legend
 
     ax2.set_xlabel('Iterations')

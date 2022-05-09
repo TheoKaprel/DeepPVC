@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.nn import init
 import itk
-import numpy as np
 import matplotlib.pyplot as plt
 
 
