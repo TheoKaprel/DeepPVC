@@ -5,7 +5,7 @@ import glob
 
 
 
-def load_data(dataset_path, batchsize,prct_train):
+def load_data(dataset_path, training_batchsize, testing_batchsize,prct_train):
     '''
     - Loads the dataset from a folder containing source (ref.mhd), projPVE (ref_PVE.mhd) and projPVfree (ref_PVfree.mhd)
     - Converts datas in ITK images and then in numpy arrays concatenated in an array (dataset) of shape (size_dataset, 2, 128,128)
@@ -19,7 +19,7 @@ def load_data(dataset_path, batchsize,prct_train):
     - return the associated DataLoaders
 
     :param dataset_path: path to the data
-    :param batchsize: number of couples (PVE,PVfree) per batch
+    :param training_batchsize, testing_batchsize: number of couples (PVE,PVfree) per batch
     :param prct_train: percentage of the dataset going into the training dataset. The remaining goes into test dataset for now
     :return: train_dataloader,test_dataloader
     '''
@@ -64,7 +64,7 @@ def load_data(dataset_path, batchsize,prct_train):
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batchsize, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batchsize, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=testing_batchsize, shuffle=True)
 
     return train_dataloader,test_dataloader
