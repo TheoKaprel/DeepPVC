@@ -4,7 +4,7 @@ import time
 
 data_params = {'dataset_path': '../PVE_data/Analytical_data/dataset','training_batchsize':5, 'test_batchsize':5, 'training_prct':0.3}
 training_params = {'n_epochs':2,'learning_rate':0.0002, 'input_channels':1, 'hidden_channels_gen':64, 'hidden_channels_disc':9, 'display_step':30,'optimizer':'Adam','training_device':'cpu'}
-losses_params = {'adv_loss':'BCE', 'recon_loss':'L1','lambda_recon':200 }
+losses_params = {'adv_loss':'BCE', 'recon_loss':'L1','lambda_recon':100 }
 
 train_dataloader,test_dataloader = load_data(dataset_path=data_params['dataset_path'],
                                              training_batchsize=data_params['training_batchsize'], testing_batchsize=data_params['test_batchsize'],prct_train=data_params['training_prct'])

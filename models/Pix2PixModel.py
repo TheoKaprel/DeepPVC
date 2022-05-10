@@ -6,7 +6,7 @@ from utils import plots
 
 
 class PVEPix2PixModel():
-    def __init__(self, training_params=None, losses_params=None, load_pth=None):
+    def __init__(self, training_params=None, losses_params=None, load_pth=None, mode = 'train'):
         if not load_pth:
             if training_params and (not losses_params):
                 raise ValueError("You have to specify training and loss parameters (losses_params is missing)")
@@ -70,7 +70,6 @@ class PVEPix2PixModel():
 
     def forward(self):
         ## Update Discriminator
-        self.discriminator_optimizer.zero_grad()
         with torch.no_grad():
             self.fakePVfree = self.Generator(self.truePVE.float())
 
@@ -80,7 +79,7 @@ class PVEPix2PixModel():
     def backward_D(self):
         disc_fake_loss = self.losses.adv_loss(self.disc_fake_hat, torch.zeros_like(self.disc_fake_hat))
 
-        disc_real_loss = self.losses.recon_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
+        disc_real_loss = self.losses.adv_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
 
         self.disc_loss = (disc_fake_loss + disc_real_loss) / 2
         self.disc_loss.backward(retain_graph=True)
@@ -88,12 +87,14 @@ class PVEPix2PixModel():
 
     def backward_G(self):
         ## Update Generator
-        self.generator_optimizer.zero_grad()
+
         self.gen_loss = self.losses.get_gen_loss(self.Generator, self.Discriminator, self.truePVfree, self.truePVE)
         self.gen_loss.backward()
         self.generator_optimizer.step()
 
     def optimize_parameters(self):
+        self.discriminator_optimizer.zero_grad()
+        self.generator_optimizer.zero_grad()
 
         self.forward()
 
