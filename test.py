@@ -5,9 +5,11 @@ from models.Pix2PixModel import PVEPix2PixModel
 from utils import plots
 import numpy as np
 
-pth_file = f'pix2pix_2.pth'
+pth_file = f'pix2pix_with_params_50.pth'
 
-pix2pix = PVEPix2PixModel(losses_params=losses_params, training_params=training_params, load_pth=pth_file)
+
+
+pix2pix = PVEPix2PixModel(load_pth=pth_file)
 pix2pix.swith_eval()
 
 pix2pix.plot_losses()

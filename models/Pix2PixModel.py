@@ -130,7 +130,12 @@ class PVEPix2PixModel():
     def plot_losses(self):
         plots.plot_losses(self.discriminator_losses, self.generator_losses)
 
-    def save_model(self):
+    def save_model(self, extention=None):
+        if extention:
+            output_filename = f"pix2pix_{extention}_{self.current_epoch}.pth"
+        else:
+            output_filename = f"pix2pix_{self.current_epoch}.pth"
+
         torch.save({'epoch': self.current_epoch,
                     'gen': self.Generator.state_dict(),
                     'gen_opt': self.generator_optimizer.state_dict(),
@@ -140,7 +145,7 @@ class PVEPix2PixModel():
                     'disc_losses': self.discriminator_losses,
                     'training_params':self.training_params,
                     'losses_params': self.losses_params
-                    }, f"pix2pix_{self.current_epoch}.pth")
+                    }, output_filename)
 
     def load_model(self,pth_path):
         checkpoint = torch.load(pth_path)
@@ -157,4 +162,9 @@ class PVEPix2PixModel():
     def swith_eval(self):
         self.Generator.eval()
         self.Discriminator.eval()
+
+    def show_infos(self):
+        print(f'training params : {self.training_params}')
+        print(f'losses params : {self.losses_params}')
+        print(f'Le Generateur ressemble à ça : {self.Generator}')
 

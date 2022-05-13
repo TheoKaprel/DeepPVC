@@ -1,0 +1,19 @@
+{
+  "data_params" : {"dataset_path": "../PVE_data/Analytical_data/dataset",
+                  "training_batchsize":5,
+                  "test_batchsize":5,
+                  "training_prct":0.3},
+
+  "training_params" : {"n_epochs":2,
+                      "learning_rate":0.0002,
+                      "input_channels":1,
+                      "hidden_channels_gen":64,
+                      "hidden_channels_disc":9,
+                      "display_step":30,
+                      "optimizer":"Adam",
+                      "training_device":"cpu"},
+
+  "losses_params" : {"adv_loss":"BCE",
+                    "recon_loss":"L1",
+                    "lambda_recon":100 }
+}

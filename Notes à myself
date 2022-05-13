@@ -1,5 +1,20 @@
+%% Training %%
+- params à modifier en command : tous les params en json + possibilité de tous les modifier en ligne de commande (cf gaga-phsp)
+- diviser l'initialisation du gros model Pix2PixModel en plusieurs fct d'init : torch, model, optimizers, loss...
+- une unique fonction de check des parametres
+- save model every k epoch
+- nb update D/G
+- epoch dump
+- plot losses convergence on test dataset
+
+%% Testing %%
+- testing on a dataset
+- function to correct an image sortie du chapeau (with preprocess etc)
+
+
+
 
 
 - dataset à diviser en : train/test/valid....
 - adaptive learning rate
-- params à modifier en command
+
