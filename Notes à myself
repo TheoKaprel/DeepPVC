@@ -1,6 +1,6 @@
 %% Training %%
-- params à modifier en command : tous les params en json + possibilité de tous les modifier en ligne de commande (cf gaga-phsp)
-- diviser l'initialisation du gros model Pix2PixModel en plusieurs fct d'init : torch, model, optimizers, loss...
+X params à modifier en command : tous les params en json + possibilité de tous les modifier en ligne de commande (cf gaga-phsp)
+X diviser l'initialisation du gros model Pix2PixModel en plusieurs fct d'init : torch, model, optimizers, loss...
 - une unique fonction de check des parametres
 - save model every k epoch
 - nb update D/G

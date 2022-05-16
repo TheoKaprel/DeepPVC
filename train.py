@@ -3,6 +3,7 @@ from models.Pix2PixModel import PVEPix2PixModel
 from utils.helpers_params import *
 import time
 import json
+import os
 import click
 
 
@@ -35,6 +36,18 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
     update_params_user_option(params, user_params=user_param_float)
     update_params_user_option(params, user_params=user_param_int)
 
+
+    if output:
+        output_filename = f"pix2pix_{output}_{params['n_epochs']}.pth"
+    else:
+        output_filename = f"pix2pix_{params['n_epochs']}.pth"
+    output_path = os.path.join(output_folder, output_filename)
+    update_params_user_option(params, user_params=(("output_path", output_path),))
+
+    check_params(params)
+
+
+
     train_dataloader, test_dataloader = load_data(dataset_path=params['dataset_path'],
                                                   training_batchsize=params['training_batchsize'],
                                                   testing_batchsize=params['test_batchsize'],
@@ -48,19 +61,19 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
 
 
 
-    DeepPVEModel.params['training_date'] = time.asctime()
+    DeepPVEModel.params['training_start_time'] = time.asctime()
 
     t0 = time.time()
     for epoch in range(DeepPVEModel.n_epochs):
-        print(f'Epoch {epoch}/{DeepPVEModel.n_epochs}')
+        print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch}')
         for step,batch in enumerate(train_dataloader):
             print(f'step {step}/{len(train_dataloader)-1}.........................')
 
             DeepPVEModel.input_data(batch)
-            print('OK')
+
             DeepPVEModel.optimize_parameters()
 
-            if (step % DeepPVEModel.display_step == 0):
+            if (step % DeepPVEModel.display_step == 0) & step!=0:
                 DeepPVEModel.display()
 
         DeepPVEModel.update_epoch()
@@ -71,7 +84,7 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
     print(f'Total training time : {total_time} s')
     DeepPVEModel.params['training_endtime'] = total_time
 
-    DeepPVEModel.save_model(folder=output_folder, extention=output)
+    DeepPVEModel.save_model()
     DeepPVEModel.plot_losses()
 
 

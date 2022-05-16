@@ -8,16 +8,6 @@ import json
 
 class PVEPix2PixModel():
     def __init__(self, params, eval=False):
-        # if not load_pth:
-        #     if training_params and (not losses_params):
-        #         raise ValueError("You have to specify training and loss parameters (losses_params is missing)")
-        #     if (not training_params) and (losses_params):
-        #         raise ValueError("You have to specify training and loss parameters (training_params is missing)")
-        #     if (not training_params) and (not losses_params):
-        #         raise ValueError("You have to specify either training and loss parameters (training_params and losses_params) either a pth file to load")
-        # else:
-        #     if training_params or losses_params:
-        #         print(f"WARNING : The training and loss parameters will be infered from the given load_pth : {load_pth} and not from the given training_params nor losses_params")
 
         self.params = params
 
@@ -31,7 +21,7 @@ class PVEPix2PixModel():
             self.generator_losses = []
             self.discriminator_losses = []
             self.current_epoch = 0
-
+            self.start_epoch=0
 
         self.current_iteration = 0
         self.mean_discriminator_loss = 0
@@ -90,14 +80,10 @@ class PVEPix2PixModel():
 
     def backward_D(self):
         disc_fake_loss = self.losses.adv_loss(self.disc_fake_hat, torch.zeros_like(self.disc_fake_hat))
-        print('disc fake loss')
         disc_real_loss = self.losses.adv_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
-        print('disc eal loss')
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
         self.disc_loss.backward(retain_graph=True)
-        print('disc loss back')
         self.discriminator_optimizer.step()
-        print('step')
 
     def backward_G(self):
         ## Update Generator
@@ -118,7 +104,6 @@ class PVEPix2PixModel():
         self.mean_discriminator_loss += self.disc_loss.item() / self.display_step
         # Keep track of the average generator loss
         self.mean_generator_loss += self.gen_loss.item() / self.display_step
-        print('mean losses')
         self.discriminator_losses.append(self.disc_loss.item())
         self.generator_losses.append(self.gen_loss.item())
 
@@ -142,13 +127,8 @@ class PVEPix2PixModel():
     def plot_losses(self):
         plots.plot_losses(self.discriminator_losses, self.generator_losses)
 
-    def save_model(self,folder, extention=None):
-        if extention:
-            output_filename = f"pix2pix_{extention}_{self.current_epoch}.pth"
-        else:
-            output_filename = f"pix2pix_{self.current_epoch}.pth"
-
-        output_path = os.path.join(folder, output_filename)
+    def save_model(self):
+        self.params['start_epoch'] = self.start_epoch
 
 
         torch.save({'epoch': self.current_epoch,
@@ -159,11 +139,15 @@ class PVEPix2PixModel():
                     'gen_losses': self.generator_losses,
                     'disc_losses': self.discriminator_losses,
                     'params': self.params
-                    }, output_path)
+                    }, self.params['output_path'])
 
     def load_model(self,pth_path):
+
+        print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path)
         self.params = checkpoint['params']
+
+
         self.init_model()
         self.init_optimization()
         self.init_losses()
@@ -172,12 +156,15 @@ class PVEPix2PixModel():
         self.Discriminator.load_state_dict(checkpoint['disc'])
 
 
-        self.generator_optimizer = checkpoint['gen_opt']
-        self.discriminator_optimizer = checkpoint['disc_opt']
+        self.generator_optimizer.load_state_dict(checkpoint['gen_opt'])
+        self.discriminator_optimizer.load_state_dict(checkpoint['disc_opt'])
 
         self.generator_losses = checkpoint['gen_losses']
         self.discriminator_losses = checkpoint['disc_losses']
         self.current_epoch = checkpoint['epoch']
+        self.start_epoch=self.current_epoch
+
+
 
     def swith_eval(self):
         self.Generator.eval()
@@ -188,5 +175,5 @@ class PVEPix2PixModel():
         print('PARAMETRES (json param file) : \n')
         json_formatted_str = json.dumps(self.params, indent=4)
         print(json_formatted_str)
-        print(f'Le Generateur ressemble à ça : {self.Generator}')
+        print('*' * 80)
 
