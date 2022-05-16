@@ -3,41 +3,52 @@ from torch import optim
 from . import networks
 from functions import losses
 from utils import plots
-
+import os
+import json
 
 class PVEPix2PixModel():
-    def __init__(self, training_params=None, losses_params=None, load_pth=None, mode = 'train'):
-        if not load_pth:
-            if training_params and (not losses_params):
-                raise ValueError("You have to specify training and loss parameters (losses_params is missing)")
-            if (not training_params) and (losses_params):
-                raise ValueError("You have to specify training and loss parameters (training_params is missing)")
-            if (not training_params) and (not losses_params):
-                raise ValueError("You have to specify either training and loss parameters (training_params and losses_params) either a pth file to load")
+    def __init__(self, params, eval=False):
+        # if not load_pth:
+        #     if training_params and (not losses_params):
+        #         raise ValueError("You have to specify training and loss parameters (losses_params is missing)")
+        #     if (not training_params) and (losses_params):
+        #         raise ValueError("You have to specify training and loss parameters (training_params is missing)")
+        #     if (not training_params) and (not losses_params):
+        #         raise ValueError("You have to specify either training and loss parameters (training_params and losses_params) either a pth file to load")
+        # else:
+        #     if training_params or losses_params:
+        #         print(f"WARNING : The training and loss parameters will be infered from the given load_pth : {load_pth} and not from the given training_params nor losses_params")
+
+        self.params = params
+
+        if 'start_pth' in self.params and self.params['start_pth'] is not None:
+            self.load_model(self.params['start_pth'])
         else:
-            if training_params or losses_params:
-                print(f"WARNING : The training and loss parameters will be infered from the given load_pth : {load_pth} and not from the given training_params nor losses_params")
+            self.init_model()
+            self.init_optimization()
+            self.init_losses()
+
+            self.generator_losses = []
+            self.discriminator_losses = []
+            self.current_epoch = 0
 
 
-        if load_pth:
-            checkpoint = torch.load(load_pth)
-            training_params = checkpoint['training_params']
-            losses_params = checkpoint['losses_params']
+        self.current_iteration = 0
+        self.mean_discriminator_loss = 0
+        self.mean_generator_loss = 0
 
-        self.training_params = training_params
-        self.losses_params = losses_params
+        self.display_step = self.params['display_step']
+        self.device = torch.device(self.params['device'])
 
-        self.n_epochs = training_params['n_epochs']
-        self.learning_rate = training_params['learning_rate']
-        self.optimizer = training_params['optimizer']
+        if eval:
+            self.swith_eval()
 
-        self.input_channels = training_params['input_channels']
-        self.hidden_channels_gen = training_params['hidden_channels_gen']
-        self.hidden_channels_disc = training_params['hidden_channels_disc']
+    def init_model(self):
+        params = self.params
 
-        self.display_step = training_params['display_step']
-
-        self.training_device = training_params['training_device']
+        self.input_channels = params['input_channels']
+        self.hidden_channels_gen = params['hidden_channels_gen']
+        self.hidden_channels_disc = params['hidden_channels_disc']
 
         self.Generator = networks.UNetGenerator(input_channel=self.input_channels,
                                                 ngc = self.hidden_channels_gen,
@@ -47,26 +58,27 @@ class PVEPix2PixModel():
                                                           ndc = self.hidden_channels_disc,
                                                           output_channel=self.input_channels)
 
+    def init_optimization(self):
+        params = self.params
+        self.n_epochs = params['n_epochs']
+
+        self.learning_rate = params['learning_rate']
+        self.optimizer = params['optimizer']
+
+        if self.optimizer == 'Adam':
+            self.generator_optimizer = optim.Adam(self.Generator.parameters(), lr=self.learning_rate)
+            self.discriminator_optimizer = optim.Adam(self.Discriminator.parameters(), lr=self.learning_rate)
+        else:
+            raise ValueError("Unknown optimizer. Choose between : Adam")
+
+    def init_losses(self):
+        self.losses_params = {'adv_loss': self.params['adv_loss'], 'recon_loss': self.params['recon_loss'], 'lambda_recon': self.params['lambda_recon']}
+
         self.losses = losses.Pix2PixLosses(self.losses_params)
 
-        self.current_iteration = 0
-        self.mean_discriminator_loss = 0
-        self.mean_generator_loss = 0
-
-        if load_pth:
-            self.load_model(load_pth)
-        else:
-            self.generator_losses = []
-            self.discriminator_losses = []
-            self.current_epoch = 0
-
-            if self.optimizer == 'Adam':
-                self.generator_optimizer = optim.Adam(self.Generator.parameters(), lr=self.learning_rate)
-                self.discriminator_optimizer = optim.Adam(self.Discriminator.parameters(), lr=self.learning_rate)
-
     def input_data(self, batch):
-        self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.training_device)
-        self.truePVfree = batch[:, 1, :, :].unsqueeze(1).to(self.training_device)
+        self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.device)
+        self.truePVfree = batch[:, 1, :, :].unsqueeze(1).to(self.device)
 
     def forward(self):
         ## Update Discriminator
@@ -78,12 +90,14 @@ class PVEPix2PixModel():
 
     def backward_D(self):
         disc_fake_loss = self.losses.adv_loss(self.disc_fake_hat, torch.zeros_like(self.disc_fake_hat))
-
+        print('disc fake loss')
         disc_real_loss = self.losses.adv_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
-
-        self.disc_loss = (disc_fake_loss + disc_real_loss) / 2
+        print('disc eal loss')
+        self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
         self.disc_loss.backward(retain_graph=True)
+        print('disc loss back')
         self.discriminator_optimizer.step()
+        print('step')
 
     def backward_G(self):
         ## Update Generator
@@ -97,16 +111,14 @@ class PVEPix2PixModel():
         self.generator_optimizer.zero_grad()
 
         self.forward()
-
         self.backward_D()
-
         self.backward_G()
 
         # Keep track of the average discriminator loss
         self.mean_discriminator_loss += self.disc_loss.item() / self.display_step
         # Keep track of the average generator loss
         self.mean_generator_loss += self.gen_loss.item() / self.display_step
-
+        print('mean losses')
         self.discriminator_losses.append(self.disc_loss.item())
         self.generator_losses.append(self.gen_loss.item())
 
@@ -130,11 +142,14 @@ class PVEPix2PixModel():
     def plot_losses(self):
         plots.plot_losses(self.discriminator_losses, self.generator_losses)
 
-    def save_model(self, extention=None):
+    def save_model(self,folder, extention=None):
         if extention:
             output_filename = f"pix2pix_{extention}_{self.current_epoch}.pth"
         else:
             output_filename = f"pix2pix_{self.current_epoch}.pth"
+
+        output_path = os.path.join(folder, output_filename)
+
 
         torch.save({'epoch': self.current_epoch,
                     'gen': self.Generator.state_dict(),
@@ -143,28 +158,35 @@ class PVEPix2PixModel():
                     'disc_opt': self.discriminator_optimizer.state_dict(),
                     'gen_losses': self.generator_losses,
                     'disc_losses': self.discriminator_losses,
-                    'training_params':self.training_params,
-                    'losses_params': self.losses_params
-                    }, output_filename)
+                    'params': self.params
+                    }, output_path)
 
     def load_model(self,pth_path):
         checkpoint = torch.load(pth_path)
+        self.params = checkpoint['params']
+        self.init_model()
+        self.init_optimization()
+        self.init_losses()
+
         self.Generator.load_state_dict(checkpoint['gen'])
         self.Discriminator.load_state_dict(checkpoint['disc'])
 
-        self.current_epoch = checkpoint['epoch']
+
         self.generator_optimizer = checkpoint['gen_opt']
         self.discriminator_optimizer = checkpoint['disc_opt']
 
         self.generator_losses = checkpoint['gen_losses']
         self.discriminator_losses = checkpoint['disc_losses']
+        self.current_epoch = checkpoint['epoch']
 
     def swith_eval(self):
         self.Generator.eval()
         self.Discriminator.eval()
 
     def show_infos(self):
-        print(f'training params : {self.training_params}')
-        print(f'losses params : {self.losses_params}')
+        print('*'*80)
+        print('PARAMETRES (json param file) : \n')
+        json_formatted_str = json.dumps(self.params, indent=4)
+        print(json_formatted_str)
         print(f'Le Generateur ressemble à ça : {self.Generator}')
 

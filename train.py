@@ -1,5 +1,6 @@
 from data.dataset import load_data
 from models.Pix2PixModel import PVEPix2PixModel
+from utils.helpers_params import *
 import time
 import json
 import click
@@ -9,56 +10,72 @@ import click
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('json_filename', type=click.Path(exists=True, file_okay=True, dir_okay=False))
-@click.option('--output', '-o', help='Output filename, default = automatic name', default='auto')
-@click.option('--output_folder', '-f', help='Output folder (ignored if output is not "auto")', default='.')
-def train(json_filename, output, output_folder):
+@click.option('--user_param_str', '-ps',
+              help='overwrite str parameter of the json file',
+              multiple=True, type=(str, str))
+@click.option('--user_param_float', '-pf',
+              help='overwrite numeric parameter of the json file',
+              multiple=True, type=(str, float))
+@click.option('--user_param_int', '-pi',
+              help='overwrite numeric int parameter of the json file',
+              multiple=True, type=(str, int))
+@click.option('--output', '-o', help='Output filename', default = None)
+@click.option('--output_folder', '-f', help='Output folder ', default='.')
+def train_onclick(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder):
+    train(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder)
+
+
+def train(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder):
     params_file = open(json_filename).read()
     params = json.loads(params_file)
-    data_params = params['data_params']
-    training_params = params['training_params']
-    losses_params = params['losses_params']
 
 
-    train_dataloader, test_dataloader = load_data(dataset_path=data_params['dataset_path'],
-                                                  training_batchsize=data_params['training_batchsize'],
-                                                  testing_batchsize=data_params['test_batchsize'],
-                                                  prct_train=data_params['training_prct'])
+    # Update parameters specified in command line
+    update_params_user_option(params, user_params=user_param_str)
+    update_params_user_option(params, user_params=user_param_float)
+    update_params_user_option(params, user_params=user_param_int)
 
-    DeepPVEModel = PVEPix2PixModel(training_params=training_params, losses_params=losses_params)
+    train_dataloader, test_dataloader = load_data(dataset_path=params['dataset_path'],
+                                                  training_batchsize=params['training_batchsize'],
+                                                  testing_batchsize=params['test_batchsize'],
+                                                  prct_train=params['training_prct'])
+
+
+
+    DeepPVEModel = PVEPix2PixModel(params)
 
     DeepPVEModel.show_infos()
 
-    # ajouter la date aux params
-    # "training_date": time.asctime()
 
 
-    # t0 = time.time()
-    # for epoch in range(DeepPVEModel.n_epochs):
-    #     print(f'Epoch {epoch}/{DeepPVEModel.n_epochs}')
-    #     for step,batch in enumerate(train_dataloader):
-    #         print(f'step {step}/{len(train_dataloader)-1}.........................')
-    #
-    #         DeepPVEModel.input_data(batch)
-    #
-    #         DeepPVEModel.optimize_parameters()
-    #
-    #         if (step % DeepPVEModel.display_step == 0):
-    #             DeepPVEModel.display()
-    #
-    #     DeepPVEModel.update_epoch()
-    #
-    # DeepPVEModel.save_model()
-    # tf = time.time()
-    # total_time = round(tf-t0)
-    # print(f'Total training time : {total_time} s')
-    # DeepPVEModel.plot_losses()
+    DeepPVEModel.params['training_date'] = time.asctime()
+
+    t0 = time.time()
+    for epoch in range(DeepPVEModel.n_epochs):
+        print(f'Epoch {epoch}/{DeepPVEModel.n_epochs}')
+        for step,batch in enumerate(train_dataloader):
+            print(f'step {step}/{len(train_dataloader)-1}.........................')
+
+            DeepPVEModel.input_data(batch)
+            print('OK')
+            DeepPVEModel.optimize_parameters()
+
+            if (step % DeepPVEModel.display_step == 0):
+                DeepPVEModel.display()
+
+        DeepPVEModel.update_epoch()
 
 
+    tf = time.time()
+    total_time = round(tf-t0)
+    print(f'Total training time : {total_time} s')
+    DeepPVEModel.params['training_endtime'] = total_time
 
-
+    DeepPVEModel.save_model(folder=output_folder, extention=output)
+    DeepPVEModel.plot_losses()
 
 
 if __name__ == '__main__':
-    train()
+    train_onclick()
 
 

@@ -6,8 +6,11 @@
 - nb update D/G
 - epoch dump
 - plot losses convergence on test dataset
+- possiblité de REPRENDRE le training à partir d'un pth
+--> train/test mode
 
 %% Testing %%
+- fct pour load un model pour tester
 - testing on a dataset
 - function to correct an image sortie du chapeau (with preprocess etc)
 
