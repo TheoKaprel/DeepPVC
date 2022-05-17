@@ -20,6 +20,8 @@ class PVEPix2PixModel():
 
             self.generator_losses = []
             self.discriminator_losses = []
+            self.generator_losses_test = []
+            self.discriminator_losses_test = []
             self.current_epoch = 0
             self.start_epoch=0
 
@@ -31,7 +33,9 @@ class PVEPix2PixModel():
         self.device = torch.device(self.params['device'])
 
         if eval:
-            self.swith_eval()
+            self.switch_eval()
+        else:
+            self.switch_train()
 
     def init_model(self):
         params = self.params
@@ -78,19 +82,21 @@ class PVEPix2PixModel():
         self.disc_fake_hat = self.Discriminator(self.fakePVfree.detach().float(), self.truePVE.float())
         self.disc_real_hat = self.Discriminator(self.truePVfree.float(), self.truePVE.float())
 
-    def backward_D(self):
+    def backward_D(self, back=True):
         disc_fake_loss = self.losses.adv_loss(self.disc_fake_hat, torch.zeros_like(self.disc_fake_hat))
         disc_real_loss = self.losses.adv_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
-        self.disc_loss.backward(retain_graph=True)
-        self.discriminator_optimizer.step()
+        if back:
+            self.disc_loss.backward(retain_graph=True)
+            self.discriminator_optimizer.step()
 
-    def backward_G(self):
+    def backward_G(self, back=True):
         ## Update Generator
 
         self.gen_loss = self.losses.get_gen_loss(self.Generator, self.Discriminator, self.truePVfree, self.truePVE)
-        self.gen_loss.backward()
-        self.generator_optimizer.step()
+        if back:
+            self.gen_loss.backward()
+            self.generator_optimizer.step()
 
     def optimize_parameters(self):
         self.discriminator_optimizer.zero_grad()
@@ -107,8 +113,16 @@ class PVEPix2PixModel():
         self.discriminator_losses.append(self.disc_loss.item())
         self.generator_losses.append(self.gen_loss.item())
 
-
         self.current_iteration+=1
+
+    def eval_test(self):
+        with torch.no_grad():
+            self.forward()
+            self.backward_D(back=False)
+            self.backward_G(back=False)
+
+        self.discriminator_losses_test.append(self.disc_loss.item())
+        self.generator_losses_test.append(self.gen_loss.item())
 
     def display(self):
         ### Visualization code ###
@@ -145,7 +159,7 @@ class PVEPix2PixModel():
 
         print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path)
-        self.params = checkpoint['params']
+        # self.params = checkpoint['params']
 
 
         self.init_model()
@@ -166,9 +180,18 @@ class PVEPix2PixModel():
 
 
 
-    def swith_eval(self):
+    def switch_eval(self):
         self.Generator.eval()
         self.Discriminator.eval()
+
+    def switch_train(self):
+        self.Generator.train()
+        self.Discriminator.train()
+
+    def test(self, img):
+        with torch.no_grad():
+            output = self.Generator(img.float())
+        return output
 
     def show_infos(self):
         print('*'*80)

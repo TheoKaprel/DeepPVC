@@ -30,6 +30,27 @@ def show_tensor_images(images):
     plt.show()
 
 
+def show_two_images(img_PVE, img_PVC):
+    array_PVE = img_PVE.numpy()
+    array_PVC = img_PVC.numpy()
+
+
+
+    fig,ax = plt.subplots(1,2)
+    im1 = ax[0].imshow(array_PVE[0,0,:,:], cmap = 'Greys')
+    ax[0].set_title('Input PVE projection')
+    im2 = ax[1].imshow(array_PVC[0,0,:,:], cmap = 'Greys')
+    ax[1].set_title('Output PVC projection')
+
+    fig.subplots_adjust(right=0.85)
+    cbar_ax = fig.add_axes([0.88, 0.15, 0.04, 0.7])
+    fig.colorbar(im2, cax=cbar_ax)
+
+
+    plt.show()
+
+
+
 def plot_losses(discriminator_losses,generator_losses):
     fig,ax1 = plt.subplots()
 

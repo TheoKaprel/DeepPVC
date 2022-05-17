@@ -1,6 +1,5 @@
 import torch
 import matplotlib.pyplot as plt
-from train import test_dataloader,train_dataloader,training_params,losses_params
 from models.Pix2PixModel import PVEPix2PixModel
 from utils import plots
 import numpy as np
@@ -8,14 +7,13 @@ import numpy as np
 pth_file = f'pix2pix_with_params_50.pth'
 
 
-
-pix2pix = PVEPix2PixModel(load_pth=pth_file)
-pix2pix.swith_eval()
-
-pix2pix.plot_losses()
-
-
-MSE = 0
+# pix2pix = PVEPix2PixModel()
+# pix2pix.swith_eval()
+#
+# pix2pix.plot_losses()
+#
+#
+# MSE = 0
 
 # for (batch,test_data) in enumerate(test_dataloader):
 #     if batch ==0:

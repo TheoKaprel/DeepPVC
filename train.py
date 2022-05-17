@@ -44,6 +44,7 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
     output_path = os.path.join(output_folder, output_filename)
     update_params_user_option(params, user_params=(("output_path", output_path),))
 
+
     check_params(params)
 
 
@@ -59,7 +60,7 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
 
     DeepPVEModel.show_infos()
 
-
+    DeepPVEModel.switch_train()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
@@ -70,8 +71,8 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
             print(f'step {step}/{len(train_dataloader)-1}.........................')
 
             DeepPVEModel.input_data(batch)
-
             DeepPVEModel.optimize_parameters()
+
 
             if (step % DeepPVEModel.display_step == 0) & step!=0:
                 DeepPVEModel.display()

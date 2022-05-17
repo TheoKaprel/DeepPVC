@@ -1,5 +1,8 @@
 **.pth
 .idea/
 **/__pycache__/
+build/
+dist/
+Pix2Pix.egg-info/
 Pix2Pix_coursera.py
 brouillon.py
