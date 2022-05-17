@@ -14,11 +14,11 @@ def check_params(params, fatal_on_unknown=False):
 
     required = ['dataset_path', 'n_epochs', 'learning_rate',
                 'hidden_channels_gen', 'hidden_channels_disc',
-                'optimizer', 'device', 'lambda_recon']
+                'optimizer', 'device', 'lambda_recon', 'save_every_n_epoch']
 
     automated = ['training_start_time', 'start_epoch', 'training_endtime', 'output_path']
     option = ['start_pth']
-    default = ['training_batchsize', 'test_batchsize', 'training_prct', 'input_channels', 'display_step', 'adv_loss', 'recon_loss']
+    default = ['training_batchsize', 'test_batchsize', 'training_prct', 'input_channels', 'adv_loss', 'recon_loss']
 
     for req in required:
         if req not in params:
@@ -35,6 +35,8 @@ def check_params(params, fatal_on_unknown=False):
     assert (type(params['device']) == str)
     assert((type(params['lambda_recon'])==float) or (type(params['lambda_recon'])==int))
     assert(params['lambda_recon']>=0)
+    assert(type(params['save_every_n_epoch'])==int)
+    assert(params['save_every_n_epoch']>0)
 
     if 'training_batchsize' not in params:
         params['training_batchsize'] = 5
@@ -48,9 +50,6 @@ def check_params(params, fatal_on_unknown=False):
     if 'input_channels' not in params:
         params['input_channels'] = 1
         print('WARNING The input_channels parameter has been automatically set to 1')
-    if 'display_step' not in params:
-        params['display_step'] = 30
-        print('WARNING The display_step parameter has been automatically set to 30')
     if 'adv_loss' not in params:
         params['adv_loss'] = "BCE"
         print('WARNING The adv_loss parameter has been automatically set to Adam')
@@ -58,7 +57,7 @@ def check_params(params, fatal_on_unknown=False):
         params['recon_loss'] = "L1"
         print('WARNING The recon_loss parameter has been automatically set to Adam')
 
-    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels', 'display_step']:
+    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels']:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 

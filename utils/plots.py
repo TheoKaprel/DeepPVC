@@ -29,6 +29,13 @@ def show_tensor_images(images):
         ax[2, k].set_title('FakePVfree')
     plt.show()
 
+    # fig,ax = plt.subplots()
+    # ax.plot(images_unflat[0,0,88,:], label = 'PVE')
+    # ax.plot(images_unflat[0,1,88,:], label = 'PVfree')
+    # ax.plot(images_unflat[0,2,88,:], label = 'PVC')
+    # plt.legend()
+    # plt.show()
+
 
 def show_two_images(img_PVE, img_PVC):
     array_PVE = img_PVE.numpy()

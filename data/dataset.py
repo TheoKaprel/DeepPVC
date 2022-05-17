@@ -5,7 +5,7 @@ import glob
 
 
 
-def load_data(dataset_path, training_batchsize, testing_batchsize,prct_train):
+def load_data(dataset_path, training_batchsize, testing_batchsize,prct_train, device):
     '''
     - Loads the dataset from a folder containing source (ref.mhd), projPVE (ref_PVE.mhd) and projPVfree (ref_PVfree.mhd)
     - Converts datas in ITK images and then in numpy arrays concatenated in an array (dataset) of shape (size_dataset, 2, 128,128)
@@ -56,7 +56,7 @@ def load_data(dataset_path, training_batchsize, testing_batchsize,prct_train):
     # dataset = (dataset - mean[None, :,None, None])/std[None, :,None, None]
 
 
-    dataset = torch.from_numpy(dataset)
+    dataset = torch.from_numpy(dataset).to(device)
 
     # Division of dataset into train_dataset and test_dataset
     train_size = int(prct_train* len(dataset))

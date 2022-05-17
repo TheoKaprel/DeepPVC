@@ -1,3 +1,5 @@
+import torch
+
 from data.dataset import load_data
 from models.Pix2PixModel import PVEPix2PixModel
 from utils.helpers_params import *
@@ -47,12 +49,14 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
 
     check_params(params)
 
-
+    save_every_n_epoch = params['save_every_n_epoch']
+    device = torch.device(params['device'])
 
     train_dataloader, test_dataloader = load_data(dataset_path=params['dataset_path'],
                                                   training_batchsize=params['training_batchsize'],
                                                   testing_batchsize=params['test_batchsize'],
-                                                  prct_train=params['training_prct'])
+                                                  prct_train=params['training_prct'],
+                                                  device = device)
 
 
 
@@ -74,18 +78,18 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
             DeepPVEModel.optimize_parameters()
 
 
-            if (step % DeepPVEModel.display_step == 0) & step!=0:
-                DeepPVEModel.display()
-
         DeepPVEModel.update_epoch()
+
+        if (DeepPVEModel.current_epoch % save_every_n_epoch==0):
+            DeepPVEModel.save_model()
 
 
     tf = time.time()
     total_time = round(tf-t0)
     print(f'Total training time : {total_time} s')
     DeepPVEModel.params['training_endtime'] = total_time
-
     DeepPVEModel.save_model()
+
     DeepPVEModel.plot_losses()
 
 

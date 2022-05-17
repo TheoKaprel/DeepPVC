@@ -10,9 +10,7 @@ import itk
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-# @click.argument('--pth', help="Model to load (.pth) ")
 @click.argument('pth')
-# @click.argument('--input', '-i', help="Input image filename (.mhd)")
 @click.argument('input')
 @click.option('--save', is_flag=True, help = "Wheter or not to save the corrected image")
 @click.option('--output', '-o', help = 'Output filename (.mhd)')
@@ -33,15 +31,30 @@ def eval_one_image(pth, input, save, output):
     model = PVEPix2PixModel(params=params)
     model.load_model(pth)
 
+
+    model.switch_device("cpu")
     model.switch_eval()
 
     model.show_infos()
 
-    input_tensor = helpers_data.load_tensor_from_mhd(input)
+    model.plot_losses()
 
-    output_tensor = model.test(input_tensor)
+    # input_tensor = helpers_data.load_tensor_from_mhd(input)
 
-    plots.show_two_images(input_tensor, output_tensor)
+    input_tensor = helpers_data.load_tensor_PVE_PVfree_from_mhd(input)
+    print(input_tensor.shape)
+    tensor_PVE = input_tensor[:,0,:,:]
+    tensor_PVE = tensor_PVE[:,None,:,:]
+
+
+    output_tensor = model.test(tensor_PVE)
+    imgs = torch.cat((input_tensor,output_tensor), dim=1)
+    print(imgs.shape)
+
+    # plots.show_two_images(input_tensor, output_tensor)
+
+    plots.show_tensor_images(imgs)
+
 
 
 
