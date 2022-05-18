@@ -30,7 +30,7 @@ In progress...
 # Training
 
 
-To train the model
+To train the model :relieved:
 
 
 ```sh

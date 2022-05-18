@@ -9,9 +9,11 @@
 * data normalisation
 * data division : train/test/validation
 
+
+
 ### Training loop
 
-* Reconsider the "resume training" 
+* Reconsider the "resume training"
 * Number of update G/D
 * epoch dump
 * adaptive learning rate
@@ -39,7 +41,10 @@
 * Show infos about a dataset
 * Plots adaptable in many situations (avec ou sans PVfree, dataset ou single img, ...)
 
-
+### Jean Zay
+* Fichier slurm
+* envoyer code&dataset
+* generer dataset **SUR** le WORK de jean-zay (pas chez moi)
 
 
 
