@@ -15,7 +15,7 @@ class PVEPix2PixModel():
         self.device = torch.device(self.params['device'])
         self.output_path = self.params['output_path']
 
-        if 'start_pth' in self.params and self.params['start_pth'] is not None:
+        if 'start_pth' in self.params and self.params['start_pth'] not in [None,'']:
             self.load_model(self.params['start_pth'])
         else:
             self.init_model()
@@ -32,6 +32,8 @@ class PVEPix2PixModel():
         self.current_iteration = 0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
+        self.mean_generator_loss_test = 0
+        self.mean_discriminator_loss_test = 0
 
         if eval:
             self.switch_eval()
@@ -118,29 +120,26 @@ class PVEPix2PixModel():
             self.backward_D(back=False)
             self.backward_G(back=False)
 
-        self.discriminator_losses_test.append(self.disc_loss.item())
-        self.generator_losses_test.append(self.gen_loss.item())
 
-    # def display(self):
-    #     print(f"Epoch {self.current_epoch}: Step {self.current_iteration-1}: Generator loss: {self.mean_generator_loss}, Discriminator loss: {self.mean_discriminator_loss}")
-    #
-    #     plots.show_tensor_images(torch.cat((self.truePVE, self.truePVfree, self.fakePVfree), 1))
-    #
-    #     self.mean_generator_loss = 0
-    #     self.mean_discriminator_loss = 0
-
+        self.mean_discriminator_loss_test+= self.disc_loss.item()
+        self.mean_generator_loss_test+= self.gen_loss.item()
 
     def update_epoch(self):
         self.discriminator_losses.append(self.mean_discriminator_loss / self.current_iteration)
         self.generator_losses.append(self.mean_generator_loss / self.current_iteration)
+        self.discriminator_losses_test.append(self.mean_discriminator_loss_test / self.current_iteration)
+        self.generator_losses_test.append(self.mean_generator_loss_test / self.current_iteration)
+
 
         self.current_epoch+=1
         self.current_iteration=0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
+        self.mean_generator_loss_test = 0
+        self.mean_discriminator_loss_test = 0
 
     def plot_losses(self):
-        plots.plot_losses(self.discriminator_losses, self.generator_losses)
+        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.discriminator_losses_test, self.generator_losses_test)
 
     def save_model(self):
         self.params['start_epoch'] = self.start_epoch
@@ -178,8 +177,6 @@ class PVEPix2PixModel():
         self.discriminator_losses = checkpoint['disc_losses']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch
-
-
 
     def switch_eval(self):
         self.Generator.eval()

@@ -11,14 +11,20 @@ X train/test mode
 
 %% Testing %%
 X fct pour load un model pour tester
-- testing on a dataset
+- testing on a dataset mais pas avec les loss mais plutot MSE par ex
 X function to correct an image sortie du chapeau (with preprocess etc)
+- plots propres : faire plein de fct de plots suivant ce qu'on veut voir (avec ou sans PVfree, dataset ou single img, ...)
 
+- enlever le fichier config quand on spécifie un pth : soit une option --json config.json soit un --resume pix2pix_de_l_an_1789.pth
+  --> mais toujours avec la possibilité de changer un param mais seulement le n_epochs (et maybe dataset et device, save_every_n_epoch) dans le cas --resume
 
-%% scripts %%
 - show infos d'un fichier pth
 
 
 - dataset à diviser en : train/test/valid....
 - adaptive learning rate
 
+%% WARNINGS %%
+- batchnorm ? instnorm ?
+- training on multi GPU pas forcement compatible avec les batch/inst normalisation. Need of 'syncronised normalisation' is multi-GPU
+-

@@ -1,0 +1,68 @@
+
+# To *Do* List
+
+
+### On Data
+
+* data scraping
+* data formating procedure (mhd->itk->numpy->tensor)
+* data normalisation
+* data division : train/test/validation
+
+### Training loop
+
+* Reconsider the "resume training" 
+* Number of update G/D
+* epoch dump
+* adaptive learning rate
+
+### Testing
+* testing on a dataset mais pas avec les loss mais plutot MSE par ex
+
+
+### Losses 
+
+* add other possible losses
+	- adv_loss : BCE, Wassersein
+	- recon_loss : L1, L2, both? 
+
+### Models
+
+* add a simple U-net model
+* add parameters to Pix2Pix : n_layers, norm or no norm, dropout, ...
+
+
+### Utils
+
+* Show infos about a pth
+* Show infos about a model
+* Show infos about a dataset
+* Plots adaptable in many situations (avec ou sans PVfree, dataset ou single img, ...)
+
+
+
+
+
+# To *Read* List
+
+
+- ideal batchsize
+
+- projection image preprocessing : norm or no norm ? Which norm (max, mean/cov...) ? 
+
+
+- Inside the NN, norm or no norm ? Which norm (batchNorm2d or instnorm) ?
+
+
+- optimal use of GPU ? https://discuss.pytorch.org/t/how-to-prefetch-data-when-processing-with-gpu/548/19
+
+
+- training on multi GPU pas forcement compatible avec les batch/inst normalisation. Need of 'syncronised normalisation' is multi-GPU
+
+
+- Jean Zay et IA : http://www.idris.fr/ia/
+
+
+
+
+

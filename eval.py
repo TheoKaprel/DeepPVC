@@ -42,18 +42,15 @@ def eval_one_image(pth, input, save, output):
     # input_tensor = helpers_data.load_tensor_from_mhd(input)
 
     input_tensor = helpers_data.load_tensor_PVE_PVfree_from_mhd(input)
-    print(input_tensor.shape)
     tensor_PVE = input_tensor[:,0,:,:]
     tensor_PVE = tensor_PVE[:,None,:,:]
 
 
     output_tensor = model.test(tensor_PVE)
     imgs = torch.cat((input_tensor,output_tensor), dim=1)
-    print(imgs.shape)
 
-    # plots.show_two_images(input_tensor, output_tensor)
 
-    plots.show_tensor_images(imgs)
+    plots.show_images_profiles(imgs, profile=True)
 
 
 

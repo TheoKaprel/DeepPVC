@@ -71,12 +71,18 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
     t0 = time.time()
     for epoch in range(DeepPVEModel.n_epochs):
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch}')
+
+        # Optimisation loop
         for step,batch in enumerate(train_dataloader):
             print(f'step {step}/{len(train_dataloader)-1}.........................')
 
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
+        # # Test loop
+        # for step, batch in enumerate(test_dataloader):
+        #     DeepPVEModel.input_data(batch)
+        #     DeepPVEModel.eval_test()
 
         DeepPVEModel.update_epoch()
 

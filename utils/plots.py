@@ -1,7 +1,8 @@
 import torch
 import matplotlib.pyplot as plt
+import numpy as np
 
-def show_tensor_images(images):
+def show_tensor_images(images, i):
     '''
     Plots PVE, PVfree and GeneratedProjection by patch
 
@@ -29,44 +30,50 @@ def show_tensor_images(images):
         ax[2, k].set_title('FakePVfree')
     plt.show()
 
-    # fig,ax = plt.subplots()
-    # ax.plot(images_unflat[0,0,88,:], label = 'PVE')
-    # ax.plot(images_unflat[0,1,88,:], label = 'PVfree')
-    # ax.plot(images_unflat[0,2,88,:], label = 'PVC')
-    # plt.legend()
-    # plt.show()
+    fig,ax = plt.subplots()
+    ax.plot(images_unflat[0,0,i,:], label = 'PVE')
+    ax.plot(images_unflat[0,1,i,:], label = 'PVfree')
+    ax.plot(images_unflat[0,2,i,:], label = 'PVC')
+    plt.legend()
+    plt.show()
 
 
-def show_two_images(img_PVE, img_PVC):
+def show_two_images(img_PVE, img_PVC,slice):
     array_PVE = img_PVE.numpy()
     array_PVC = img_PVC.numpy()
 
-
+    # , cmap = 'Greys'
 
     fig,ax = plt.subplots(1,2)
-    im1 = ax[0].imshow(array_PVE[0,0,:,:], cmap = 'Greys')
+    im1 = ax[0].imshow(array_PVE[0,0,:,:])
     ax[0].set_title('Input PVE projection')
-    im2 = ax[1].imshow(array_PVC[0,0,:,:], cmap = 'Greys')
+    im2 = ax[1].imshow(array_PVC[0,0,:,:])
     ax[1].set_title('Output PVC projection')
 
     fig.subplots_adjust(right=0.85)
     cbar_ax = fig.add_axes([0.88, 0.15, 0.04, 0.7])
     fig.colorbar(im2, cax=cbar_ax)
+    plt.show()
 
-
+    fig,ax = plt.subplots()
+    ax.plot(array_PVE[0,0,slice,:], label = 'PVE')
+    ax.plot(array_PVC[0,0,slice,:], label = 'PVC')
+    plt.legend()
     plt.show()
 
 
 
-def plot_losses(discriminator_losses,generator_losses):
+def plot_losses(discriminator_losses,generator_losses, discriminator_losses_test, generator_losses_test):
     fig,ax1 = plt.subplots()
 
     p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
+    p1 = ax1.plot(generator_losses_test, color = 'orange',linestyle = 'dashed', label = 'Generator Loss TEST')
     ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = 14)
     ax1.legend(loc=2) #upper left legend
 
     ax2 = ax1.twinx()
     p2 = ax2.plot(discriminator_losses,color = 'blue', label= 'Discriminator Loss')
+    p2 = ax2.plot(discriminator_losses_test,color = 'blue',linestyle='dashed', label= 'Discriminator Loss TEST')
     ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=14)
     ax2.legend(loc=1) #upper right legend
 
@@ -74,3 +81,54 @@ def plot_losses(discriminator_losses,generator_losses):
     ax2.set_title('Losses')
 
     plt.show()
+
+
+def show_images_profiles(images,profile = None):
+    array_image = images.numpy().squeeze()
+    shape = array_image.shape
+    nb_image = shape[0]
+
+    # def of colors and labels
+    if nb_image==2:
+        labels = ['PVE', 'PVC']
+        colors = ['red', 'blue']
+    elif nb_image==3:
+        labels = ['PVE', 'PVfree', 'PVC']
+        colors = ['red','green', 'blue']
+    else:
+        print('Error : incorrect number of images')
+        exit(0)
+
+
+    if profile==False:
+        nrows = 1
+    else:
+        nrows = 2
+
+    fig = plt.figure(figsize=(5.5,3.5))
+    spec = fig.add_gridspec(nrows,nb_image)
+
+    ax_imgs = []
+    for i in range(nb_image):
+        ax_imgs_i = fig.add_subplot(spec[0,i])
+        ax_imgs.append(ax_imgs_i)
+        ax_imgs_i.imshow(array_image[i,:,:])
+        ax_imgs_i.set_title(labels[i])
+
+
+    # compute and plot profiles
+    if nrows>1:
+        ref_img = array_image[0,:,:]
+        center_indexes = np.where(ref_img == np.amax(ref_img))
+        center_i = (np.mean(center_indexes[0])).astype(int)
+        center_j = (np.mean(center_indexes[1])).astype(int)
+
+        ax_pfls = fig.add_subplot(spec[1,:])
+        for i in range(nb_image):
+            ax_pfls.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
+        ax_pfls.legend()
+
+
+    plt.show()
+
+

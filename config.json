@@ -4,7 +4,7 @@
   "test_batchsize":5,
   "training_prct":0.8,
 
-  "n_epochs":50,
+  "n_epochs":20,
   "learning_rate":0.0002,
   "input_channels":1,
   "hidden_channels_gen":64,
@@ -15,7 +15,9 @@
 
   "adv_loss":"BCE",
   "recon_loss":"L1",
-  "lambda_recon":100
+  "lambda_recon":100,
+
+  "start_pth": ""
 
 
 }

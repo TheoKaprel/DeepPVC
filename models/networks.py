@@ -125,7 +125,6 @@ class NLayerDiscriminator(nn.Module):
     - ndc : number of channels/features after first feature extraction
     - output_channel : number of channels desired for the output
     FIXME : ajouter options : nb_layers, dropout, normlayer
-    FIXME : architecture sous forme séquentielle, methode pour calculer le receptive field
     """
     def __init__(self, input_channel, ndc, output_channel=1):
         super(NLayerDiscriminator, self).__init__()
@@ -134,7 +133,6 @@ class NLayerDiscriminator(nn.Module):
         sequence = [nn.Conv2d(input_channel, ndc, kernel_size=(4, 4), stride=(2, 2), padding = 1), nn.LeakyReLU(0.2, True)]
 
         #contracting lagers
-
         sequence += [DownSamplingBlock(ndc, 2 * ndc)]
         sequence += [DownSamplingBlock(2 * ndc, 4 * ndc)]
         # sequence += [DownSamplingBlock(4 * ndc, 8 * ndc)]
@@ -162,55 +160,4 @@ class NLayerDiscriminator(nn.Module):
                         prod_S = prod_S * sublayer.stride[0]
         return R
 
-
-def plot_img(img):
-    """
-    :param img: tensor image (nb_img à plotter,nb_channel, Nx, Ny)
-    :return: rien, juste on plot le dernier channel de l'image
-    """
-    fig,ax = plt.subplots(1,2)
-    ax[0].imshow(img[0,0,:,:].detach().numpy())
-    ax[1].imshow(img[1,0,:,:].detach().numpy())
-    plt.show()
-
-
-def test():
-
-    # img = itk.imread('../Gate_PVE/garf_simu/output/projection.mhd')
-    img = itk.imread('../../PVE_data/Analytical_data/dataset/WVQNF_PVE.mhd')
-    img_np = itk.array_from_image(img)
-    input = torch.from_numpy(img_np)
-    print(input.shape[:])
-    input = input[None, :]
-    print(f'input projections shape : {input.shape}')
-
-    input_channels = input.shape[1]
-    output_channels = input_channels
-    h = 64
-    Gen = UNetGenerator(input_channel=input_channels, ngc=h, output_channel=input_channels)
-
-    output = Gen(input)
-
-    print(f'output projections shape : {output.shape}')
-    in_out = torch.cat([input, output], 0)
-    plot_img(in_out)
-
-def test_G_D():
-    h = 64
-    Gen = UNetGenerator(input_channel=1, ngc=h, output_channel=1)
-    Disc = NLayerDiscriminator(input_channel=2, ndc=9, output_channel=1)
-    X = torch.rand([1, 1, 128, 128])
-    print(f'Size of input X : {X.shape}')
-
-    Y = Gen(X)
-    print(f'Y = Gen(X)')
-    print(f'Size of Y : {Y.shape}')
-    C = Disc(X,Y)
-    print('C = Dicr(X,Y)')
-    print(f'Size of C : {C.shape}')
-
-    print(C)
-
-    R = Disc.get_receptive_field()
-    print('Receptive field : ', R)
 

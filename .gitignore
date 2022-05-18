@@ -6,3 +6,7 @@ dist/
 Pix2Pix.egg-info/
 Pix2Pix_coursera.py
 brouillon.py
+
+**.mhd
+**.raw
+**.backup
