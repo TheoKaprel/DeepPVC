@@ -63,17 +63,15 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses(discriminator_losses,generator_losses, discriminator_losses_test, generator_losses_test):
+def plot_losses(discriminator_losses,generator_losses):
     fig,ax1 = plt.subplots()
 
     p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
-    p1 = ax1.plot(generator_losses_test, color = 'orange',linestyle = 'dashed', label = 'Generator Loss TEST')
     ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = 14)
     ax1.legend(loc=2) #upper left legend
 
     ax2 = ax1.twinx()
     p2 = ax2.plot(discriminator_losses,color = 'blue', label= 'Discriminator Loss')
-    p2 = ax2.plot(discriminator_losses_test,color = 'blue',linestyle='dashed', label= 'Discriminator Loss TEST')
     ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=14)
     ax2.legend(loc=1) #upper right legend
 

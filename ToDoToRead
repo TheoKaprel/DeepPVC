@@ -6,17 +6,23 @@
 
 * data scraping
 * data formating procedure (mhd->itk->numpy->tensor)
-* data normalisation
 * data division : train/test/validation
+
+### Normalisation
+
+* Maybe no normalisation. Dans ce cas, soit pas de derniere fct d'activation, soit une RelU
+* Si normalisation, laquelle ? maxNorm, gaussNorm ? Comment dénormaliser ? 
+
 
 
 
 ### Training loop
 
-* Reconsider the "resume training"
-* Number of update G/D
+* ~~Reconsider the "resume training"~~
+* **Number of update G/D**
 * epoch dump
 * adaptive learning rate
+* progress bar
 
 ### Testing
 * testing on a dataset mais pas avec les loss mais plutot MSE par ex
@@ -31,25 +37,36 @@
 ### Models
 
 * add a simple U-net model
-* add parameters to Pix2Pix : n_layers, norm or no norm, dropout, ...
+* add parameters to Pix2Pix : n_layers, norm or no norm, dropout, activation functions...
+
+
+### Device
+* init_cuda proprement (automatic selection of the device)
 
 
 ### Utils
 
+* automated output filename
 * Show infos about a pth
 * Show infos about a model
 * Show infos about a dataset
+* Verbose during training
 * Plots adaptable in many situations (avec ou sans PVfree, dataset ou single img, ...)
 
 ### Jean Zay
-* Fichier slurm
+* **Fichier slurm**
 * envoyer code&dataset
 * generer dataset **SUR** le WORK de jean-zay (pas chez moi)
+
+
+### General
+* setup.py for scripts in a bins folder
 
 
 
 # To *Read* List
 
+- A Partial Volume Correction article (PET, MRI, SPECT... cque tu veux mais il faut lire un peu la)
 
 - ideal batchsize
 

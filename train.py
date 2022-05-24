@@ -4,7 +4,7 @@ from data.dataset import load_data
 from models.Pix2PixModel import PVEPix2PixModel
 from utils.helpers_params import *
 import time
-import json
+import json as js
 import os
 import click
 
@@ -12,7 +12,9 @@ import click
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('json_filename', type=click.Path(exists=True, file_okay=True, dir_okay=False))
+
+@click.option('--json', help = 'JSON parameter file to start trainging FROM SCRATCH')
+@click.option('--resume', help = 'PTH file from which to RESUME training')
 @click.option('--user_param_str', '-ps',
               help='overwrite str parameter of the json file',
               multiple=True, type=(str, str))
@@ -24,27 +26,50 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               multiple=True, type=(str, int))
 @click.option('--output', '-o', help='Output filename', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder):
-    train(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder)
+def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder):
+    train(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder)
 
 
-def train(json_filename, user_param_str,user_param_float,user_param_int,output, output_folder):
-    params_file = open(json_filename).read()
-    params = json.loads(params_file)
+def train(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder):
+    if (json==None) and (resume ==None):
+        print('ERROR : no json parameter file nor pth file to start/resume training')
+        exit(0)
+
+    if json and resume:
+        print('WARNING : the json file will be ignored. The parameter file used will be the one from the pth file')
+
+    if resume:
+        is_resume = True
+        checkpoint = torch.load(resume)
+        params = checkpoint['params']
+        params['start_pth'].append(resume)
+        start_epoch = checkpoint['epoch']
+    elif json:
+        is_resume = False
+        params_file = open(json).read()
+        params = js.loads(params_file)
+        params['start_pth'] = []
+        start_epoch = 0
+    else:
+        print('ERROR : Absence of params not detected earlier ...')
+        params = None
+        is_resume=None
+        start_epoch = 0
+        exit(0)
 
 
     # Update parameters specified in command line
-    update_params_user_option(params, user_params=user_param_str)
-    update_params_user_option(params, user_params=user_param_float)
-    update_params_user_option(params, user_params=user_param_int)
+    update_params_user_option(params, user_params=user_param_str, is_resume=is_resume)
+    update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
+    update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
 
 
     if output:
-        output_filename = f"pix2pix_{output}_{params['n_epochs']}.pth"
+        output_filename = f"pix2pix_{output}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     else:
-        output_filename = f"pix2pix_{params['n_epochs']}.pth"
+        output_filename = f"pix2pix_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     output_path = os.path.join(output_folder, output_filename)
-    update_params_user_option(params, user_params=(("output_path", output_path),))
+    update_params_user_option(params, user_params=(("output_path", output_path),), is_resume=is_resume)
 
 
     check_params(params)
@@ -60,7 +85,7 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
 
 
 
-    DeepPVEModel = PVEPix2PixModel(params)
+    DeepPVEModel = PVEPix2PixModel(params, is_resume)
 
     DeepPVEModel.show_infos()
 
@@ -74,15 +99,9 @@ def train(json_filename, user_param_str,user_param_float,user_param_int,output, 
 
         # Optimisation loop
         for step,batch in enumerate(train_dataloader):
-            print(f'step {step}/{len(train_dataloader)-1}.........................')
-
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
-        # # Test loop
-        # for step, batch in enumerate(test_dataloader):
-        #     DeepPVEModel.input_data(batch)
-        #     DeepPVEModel.eval_test()
 
         DeepPVEModel.update_epoch()
 

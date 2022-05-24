@@ -45,8 +45,8 @@ def load_data(dataset_path, training_batchsize, testing_batchsize,prct_train, de
 
 
     # Ranges data between [0 , 1]
+    # Each projection is normalized by its maximum
     data_max = np.max(dataset,axis=(2,3))[:,:,None,None]
-
     dataset = dataset/data_max
 
 

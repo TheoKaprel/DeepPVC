@@ -9,14 +9,15 @@ import os
 import json
 
 class PVEPix2PixModel():
-    def __init__(self, params, eval=False):
+    def __init__(self, params,is_resume, eval=False):
 
+        self.is_resume = is_resume
         self.params = params
         self.device = torch.device(self.params['device'])
         self.output_path = self.params['output_path']
 
-        if 'start_pth' in self.params and self.params['start_pth'] not in [None,'']:
-            self.load_model(self.params['start_pth'])
+        if self.is_resume:
+            self.load_model(self.params['start_pth'][-1])
         else:
             self.init_model()
             self.init_optimization()
@@ -24,16 +25,14 @@ class PVEPix2PixModel():
 
             self.generator_losses = []
             self.discriminator_losses = []
-            self.generator_losses_test = []
-            self.discriminator_losses_test = []
+
             self.current_epoch = 0
             self.start_epoch=0
 
         self.current_iteration = 0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
-        self.mean_generator_loss_test = 0
-        self.mean_discriminator_loss_test = 0
+
 
         if eval:
             self.switch_eval()
@@ -60,6 +59,8 @@ class PVEPix2PixModel():
         self.n_epochs = params['n_epochs']
 
         self.learning_rate = params['learning_rate']
+        self.generator_update = params['generator_update']
+        self.discriminator_update = params['discriminator_update']
         self.optimizer = params['optimizer']
 
         if self.optimizer == 'Adam':
@@ -102,47 +103,38 @@ class PVEPix2PixModel():
             self.generator_optimizer.step()
 
     def optimize_parameters(self):
-        self.discriminator_optimizer.zero_grad()
-        self.generator_optimizer.zero_grad()
 
-        self.forward()
-        self.backward_D()
-        self.backward_G()
+        # Discriminator Updates
+        for _ in range(self.discriminator_update):
+            self.discriminator_optimizer.zero_grad()
+            self.forward()
+            self.backward_D(back=True)
+
+        # Generator Updates
+        for _ in range(self.generator_update):
+            self.generator_optimizer.zero_grad()
+            self.backward_G(back=True)
 
         self.mean_generator_loss+=self.gen_loss.item()
         self.mean_discriminator_loss+=self.disc_loss.item()
 
         self.current_iteration+=1
 
-    def eval_test(self):
-        with torch.no_grad():
-            self.forward()
-            self.backward_D(back=False)
-            self.backward_G(back=False)
-
-
-        self.mean_discriminator_loss_test+= self.disc_loss.item()
-        self.mean_generator_loss_test+= self.gen_loss.item()
-
     def update_epoch(self):
         self.discriminator_losses.append(self.mean_discriminator_loss / self.current_iteration)
         self.generator_losses.append(self.mean_generator_loss / self.current_iteration)
-        self.discriminator_losses_test.append(self.mean_discriminator_loss_test / self.current_iteration)
-        self.generator_losses_test.append(self.mean_generator_loss_test / self.current_iteration)
-
 
         self.current_epoch+=1
         self.current_iteration=0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
-        self.mean_generator_loss_test = 0
-        self.mean_discriminator_loss_test = 0
 
     def plot_losses(self):
-        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.discriminator_losses_test, self.generator_losses_test)
+        plots.plot_losses(self.discriminator_losses, self.generator_losses)
 
     def save_model(self):
         self.params['start_epoch'] = self.start_epoch
+        self.params['current_epoch'] = self.current_epoch
 
         torch.save({'saving_date': time.asctime(),
                     'epoch': self.current_epoch,
@@ -159,8 +151,6 @@ class PVEPix2PixModel():
 
         print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path)
-        # self.params = checkpoint['params']
-
 
         self.init_model()
         self.init_optimization()

@@ -28,7 +28,7 @@ def eval_one_image(pth, input, save, output):
 
     pth_file = torch.load(pth)
     params = pth_file['params']
-    model = PVEPix2PixModel(params=params)
+    model = PVEPix2PixModel(params=params, is_resume=False)
     model.load_model(pth)
 
 
