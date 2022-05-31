@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 def show_tensor_images(images, i):
     '''
@@ -63,7 +64,7 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses(discriminator_losses,generator_losses, test_mse):
+def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
     fig,ax1 = plt.subplots()
 
     p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
@@ -88,10 +89,14 @@ def plot_losses(discriminator_losses,generator_losses, test_mse):
     ax2.set_xlabel('Iterations')
     ax2.set_title('Losses')
 
-    plt.show()
+    if save:
+        figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
+        plt.savefig(figname)
+    else:
+        plt.show()
 
 
-def show_images_profiles(images,profile = None):
+def show_images_profiles(images,profile = None, save=True):
 
     array_image = images.cpu().numpy().squeeze()
     shape = array_image.shape
@@ -137,7 +142,10 @@ def show_images_profiles(images,profile = None):
             ax_pfls.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
         ax_pfls.legend()
 
-
-    plt.show()
+    if save:
+        figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
+        plt.savefig(figname)
+    else:
+        plt.show()
 
 
