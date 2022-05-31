@@ -89,15 +89,19 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
                                                   prct_train=params['training_prct'],
                                                   normalisation = params['data_normalisation'],
                                                   device = device)
-
+    nb_train_data = len(train_dataloader.dataset)
     testdataset = test_dataloader.dataset
     nb_test_data = len(testdataset)
 
-
+    print(f'Number of training data : {nb_train_data}')
+    print(f'Number of testing data : {nb_test_data}')
 
     DeepPVEModel = PVEPix2PixModel(params, is_resume)
+    DeepPVEModel.params['nb_training_data'] = nb_train_data
+    DeepPVEModel.params['nb_testing_data'] = nb_test_data
 
     DeepPVEModel.show_infos()
+
 
     DeepPVEModel.switch_train()
 
