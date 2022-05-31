@@ -51,7 +51,7 @@ def check_params(params, fatal_on_unknown=False):
 
     assert(type(params['optimizer'])==str)
     assert(params['optimizer'] in ["Adam"])
-    assert (type(params['device']) == str)
+
     assert((type(params['lambda_recon'])==float) or (type(params['lambda_recon'])==int))
     assert(params['lambda_recon']>=0)
     assert(type(params['save_every_n_epoch'])==int)
@@ -67,6 +67,8 @@ def check_params(params, fatal_on_unknown=False):
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
+
+    assert (params['device'] in ["cpu", "cuda", "auto"])
     assert (type(params['training_prct']) == float)
     assert (params['training_prct'] >= 0)
     assert(params['generator_activation'] in ["sigmoid", "tanh", "relu", "linear", "none"])

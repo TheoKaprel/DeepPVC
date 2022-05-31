@@ -5,6 +5,7 @@ from torch import optim
 from . import networks
 from functions import losses
 from utils import plots
+from utils import helpers
 import os
 import json
 
@@ -13,7 +14,7 @@ class PVEPix2PixModel():
 
         self.is_resume = is_resume
         self.params = params
-        self.device = torch.device(self.params['device'])
+        self.device = helpers.get_auto_device(self.params['device'])
         self.output_path = self.params['output_path']
 
         if self.is_resume:
@@ -155,7 +156,7 @@ class PVEPix2PixModel():
     def load_model(self,pth_path):
 
         print(f'Loading Model from {pth_path}... ')
-        checkpoint = torch.load(pth_path)
+        checkpoint = torch.load(pth_path, map_location=self.device)
 
         self.init_model()
         self.init_optimization()

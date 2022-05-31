@@ -5,7 +5,7 @@
   "training_prct":0.8,
   "data_normalisation": "none",
 
-  "n_epochs":100,
+  "n_epochs":3,
   "learning_rate":0.0002,
   "input_channels":1,
   "hidden_channels_gen":64,
@@ -18,7 +18,6 @@
   "test_every_n_epoch": 10,
   "optimizer":"Adam",
   "device":"cuda",
-
   "adv_loss":"BCE",
   "recon_loss":"L1",
   "lambda_recon":100

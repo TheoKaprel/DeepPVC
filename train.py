@@ -1,14 +1,12 @@
 import torch
-
-from data.dataset import load_data
-from models.Pix2PixModel import PVEPix2PixModel
-from utils.helpers_params import *
-from utils import plots
 import time
 import json as js
 import os
 import numpy as np
 import click
+from data.dataset import load_data
+from models.Pix2PixModel import PVEPix2PixModel
+from utils import helpers,helpers_data,helpers_params,plots
 
 
 
@@ -40,9 +38,12 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
     if json and resume:
         print('WARNING : the json file will be ignored. The parameter file used will be the one from the pth file')
 
+
+
     if resume:
         is_resume = True
-        checkpoint = torch.load(resume)
+        device = helpers.get_auto_device("auto")
+        checkpoint = torch.load(resume, map_location=device)
         params = checkpoint['params']
         params['start_pth'].append(resume)
         start_epoch = checkpoint['epoch']
@@ -61,9 +62,9 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
 
 
     # Update parameters specified in command line
-    update_params_user_option(params, user_params=user_param_str, is_resume=is_resume)
-    update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
-    update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=user_param_str, is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
 
 
     if output:
@@ -71,10 +72,10 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
     else:
         output_filename = f"pix2pix_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     output_path = os.path.join(output_folder, output_filename)
-    update_params_user_option(params, user_params=(("output_path", output_path),), is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=(("output_path", output_path),), is_resume=is_resume)
 
 
-    check_params(params)
+    helpers_params.check_params(params)
 
     save_every_n_epoch = params['save_every_n_epoch']
     show_every_n_epoch = params['show_every_n_epoch']
