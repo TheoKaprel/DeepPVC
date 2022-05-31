@@ -1,6 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
-from utils import plots,helpers_data
+from utils import plots,helpers_data,helpers
 import numpy as np
 import click
 from models.Pix2PixModel import PVEPix2PixModel
@@ -50,8 +50,8 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
         print('ERROR : no input nor n specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
         exit(0)
 
-
-    pth_file = torch.load(pth)
+    device = helpers.get_auto_device("auto")
+    pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
     data_normalisation = params['data_normalisation']
     model = PVEPix2PixModel(params=params, is_resume=False)
