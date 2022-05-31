@@ -14,6 +14,21 @@
 * Si normalisation, laquelle ? maxNorm, gaussNorm ? Comment dénormaliser ? 
 
 
+###### Max normalisation : 
+Advantage : each projection remains in [0,1] then &rarr; easier for training 
+
+
+Disadvantage : what activation function ? If tanh or sigmoid &rarr; values of PVfree > max(PVE) are unrecoverrable. If Linear &rarr; why not ?
+
+
+###### Sum normalisation : 
+
+Advantage : the sum of all counts is ~ not depending on the level of Partial Volume Effect
+
+
+
+
+
 
 
 ### Training loop
@@ -40,6 +55,17 @@
 * add parameters to Pix2Pix : n_layers, norm or no norm, dropout, activation functions...
 
 
+### List of tunable parameters : 
+* data_normalisation
+* learning rate
+* hidden\_channel\_gen
+* hidden\_channel\_disc
+* generator\_activation
+* generator/disc update
+* recon\_loss
+* lambda\_recon
+
+
 ### Device
 * init_cuda proprement (automatic selection of the device)
 
@@ -47,7 +73,6 @@
 ### Utils
 
 * automated output filename
-* Show infos about a pth
 * Show infos about a model
 * Show infos about a dataset
 * Verbose during training
@@ -61,6 +86,9 @@
 
 ### General
 * setup.py for scripts in a bins folder
+
+
+
 
 
 

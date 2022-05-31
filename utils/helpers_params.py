@@ -35,7 +35,7 @@ def check_params(params, fatal_on_unknown=False):
 
     automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime', 'output_path', 'start_pth']
 
-    default_params_values = [['training_batchsize', 5], ['test_batchsize', 5], ['training_prct',0.2],['data_normalisation','sum'], ['input_channels',1], ['adv_loss','BCE'], ['recon_loss', 'L1']]
+    default_params_values = [['training_batchsize', 5], ['test_batchsize', 5], ['training_prct',0.2],['data_normalisation','sum'], ['input_channels',1], ["generator_activation", "sigmoid"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10]]
     default_params = [param for param, value in default_params_values]
 
     for req in required:
@@ -69,9 +69,10 @@ def check_params(params, fatal_on_unknown=False):
 
     assert (type(params['training_prct']) == float)
     assert (params['training_prct'] >= 0)
+    assert(params['generator_activation'] in ["sigmoid", "tanh", "relu", "linear", "none"])
     assert (params['adv_loss'] in ["BCE"])
     assert (params['recon_loss'] in ["L1"])
-    assert (params['data_normalisation'] in ["sum", "mean", "max"])
+    assert (params['data_normalisation'] in ["sum", "mean", "max", "min_max_glob", "none"])
 
     for p in params:
         if p not in (required+automated+default_params):

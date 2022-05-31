@@ -9,7 +9,7 @@ import os
 import json
 
 class PVEPix2PixModel():
-    def __init__(self, params,is_resume, eval=False):
+    def __init__(self, params,is_resume,pth=None, eval=False):
 
         self.is_resume = is_resume
         self.params = params
@@ -17,7 +17,9 @@ class PVEPix2PixModel():
         self.output_path = self.params['output_path']
 
         if self.is_resume:
-            self.load_model(self.params['start_pth'][-1])
+            if pth is None:
+                pth = self.params['start_pth'][-1]
+            self.load_model(pth)
         else:
             self.init_model()
             self.init_optimization()
@@ -25,6 +27,7 @@ class PVEPix2PixModel():
 
             self.generator_losses = []
             self.discriminator_losses = []
+            self.test_mse = []
 
             self.current_epoch = 0
             self.start_epoch=0
@@ -45,10 +48,11 @@ class PVEPix2PixModel():
         self.input_channels = params['input_channels']
         self.hidden_channels_gen = params['hidden_channels_gen']
         self.hidden_channels_disc = params['hidden_channels_disc']
+        self.generator_activation = params['generator_activation']
 
         self.Generator = networks.UNetGenerator(input_channel=self.input_channels,
                                                 ngc = self.hidden_channels_gen,
-                                                output_channel=self.input_channels).to(device=self.device)
+                                                output_channel=self.input_channels,generator_activation = self.generator_activation, norm = True).to(device=self.device)
 
         self.Discriminator = networks.NLayerDiscriminator(input_channel=2*self.input_channels,
                                                           ndc = self.hidden_channels_disc,
@@ -130,7 +134,7 @@ class PVEPix2PixModel():
         self.mean_discriminator_loss = 0
 
     def plot_losses(self):
-        plots.plot_losses(self.discriminator_losses, self.generator_losses)
+        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.test_mse)
 
     def save_model(self):
         self.params['start_epoch'] = self.start_epoch
@@ -144,6 +148,7 @@ class PVEPix2PixModel():
                     'disc_opt': self.discriminator_optimizer.state_dict(),
                     'gen_losses': self.generator_losses,
                     'disc_losses': self.discriminator_losses,
+                    'test_mse': self.test_mse,
                     'params': self.params
                     }, self.output_path )
 
@@ -165,6 +170,7 @@ class PVEPix2PixModel():
 
         self.generator_losses = checkpoint['gen_losses']
         self.discriminator_losses = checkpoint['disc_losses']
+        self.test_mse = checkpoint['test_mse']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch
 
@@ -191,5 +197,7 @@ class PVEPix2PixModel():
         print('PARAMETRES (json param file) : \n')
         json_formatted_str = json.dumps(self.params, indent=4)
         print(json_formatted_str)
+        print(self.Generator)
+        print(self.Discriminator)
         print('*' * 80)
 

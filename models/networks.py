@@ -19,7 +19,6 @@ class DownSamplingBlock(nn.Module):
     def __init__(self, input_nc, output_nc, kernel_size = (4,4), stride = (2,2), padding = 1, norm=True):
         super(DownSamplingBlock, self).__init__()
         self.norm = norm
-
         self.downConv = nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
         self.downRelu = nn.LeakyReLU(0.2, True)
         if self.norm:
@@ -73,22 +72,32 @@ class UNetGenerator(nn.Module):
     FIXME : ajouter options : nb_layers, dropout, normlayer...
 
     """
-    def __init__(self,input_channel, ngc, output_channel):
+    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
-        self.down1 = DownSamplingBlock(ngc, 2 * ngc)
-        self.down2 = DownSamplingBlock(2 * ngc, 4 * ngc)
-        self.down3 = DownSamplingBlock(4 * ngc, 8 * ngc)
-        self.down4 = DownSamplingBlock(8 * ngc, 16 * ngc)
+        self.down1 = DownSamplingBlock(ngc, 2 * ngc, norm=norm)
+        self.down2 = DownSamplingBlock(2 * ngc, 4 * ngc, norm=norm)
+        self.down3 = DownSamplingBlock(4 * ngc, 8 * ngc, norm=norm)
+        self.down4 = DownSamplingBlock(8 * ngc, 16 * ngc, norm=norm)
 
-        self.up1 = UpSamplingBlock(16 * ngc, 8 * ngc)
-        self.up2 = UpSamplingBlock(16 * ngc, 4 * ngc)
-        self.up3 = UpSamplingBlock(8 * ngc, 2 * ngc)
-        self.up4 = UpSamplingBlock(4 * ngc, ngc)
+        self.up1 = UpSamplingBlock(16 * ngc, 8 * ngc, norm=norm)
+        self.up2 = UpSamplingBlock(16 * ngc, 4 * ngc, norm=norm)
+        self.up3 = UpSamplingBlock(8 * ngc, 2 * ngc, norm=norm)
+        self.up4 = UpSamplingBlock(4 * ngc, ngc, norm=norm)
 
         self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
-        self.sigmoid = nn.Sigmoid()
+
+        if generator_activation=="sigmoid":
+            self.activation = nn.Sigmoid()
+        elif generator_activation=="tanh":
+            self.activation = nn.Tanh()
+        elif generator_activation=="relu":
+            self.activation = nn.ReLU()
+        elif generator_activation=="none":
+            self.activation = nn.Identity()
+
+
 
     def forward(self, x):
         # ----------------------------------------------------------
@@ -114,7 +123,7 @@ class UNetGenerator(nn.Module):
         # ----------------------------------------------------------
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
-        y = self.sigmoid(y)
+        y = self.activation(y)
         # ----------------------------------------------------------
         return(y)
 

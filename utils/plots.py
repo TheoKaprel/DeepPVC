@@ -63,7 +63,7 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses(discriminator_losses,generator_losses):
+def plot_losses(discriminator_losses,generator_losses, test_mse):
     fig,ax1 = plt.subplots()
 
     p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
@@ -75,6 +75,16 @@ def plot_losses(discriminator_losses,generator_losses):
     ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=14)
     ax2.legend(loc=1) #upper right legend
 
+    if len(test_mse)>0:
+        ax3 = ax1.twinx()
+        ax3.spines.right.set_position(("axes", 1.2))
+
+        test_epochs = [k[0] for k in test_mse]
+        test_mse = [k[1] for k in test_mse]
+        p3 = ax3.plot(test_epochs, test_mse, color = 'green', label = 'MSE on test dataset')
+        ax3.set_ylabel("MSE test", color = p3[0].get_color(), fontsize = 14)
+        ax3.legend(loc = 'upper center')
+
     ax2.set_xlabel('Iterations')
     ax2.set_title('Losses')
 
@@ -82,7 +92,8 @@ def plot_losses(discriminator_losses,generator_losses):
 
 
 def show_images_profiles(images,profile = None):
-    array_image = images.numpy().squeeze()
+
+    array_image = images.cpu().numpy().squeeze()
     shape = array_image.shape
     nb_image = shape[0]
 
