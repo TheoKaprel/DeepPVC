@@ -34,9 +34,23 @@ To train the model
 
 
 ```sh
-python train.py config.json
+python train.py --json config.json
 ```
 
-Possible to overwrite parameters
+Possible to overwrite parameters : -pi for integer parameter, -ps for string parameter and -pf for float parameter. 
+For example : 
+
+```sh 
+python train.py --json config.json -pi n_epochs 999
+```
+
+To Resume training from a saved.pth : 
+
+```sh
+python train.py --resume saved.pth
+```
+
+
+
 
 
