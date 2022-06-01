@@ -123,10 +123,12 @@ def show_images_profiles(images,profile = None, save=True):
     spec = fig.add_gridspec(nrows,nb_image)
 
     ax_imgs = []
+    _vmin = np.min(array_image)
+    _vmax = np.max(array_image)
     for i in range(nb_image):
         ax_imgs_i = fig.add_subplot(spec[0,i])
         ax_imgs.append(ax_imgs_i)
-        ax_imgs_i.imshow(array_image[i,:,:])
+        ax_imgs_i.imshow(array_image[i,:,:], vmin=_vmin, vmax = _vmax)
         ax_imgs_i.set_title(labels[i])
 
 

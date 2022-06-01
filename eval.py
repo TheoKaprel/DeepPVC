@@ -15,8 +15,8 @@ import random
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('pth')
-@click.option('--input')
+@click.option('--pth',required = True ,help = 'path/to/saved/model.pth')
+@click.option('--input', '-i')
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--ref/--no-ref', default = True)

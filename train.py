@@ -132,14 +132,14 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
 
 
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
-            DeepPVEModel.plot_losses()
+            DeepPVEModel.plot_losses(save = False)
             id_test = np.random.randint(0,nb_test_data)
             testdata = testdataset[id_test]
             input = testdata[0,:,:]
             input = input[None, None, :,:]
             output = DeepPVEModel.test(input)
             imgs = torch.cat((testdata[None, :,:,:], output), dim=1)
-            plots.show_images_profiles(imgs, profile=True)
+            plots.show_images_profiles(imgs, profile=True, save = False)
 
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0):
@@ -154,7 +154,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
 
 
     DeepPVEModel.save_model()
-    DeepPVEModel.plot_losses()
+    DeepPVEModel.plot_losses(save = False)
 
 
 
