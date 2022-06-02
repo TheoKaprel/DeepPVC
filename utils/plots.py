@@ -96,9 +96,11 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
         plt.show()
 
 
-def show_images_profiles(images,profile = None, save=True):
+def show_images_profiles(images,profile = None, save=True, is_tensor=True):
+    if is_tensor:
+        images = images.cpu().numpy()
 
-    array_image = images.cpu().numpy().squeeze()
+    array_image = images.squeeze()
     shape = array_image.shape
     nb_image = shape[0]
 

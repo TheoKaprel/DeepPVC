@@ -53,7 +53,8 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
     device = helpers.get_auto_device("auto")
     pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
-    data_normalisation = params['data_normalisation']
+    norm = params['norm']
+    normalisation = params['data_normalisation']
     model = PVEPix2PixModel(params=params, is_resume=False)
     model.load_model(pth)
     model.switch_device("cpu")
@@ -63,14 +64,18 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
 
     for input in list_of_images:
         is_ref = ref
-        input_tensor,norms = helpers_data.load_image(input, data_normalisation, is_ref)
+        input_array = helpers_data.load_image(input, is_ref)
+        normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
 
-        tensor_PVE = input_tensor[:,0,:,:]
+        tensor_PVE = normalized_input_tensor[:,0,:,:]
         tensor_PVE = tensor_PVE[:,None,:,:]
         output_tensor = model.test(tensor_PVE)
 
-        imgs = torch.cat((input_tensor,output_tensor), dim=1)
-        plots.show_images_profiles(imgs, profile=True, save = save)
+        denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+
+
+        imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
+        plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False)
 
 
 

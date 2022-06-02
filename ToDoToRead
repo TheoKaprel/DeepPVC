@@ -7,6 +7,7 @@
 * data scraping
 * data formating procedure (mhd->itk->numpy->tensor)
 * data division : train/test/validation
+* data diversity : ellipses, background...
 
 ### Normalisation
 
@@ -79,13 +80,13 @@ Advantage : the sum of all counts is ~ not depending on the level of Partial Vol
 * Plots adaptable in many situations (avec ou sans PVfree, dataset ou single img, ...)
 
 ### Jean Zay
-* **Fichier slurm**
-* envoyer code&dataset
-* generer dataset **SUR** le WORK de jean-zay (pas chez moi)
+cava
+
 
 
 ### General
 * setup.py for scripts in a bins folder
+* requirement file
 
 
 

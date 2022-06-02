@@ -152,6 +152,7 @@ class PVEPix2PixModel():
                     'test_mse': self.test_mse,
                     'params': self.params
                     }, self.output_path )
+        print(f'Model saved at : {self.output_path}')
 
     def load_model(self,pth_path):
 
@@ -196,7 +197,7 @@ class PVEPix2PixModel():
     def show_infos(self):
         print('*'*80)
         print('PARAMETRES (json param file) : \n')
-        json_formatted_str = json.dumps(self.params, indent=4)
+        json_formatted_str = json.dumps(str(self.params), indent=4)
         print(json_formatted_str)
         print(self.Generator)
         print(self.Discriminator)
