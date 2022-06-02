@@ -24,13 +24,14 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--user_param_int', '-pi',
               help='overwrite numeric int parameter of the json file',
               multiple=True, type=(str, int))
+@click.option('--plot_at_end', default = True)
 @click.option('--output', '-o', help='Output filename', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder):
-    train(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder)
+def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):
+    train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder)
 
 
-def train(json, resume, user_param_str,user_param_float,user_param_int,output, output_folder):
+def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):
     if (json==None) and (resume ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
@@ -151,7 +152,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,output, o
 
 
     DeepPVEModel.save_model()
-    DeepPVEModel.plot_losses(save = False)
+    if plot_at_end:
+        DeepPVEModel.plot_losses(save = False)
 
 
 
