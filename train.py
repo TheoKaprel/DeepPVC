@@ -88,7 +88,6 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     testdataset = test_dataloader.dataset
 
     DeepPVEModel = PVEPix2PixModel(params, is_resume)
-
     DeepPVEModel.show_infos()
     DeepPVEModel.switch_train()
 
@@ -117,7 +116,6 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
                 denormalized_input = helpers_data.denormalize(DeepPVEModel.truePVE, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                 denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-
                 MSE += np.sum(np.mean((denormalized_output - denormalized_input)**2, axis=(2,3)))/nb_testing_data
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
@@ -131,8 +129,14 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
             input = testdata[0,:,:]
             input = input[None, None, :,:]
             output = DeepPVEModel.test(input)
-            imgs = torch.cat((testdata[None, :,:,:], output), dim=1)
-            plots.show_images_profiles(imgs, profile=True, save = False, is_tensor=True)
+
+            denormalized_input = helpers_data.denormalize(input, normtype=params['data_normalisation'],
+                                                          norm=params['norm'], to_numpy=True)
+            denormalized_output = helpers_data.denormalize(output, normtype=params['data_normalisation'],
+                                                           norm=params['norm'], to_numpy=True)
+            imgs = np.concatenate((denormalized_input,denormalized_output), axis=1)
+
+            plots.show_images_profiles(imgs, profile=True, save = False, is_tensor=False)
 
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0):
