@@ -195,10 +195,17 @@ class PVEPix2PixModel():
         return output
 
     def show_infos(self):
+        strparams = self.params
+        strparams['norm'] = str(strparams['norm'])
         print('*'*80)
         print('PARAMETRES (json param file) : \n')
-        json_formatted_str = json.dumps(str(self.params), indent=4)
+        json_formatted_str = json.dumps(strparams, indent=4)
         print(json_formatted_str)
+        print('*' * 80)
+        print('MEAN SQUARE ERROR on TEST DATA')
+
+        print(f'list of MSE on test data :{self.test_mse} ')
+        print('*' * 80)
         print(self.Generator)
         print(self.Discriminator)
         print('*' * 80)
