@@ -118,12 +118,6 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
                 denormalized_input = helpers_data.denormalize(DeepPVEModel.truePVE, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                 denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
 
-                if test_it==1:
-                    print(f'nP_PVE min : {torch.min(DeepPVEModel.truePVE)}   max : {torch.max(DeepPVEModel.truePVE)} ')
-                    print(f'P_PVE min : {torch.min(denormalized_input)}   max : {torch.max(denormalized_input)} ')
-                    print(f'nP_PVf min : {torch.min(fakePVfree)}   max : {torch.max(fakePVfree)} ')
-                    print(f'P_PVf min : {torch.min(denormalized_output)}   max : {torch.max(denormalized_output)} ')
-
                 MSE += np.mean((denormalized_output - denormalized_input)**2)
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')
