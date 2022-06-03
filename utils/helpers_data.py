@@ -17,7 +17,7 @@ def compute_norm(dataset, data_normalisation):
         mean = np.mean(dataset)
         std = np.std(dataset)
         norm = [mean, std]
-    elif data_normalisation=="min_max":
+    elif data_normalisation in ["min_max", "min_max_1_1"] :
         min = np.min(dataset)
         max = np.max(dataset)
         norm = [min, max]
@@ -37,6 +37,10 @@ def normalize(dataset_or_img,normtype,norm, to_torch, device):
         min = norm[0]
         max = norm[1]
         out =  (dataset_or_img - min)/(max - min)
+    elif normtype=="min_max_1_1":
+        min = norm[0]
+        max = norm[1]
+        out = (2 * (dataset_or_img - min) )/(max - min) -1
     else:
         out = dataset_or_img
     if to_torch:
@@ -52,6 +56,10 @@ def denormalize(dataset_or_img,normtype,norm, to_numpy):
         min = norm[0]
         max = norm[1]
         output = dataset_or_img*(max - min) + min
+    elif normtype == "min_max_1_1":
+        min = norm[0]
+        max = norm[1]
+        output = ((dataset_or_img+1)*( max - min ) + 2 * min ) / 2
     else:
         output = dataset_or_img
     if to_numpy:

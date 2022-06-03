@@ -130,7 +130,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
             input = input[None, None, :,:]
             output = DeepPVEModel.test(input)
 
-            denormalized_input = helpers_data.denormalize(input, normtype=params['data_normalisation'],
+            denormalized_input = helpers_data.denormalize(testdata[None,:,:,:], normtype=params['data_normalisation'],
                                                           norm=params['norm'], to_numpy=True)
             denormalized_output = helpers_data.denormalize(output, normtype=params['data_normalisation'],
                                                            norm=params['norm'], to_numpy=True)

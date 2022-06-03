@@ -16,19 +16,23 @@ class DownSamplingBlock(nn.Module):
     si dim(x) = (I,I) et y = Conv2D(x)
     alors dim(y) = (I - kernel_size + 2*padding)/stride +1 = (I-4+2)/2 +1 = I/2
     """
-    def __init__(self, input_nc, output_nc, kernel_size = (4,4), stride = (2,2), padding = 1, norm=True):
+    def __init__(self, input_nc, output_nc, kernel_size = (4,4), stride = (2,2), padding = 1, norm="batch_norm"):
         super(DownSamplingBlock, self).__init__()
-        self.norm = norm
+
+        self.do_norm = (norm!="none")
+        self.normtype = norm
         self.downConv = nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
         self.downRelu = nn.LeakyReLU(0.2, True)
-        if self.norm:
-            self.downNorm = nn.BatchNorm2d(output_nc)
 
+        if self.normtype=="batch_norm":
+            self.downNorm = nn.BatchNorm2d(output_nc)
+        elif self.normtype=="inst_norm":
+            self.downNorm = nn.InstanceNorm2d(output_nc)
 
     def forward(self, x):
         x = self.downConv(x)
         x = self.downRelu(x)
-        if self.norm:
+        if self.do_norm:
             x = self.downNorm(x)
         return(x)
 
@@ -44,21 +48,24 @@ class UpSamplingBlock(nn.Module):
     si dim(x) = (I,I) et y = ConvTranspose2d(x)
     alors dim(y) = (I-1)stride - 2*padding + kernel_size =  (I-1)*2 - 2 * 1 + 4 = 2 I
     """
-    def __init__(self, input_nc, output_nc, norm=True):
+    def __init__(self, input_nc, output_nc, norm="batch_norm"):
         super(UpSamplingBlock, self).__init__()
-        self.norm = norm
+        self.do_norm = (norm!="none")
+        self.normtype = norm
 
         self.upConv = nn.ConvTranspose2d(input_nc, output_nc, kernel_size=(4,4), stride=(2,2), padding = (1,1))
         self.upRelu = nn.ReLU(True)
 
-        if self.norm:
+        if self.normtype=="batch_norm":
             self.upNorm = nn.BatchNorm2d(output_nc)
+        elif self.normtype=="inst_norm":
+            self.upNorm = nn.InstanceNorm2d(output_nc)
 
 
     def forward(self, x):
         x = self.upConv(x)
         x = self.upRelu(x)
-        if self.norm :
+        if self.do_norm :
             x = self.upNorm(x)
         return(x)
 
