@@ -114,7 +114,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
                 DeepPVEModel.input_data(batch)
                 fakePVfree = DeepPVEModel.test(DeepPVEModel.truePVE)
 
-                denormalized_input = helpers_data.denormalize(DeepPVEModel.truePVE, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
+                denormalized_input = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                 denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                 MSE += np.sum(np.mean((denormalized_output - denormalized_input)**2, axis=(2,3)))/nb_testing_data
 

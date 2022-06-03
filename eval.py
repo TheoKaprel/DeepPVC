@@ -44,7 +44,7 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
         list_of_all_images = glob.glob(f'{dataset}/?????.mhd')
         Nimages = len(list_of_all_images)
         list_index = [random.randint(0,Nimages) for _ in range(n)]
-        list_of_images = [list_of_all_images[list_index[i]][:-4] for i in range(n)]
+        list_of_images = [list_of_all_images[list_index[i]][:-4] for i in range(len(list_index))]
 
     else:
         print('ERROR : no input nor n specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')

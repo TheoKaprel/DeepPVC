@@ -65,7 +65,8 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
-    fig,ax1 = plt.subplots()
+    fig,ax1 = plt.subplots(figsize=(8,6))
+    fig.subplots_adjust(right=0.75)
 
     p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
     ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = 14)
