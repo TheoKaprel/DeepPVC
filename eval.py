@@ -15,7 +15,7 @@ import random
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--pth',required = True ,help = 'path/to/saved/model.pth')
+@click.argument('pth',nargs=-1, type=click.Path()) # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
@@ -51,31 +51,34 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
         exit(0)
 
     device = helpers.get_auto_device("auto")
-    pth_file = torch.load(pth, map_location=device)
-    params = pth_file['params']
-    norm = params['norm']
-    normalisation = params['data_normalisation']
-    model = PVEPix2PixModel(params=params, is_resume=False)
-    model.load_model(pth)
-    model.switch_device("cpu")
-    model.switch_eval()
-    model.show_infos()
-    model.plot_losses(save)
 
-    for input in list_of_images:
-        is_ref = ref
-        input_array = helpers_data.load_image(input, is_ref)
-        normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+    for one_pth in pth:
 
-        tensor_PVE = normalized_input_tensor[:,0,:,:]
-        tensor_PVE = tensor_PVE[:,None,:,:]
-        output_tensor = model.test(tensor_PVE)
+        pth_file = torch.load(one_pth, map_location=device)
+        params = pth_file['params']
+        norm = params['norm']
+        normalisation = params['data_normalisation']
+        model = PVEPix2PixModel(params=params, is_resume=False)
+        model.load_model(one_pth)
+        model.switch_device("cpu")
+        model.switch_eval()
+        model.show_infos()
+        model.plot_losses(save)
 
-        denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+        for input in list_of_images:
+            is_ref = ref
+            input_array = helpers_data.load_image(input, is_ref)
+            normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+
+            tensor_PVE = normalized_input_tensor[:,0,:,:]
+            tensor_PVE = tensor_PVE[:,None,:,:]
+            output_tensor = model.test(tensor_PVE)
+
+            denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 
 
-        imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
-        plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False)
+            imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
+            plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False)
 
 
 
