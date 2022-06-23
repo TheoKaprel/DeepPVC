@@ -12,7 +12,7 @@ import glob
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('pth',nargs=1, type=click.Path()) # 'path/to/saved/model.pth'
+@click.option('--pth') # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
 @click.option('--output_filename', '-o', help = 'Output filename (mhd)')
 
