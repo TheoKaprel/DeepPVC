@@ -146,7 +146,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     tf = time.time()
     total_time = round(tf-t0)
     print(f'Total training time : {total_time} s')
-    DeepPVEModel.params['training_endtime'] = total_time
+    DeepPVEModel.params['training_endtime'] = time.asctime()
+    DeepPVEModel.params['training_duration'] = total_time
 
 
 
