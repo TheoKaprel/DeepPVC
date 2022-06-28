@@ -3,10 +3,8 @@
 **/__pycache__/
 build/
 dist/
-data_test_image/
 Pix2Pix.egg-info/
-Pix2Pix_coursera.py
-brouillon.py
+
 
 **.mhd
 **.raw

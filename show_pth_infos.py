@@ -1,20 +1,19 @@
 import torch
 import click
-from models import Pix2PixModel
-from utils.helpers import get_auto_device
+
+from DeepPVC import Pix2PixModel, helpers
+
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('pth')
-# FIXME ajouter des param/fct pour tracer les courbes de loss etc...
-# FIXME calculer le receptive field du Discr
 def show_click(pth):
     show_pth(pth)
 
 
 def show_pth(pth):
 
-    device = get_auto_device("auto")
+    device = helpers.get_auto_device("auto")
     nn = torch.load(pth,map_location=device)
     print('-'*80)
     print(f'Showing informations about file {pth} : ')

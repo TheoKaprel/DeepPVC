@@ -4,10 +4,11 @@ import json as js
 import os
 import numpy as np
 import click
-from data.dataset import load_data
-from models.Pix2PixModel import PVEPix2PixModel
-from utils import helpers,helpers_data,helpers_params,plots
+# from data.dataset import load_data
+# from models.Pix2PixModel import PVEPix2PixModel
+# from utils import helpers,helpers_data,helpers_params,plots
 
+from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, plots
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -82,12 +83,12 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     show_every_n_epoch = params['show_every_n_epoch']
     test_every_n_epoch = params['test_every_n_epoch']
 
-    train_dataloader, test_dataloader, params = load_data(params)
+    train_dataloader, test_dataloader, params = dataset.load_data(params)
 
     nb_testing_data = params['nb_testing_data']
     testdataset = test_dataloader.dataset
 
-    DeepPVEModel = PVEPix2PixModel(params, is_resume)
+    DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
     DeepPVEModel.show_infos()
     DeepPVEModel.switch_train()
 

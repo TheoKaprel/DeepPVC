@@ -1,9 +1,5 @@
 import torch
 import torch.nn as nn
-from torch.nn import init
-import itk
-import matplotlib.pyplot as plt
-
 
 class DownSamplingBlock(nn.Module):
     """ DownSampling Block = One Subblock of the left part of a Unet --> Encoding

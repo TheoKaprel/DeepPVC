@@ -1,17 +1,12 @@
 import torch
 import matplotlib.pyplot as plt
-from utils import plots,helpers_data,helpers
 import numpy as np
 import click
-from models.Pix2PixModel import PVEPix2PixModel
 import itk
 import glob
 import random
 
-
-
-
-
+from DeepPVC import plots, helpers_data, helpers, Pix2PixModel
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -53,7 +48,7 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
     params = pth_file['params']
     norm = params['norm']
     normalisation = params['data_normalisation']
-    model = PVEPix2PixModel(params=params, is_resume=False)
+    model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
     model.load_model(pth)
     model.switch_device("cpu")
     model.switch_eval()

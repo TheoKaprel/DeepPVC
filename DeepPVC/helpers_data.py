@@ -3,15 +3,6 @@ import torch
 import numpy as np
 
 
-
-# elif normalisation == "sum":
-# data_sum = np.sum(dataset, axis=(2, 3))[:, :, None, None]
-# dataset = dataset / data_sum
-# elif normalisation == "mean":
-# data_mean = np.mean(dataset, axis=(2, 3))[:, :, None, None]
-# dataset = dataset / data_mean
-
-
 def compute_norm(dataset, data_normalisation):
     if data_normalisation=="standard":
         mean = np.mean(dataset)

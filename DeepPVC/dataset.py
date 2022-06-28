@@ -2,10 +2,8 @@ import itk
 import torch
 import numpy as np
 import glob
-from utils import helpers_data,helpers
-import matplotlib.pyplot as plt
 
-
+from . import helpers_data, helpers
 
 def construct_dataset_from_path(dataset_path):
     print(f'Loading data from {dataset_path} ...')
