@@ -13,7 +13,7 @@ from utils import helpers,helpers_data,helpers_params,plots
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 
-@click.option('--json', help = 'JSON parameter file to start trainging FROM SCRATCH')
+@click.option('--json', help = 'JSON parameter file to start training FROM SCRATCH')
 @click.option('--resume', help = 'PTH file from which to RESUME training')
 @click.option('--user_param_str', '-ps',
               help='overwrite str parameter of the json file',
