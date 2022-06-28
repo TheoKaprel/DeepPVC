@@ -24,7 +24,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--user_param_int', '-pi',
               help='overwrite numeric int parameter of the json file',
               multiple=True, type=(str, int))
-@click.option('--plot_at_end', default = True)
+@click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output filename', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
 def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):

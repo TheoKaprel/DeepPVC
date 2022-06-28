@@ -70,7 +70,7 @@ def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folde
     if deeppvc:
         # Reconstruction with DeepPVC projections
 
-        ref_pix2pix = get_ref('./output_from_Jean_Zay/752436/pix2pix_752436_0_400.pth')
+        ref_pix2pix = get_ref(pth)
 
         proj_DeepPVC_file = f'{ref}_projDeepPVC_{ref_pix2pix}.mhd'
         proj_DeepPVC_path = os.path.join(folder, proj_DeepPVC_file)
