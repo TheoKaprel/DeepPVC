@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torch import Tensor
+from torch.nn import functional as F
 
 class DownSamplingBlock(nn.Module):
     """ DownSampling Block = One Subblock of the left part of a Unet --> Encoding
@@ -66,6 +68,16 @@ class UpSamplingBlock(nn.Module):
         return(x)
 
 
+class myminRelu(nn.ReLU):
+    def __init__(self, min):
+        super(myminRelu, self).__init__()
+        self.min = min
+
+    def forward(self, input: Tensor) -> Tensor:
+        return F.relu(input - self.min, inplace=self.inplace) + self.min
+
+
+
 class UNetGenerator(nn.Module):
     """UNet shaped Generator
     Parameters :
@@ -75,7 +87,7 @@ class UNetGenerator(nn.Module):
     FIXME : ajouter options : nb_layers, dropout, normlayer...
 
     """
-    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm):
+    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm, min = None):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
@@ -99,6 +111,8 @@ class UNetGenerator(nn.Module):
             self.activation = nn.ReLU()
         elif generator_activation=="none":
             self.activation = nn.Identity()
+        elif generator_activation=='relu_min':
+            self.activation = myminRelu(min)
 
 
 
@@ -171,5 +185,3 @@ class NLayerDiscriminator(nn.Module):
                         R = R + (sublayer.kernel_size[0] - 1) * prod_S
                         prod_S = prod_S * sublayer.stride[0]
         return R
-
-

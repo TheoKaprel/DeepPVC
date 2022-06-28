@@ -47,6 +47,8 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
     pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
     norm = params['norm']
+    print(norm)
+    print(-norm[0]/norm[1])
     normalisation = params['data_normalisation']
     model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
     model.load_model(pth)
@@ -70,7 +72,8 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
         imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
         plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False)
 
-
+        nimgs = np.concatenate((normalized_input_tensor,output_tensor), axis=1)
+        plots.show_images_profiles(nimgs, profile=True, save = save, is_tensor=False)
 
 
 

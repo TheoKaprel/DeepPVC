@@ -11,7 +11,7 @@
   "input_channels":1,
   "hidden_channels_gen":64,
   "hidden_channels_disc":9,
-  "generator_activation": "none",
+  "generator_activation": "relu_min",
   "generator_norm": "inst_norm",
   "generator_update": 1,
   "discriminator_update": 1,

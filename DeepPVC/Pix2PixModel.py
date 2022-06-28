@@ -49,9 +49,15 @@ class PVEPix2PixModel():
         self.generator_activation = params['generator_activation']
         self.generator_norm = params['generator_norm']
 
+        if self.generator_activation=='relu_min':
+            norm = self.params['norm']
+            min = -norm[0]/norm[1]
+        else:
+            min = None
+
         self.Generator = networks.UNetGenerator(input_channel=self.input_channels,
                                                 ngc = self.hidden_channels_gen,
-                                                output_channel=self.input_channels,generator_activation = self.generator_activation, norm = self.generator_norm).to(device=self.device)
+                                                output_channel=self.input_channels,generator_activation = self.generator_activation, norm = self.generator_norm, min=min).to(device=self.device)
 
         self.Discriminator = networks.NLayerDiscriminator(input_channel=2*self.input_channels,
                                                           ndc = self.hidden_channels_disc,
