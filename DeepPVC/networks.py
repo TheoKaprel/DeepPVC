@@ -69,12 +69,12 @@ class UpSamplingBlock(nn.Module):
 
 
 class myminRelu(nn.ReLU):
-    def __init__(self, min):
+    def __init__(self, vmin):
         super(myminRelu, self).__init__()
-        self.min = min
+        self.vmin = vmin
 
     def forward(self, input: Tensor) -> Tensor:
-        return F.relu(input - self.min, inplace=self.inplace) + self.min
+        return F.relu(input - self.vmin, inplace=self.inplace) + self.vmin
 
 
 
@@ -87,7 +87,7 @@ class UNetGenerator(nn.Module):
     FIXME : ajouter options : nb_layers, dropout, normlayer...
 
     """
-    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm, min = None):
+    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm, vmin = None):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
@@ -112,7 +112,7 @@ class UNetGenerator(nn.Module):
         elif generator_activation=="none":
             self.activation = nn.Identity()
         elif generator_activation=='relu_min':
-            self.activation = myminRelu(min)
+            self.activation = myminRelu(vmin)
 
 
 
