@@ -10,15 +10,21 @@ from DeepPVC import plots, helpers_data, helpers, Pix2PixModel
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--pth') # 'path/to/saved/model.pth'
+@click.option('--pth', multiple = True) # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--ref/--no-ref', default = True)
 @click.option('--save', is_flag=True, help = "Wheter or not to save the corrected image")
-@click.option('--output', '-o', help = 'Output folder')
+@click.option('--mse', is_flag=True, help="Compute the MSE on the provided dataset")
+def eval_click(pth, input, n, dataset, ref, save, mse):
+    eval(pth, input, n, dataset, ref, save, mse)
 
-def eval_one_image(pth, input,n,dataset,ref, save, output):
+
+
+
+
+def eval(pth, input,n,dataset,ref, save, mse):
     """ Evaluate visually a trained Pix2Pix (pth) on a given projection \n
         Output is the corrected projection
 
@@ -29,14 +35,21 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
 
     if input:
         list_of_images = [input]
+        do_mse = False
     elif n:
         n = int(n)
         list_of_all_images = glob.glob(f'{dataset}/?????.mhd')
         Nimages = len(list_of_all_images)
         list_index = [random.randint(0,Nimages) for _ in range(n)]
         list_of_images = [list_of_all_images[list_index[i]][:-4] for i in range(len(list_index))]
+        list_of_all_images = [list_of_all_images[i][:-4] for i in range(Nimages)]
+        if mse:
+            do_mse = True
+        else:
+            do_mse = False
 
     else:
+        do_mse = None
         print('ERROR : no input nor n specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
         exit(0)
 
@@ -44,38 +57,60 @@ def eval_one_image(pth, input,n,dataset,ref, save, output):
 
 
 
-    pth_file = torch.load(pth, map_location=device)
-    params = pth_file['params']
-    norm = params['norm']
-    print(norm)
-    print(-norm[0]/norm[1])
-    normalisation = params['data_normalisation']
-    model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
-    model.load_model(pth)
-    model.switch_device("cpu")
-    model.switch_eval()
-    model.show_infos()
-    model.plot_losses(save)
+    for one_pth in pth:
 
-    for input in list_of_images:
-        is_ref = ref
-        input_array = helpers_data.load_image(input, is_ref)
-        normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+        pth_file = torch.load(one_pth, map_location=device)
+        params = pth_file['params']
+        norm = params['norm']
+        print(norm)
+        normalisation = params['data_normalisation']
+        model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
+        model.load_model(one_pth)
+        model.switch_device("cpu")
+        model.switch_eval()
+        model.show_infos()
+        model.plot_losses(save)
 
-        tensor_PVE = normalized_input_tensor[:,0,:,:]
-        tensor_PVE = tensor_PVE[:,None,:,:]
-        output_tensor = model.test(tensor_PVE)
+        if do_mse:
+            MSE = 0
+            for test_data in list_of_all_images:
+                input_array = helpers_data.load_image(test_data, True)
+                normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
+                tensor_PVE = normalized_input_tensor[:, 0, :, :]
+                tensor_PVE = tensor_PVE[:, None, :, :]
+                output_tensor = model.test(tensor_PVE)
 
-        denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+                denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
+
+                projPVfree = input_array[0,1,:,:]
+                projDeepPVC = denormalized_output_array[0,0,:,:]
+                MSE += (np.mean((projDeepPVC - projPVfree) ** 2)) / Nimages
+            print(f'MSE on the test dataset {dataset}:'+ "{:.3e}".format(MSE))
+            print('*' * 80)
+
+        else:
+            print(f'No calculation of MSE as no dataset is provided')
 
 
-        imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
-        plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False)
 
-        nimgs = np.concatenate((normalized_input_tensor,output_tensor), axis=1)
-        plots.show_images_profiles(nimgs, profile=True, save = save, is_tensor=False)
+        for input in list_of_images:
+            is_ref = ref
+            input_array = helpers_data.load_image(input, is_ref)
+            normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+
+            tensor_PVE = normalized_input_tensor[:,0,:,:]
+            tensor_PVE = tensor_PVE[:,None,:,:]
+            output_tensor = model.test(tensor_PVE)
+
+            denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+
+
+            imgs = np.concatenate((input_array,denormalized_output_array), axis=1)
+            plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False, title = input)
+
+
 
 
 
 if __name__ == '__main__':
-    eval_one_image()
+    eval_click()

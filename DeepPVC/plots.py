@@ -97,7 +97,7 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
         plt.show()
 
 
-def show_images_profiles(images,profile = None, save=True, is_tensor=True):
+def show_images_profiles(images,profile = None, save=True, is_tensor=True, title = None):
     if is_tensor:
         images = images.cpu().numpy()
 
@@ -146,6 +146,9 @@ def show_images_profiles(images,profile = None, save=True, is_tensor=True):
         for i in range(nb_image):
             ax_pfls.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
         ax_pfls.legend()
+
+    if title!=None:
+        plt.suptitle(title)
 
     if save:
         figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
