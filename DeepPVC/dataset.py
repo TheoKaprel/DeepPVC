@@ -39,44 +39,48 @@ def load_data(params):
     - Normalizes data according to the maximum of each (128,128) image  --> [0,1] images
     - Converts the numpy array into torch tensor
     - Devides the dataset into training/test dataset
-    - FIXME : no validation dataset yet
     - return the associated DataLoaders
     '''
 
     dataset_path = params['dataset_path']
+
     test_dataset_path = params['test_dataset_path']
     training_batchsize = params['training_batchsize']
     testing_batchsize = params['test_batchsize']
-    prct_train = params['training_prct']
+
     normalisation = params['data_normalisation']
     device = helpers.get_auto_device(params['device'])
 
+    dataset_is_set = False
+    for path in dataset_path:
+        tmp_dataset = construct_dataset_from_path(dataset_path=path)
+        if dataset_is_set:
+            dataset = np.concatenate((dataset, tmp_dataset), axis=0)
+        else:
+            dataset = tmp_dataset
+            dataset_is_set = True
 
-    dataset = construct_dataset_from_path(dataset_path=dataset_path)
+
+
     norm = helpers_data.compute_norm(dataset, normalisation)
-    dataset = helpers_data.normalize(dataset_or_img=dataset,normtype=normalisation, norm = norm, to_torch=True, device=device)
+    normalized_train_dataset = helpers_data.normalize(dataset_or_img=dataset,normtype=normalisation, norm = norm, to_torch=True, device=device)
     params['norm'] = norm
-    if test_dataset_path!=dataset_path:
-        # if the path to test_dataset is different it is loaded, normalized and tensorized here
-        train_dataset = dataset
-        test_dataset = construct_dataset_from_path(dataset_path=test_dataset_path)
-        test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
-    else:
-        # Division of dataset into train_dataset and test_dataset
-        train_size = int(prct_train * len(dataset))
-        test_size = len(dataset) - train_size
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
 
-    nb_training_data = len(train_dataset)
-    nb_testing_data = len(test_dataset)
+    test_dataset = construct_dataset_from_path(dataset_path=test_dataset_path)
+    normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
+
+
+
+    nb_training_data = len(normalized_train_dataset)
+    nb_testing_data = len(normalized_test_dataset)
     print(f'Number of training data : {nb_training_data}')
     print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
 
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=testing_batchsize, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(normalized_train_dataset, batch_size=training_batchsize, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(normalized_test_dataset, batch_size=testing_batchsize, shuffle=True)
 
     return train_dataloader,test_dataloader,params

@@ -36,11 +36,11 @@ def check_params(params, fatal_on_unknown=False):
 
     automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','training_duration', 'output_path', 'start_pth', 'nb_training_data', 'nb_testing_data']
 
-    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['training_prct',0.2], ['input_channels',1], ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10]]
+    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10]]
     default_params = [param for param, value in default_params_values]
 
     for req in required:
-        if req not in params:
+        if (req not in params or req in [[], ""]):
             print(f'Error, the parameters "{req}" is required in {params}')
             exit(0)
 
@@ -70,8 +70,6 @@ def check_params(params, fatal_on_unknown=False):
 
 
     assert (params['device'] in ["cpu", "cuda", "auto"])
-    assert (type(params['training_prct']) == float)
-    assert (params['training_prct'] >= 0)
     assert(params['generator_activation'] in ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"])
     assert (params['adv_loss'] in ["BCE"])
     assert (params['recon_loss'] in ["L1"])

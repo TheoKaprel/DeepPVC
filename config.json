@@ -1,9 +1,8 @@
 {
-  "dataset_path": "../PVE_data/Analytical_data/test_dataset",
+  "dataset_path": ["../PVE_data/Analytical_data/test_dataset", "../PVE_data/Analytical_data/test_bg_ell"],
   "test_dataset_path": "../PVE_data/Analytical_data/test_dataset",
   "training_batchsize":5,
   "test_batchsize":5,
-  "training_prct":0.8,
   "data_normalisation": "standard",
 
   "n_epochs":10,
