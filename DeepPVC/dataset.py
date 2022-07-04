@@ -67,7 +67,15 @@ def load_data(params):
     params['norm'] = norm
 
 
-    test_dataset = construct_dataset_from_path(dataset_path=test_dataset_path)
+    test_dataset_is_set = False
+    for path in test_dataset_path:
+        tmp_dataset = construct_dataset_from_path(dataset_path=path)
+        if test_dataset_is_set:
+            test_dataset = np.concatenate((test_dataset, tmp_dataset), axis=0)
+        else:
+            test_dataset = tmp_dataset
+            test_dataset_is_set = True
+
     normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
 
 

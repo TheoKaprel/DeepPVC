@@ -4,9 +4,6 @@ import json as js
 import os
 import numpy as np
 import click
-# from data.dataset import load_data
-# from models.Pix2PixModel import PVEPix2PixModel
-# from utils import helpers,helpers_data,helpers_params,plots
 
 from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, plots
 
@@ -39,7 +36,6 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
     if json and resume:
         print('WARNING : the json file will be ignored. The parameter file used will be the one from the pth file')
-
 
 
     if resume:

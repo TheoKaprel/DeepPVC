@@ -138,8 +138,8 @@ class PVEPix2PixModel():
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
 
-    def plot_losses(self, save):
-        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.test_mse, save=save)
+    def plot_losses(self, save, wait, title):
+        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.test_mse, save=save, wait = wait, title = title)
 
     def save_model(self):
         self.params['start_epoch'] = self.start_epoch

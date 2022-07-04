@@ -64,7 +64,7 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
+def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, wait = False, title = None):
     fig,ax1 = plt.subplots(figsize=(8,6))
     fig.subplots_adjust(right=0.75)
 
@@ -88,11 +88,16 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = True):
         ax3.legend(loc = 'upper center')
 
     ax2.set_xlabel('Iterations')
-    ax2.set_title('Losses')
+    if title:
+        ax2.set_title('Losses '+title)
+    else:
+        ax2.set_title('Losses')
 
     if save:
         figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
         plt.savefig(figname)
+    elif wait:
+        print('')
     else:
         plt.show()
 
