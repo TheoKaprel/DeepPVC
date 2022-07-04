@@ -69,7 +69,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
         model.switch_device("cpu")
         model.switch_eval()
         model.show_infos()
-        model.plot_losses(save)
+        model.plot_losses(save, wait = False, title = one_pth)
 
         if do_mse:
             MSE = 0

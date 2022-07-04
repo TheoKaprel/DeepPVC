@@ -216,3 +216,5 @@ class PVEPix2PixModel():
 
         self.params['norm'] = listnorm
 
+        return json_formatted_str
+
