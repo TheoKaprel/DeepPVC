@@ -1,7 +1,9 @@
+import os.path
 import time
 import torch
 from torch import optim
 import json
+import copy
 
 from . import networks, losses,plots, helpers
 
@@ -12,7 +14,9 @@ class PVEPix2PixModel():
         self.is_resume = is_resume
         self.params = params
         self.device = helpers.get_auto_device(self.params['device'])
-        self.output_path = self.params['output_path']
+        # self.output_path = self.params['output_path']
+        self.output_folder = self.params['output_folder']
+        self.output_pth = self.params['output_pth']
 
         if self.is_resume:
             if pth is None:
@@ -145,6 +149,8 @@ class PVEPix2PixModel():
         self.params['start_epoch'] = self.start_epoch
         self.params['current_epoch'] = self.current_epoch
 
+        output_path = os.path.join(self.output_folder, self.output_pth)
+
         torch.save({'saving_date': time.asctime(),
                     'epoch': self.current_epoch,
                     'gen': self.Generator.state_dict(),
@@ -155,8 +161,17 @@ class PVEPix2PixModel():
                     'disc_losses': self.discriminator_losses,
                     'test_mse': self.test_mse,
                     'params': self.params
-                    }, self.output_path )
-        print(f'Model saved at : {self.output_path}')
+                    }, output_path )
+        print(f'Model saved at : {output_path}')
+
+        output_json = self.output_pth[:-4]+'.json'
+
+        formatted_params = self.format_params()
+        jsonFile = open(os.path.join(self.output_folder, output_json), "w")
+        jsonFile.write(formatted_params)
+        jsonFile.close()
+
+
 
     def load_model(self,pth_path):
 
@@ -198,23 +213,23 @@ class PVEPix2PixModel():
             output = self.Generator(img.float())
         return output
 
+    def format_params(self):
+        formatted_params = copy.deepcopy(self.params)
+        listnorm = formatted_params['norm']
+        formatted_params['norm'] = str(listnorm)
+        return json.dumps(formatted_params, indent=4)
+
     def show_infos(self):
-        listnorm = self.params['norm']
-        self.params['norm'] = str(listnorm)
+        formatted_params = self.format_params()
         print('*'*80)
         print('PARAMETRES (json param file) : \n')
-        json_formatted_str = json.dumps(self.params, indent=4)
-        print(json_formatted_str)
+        print(formatted_params)
         print('*' * 80)
         print('MEAN SQUARE ERROR on TEST DATA')
-
         print(f'list of MSE on test data :{self.test_mse} ')
         print('*' * 80)
         print(self.Generator)
         print(self.Discriminator)
         print('*' * 80)
 
-        self.params['norm'] = listnorm
-
-        return json_formatted_str
 

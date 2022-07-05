@@ -64,13 +64,17 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
     helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
 
-
     if output:
-        output_filename = f"pix2pix_{output}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
+        ref = output
     else:
-        output_filename = f"pix2pix_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
-    output_path = os.path.join(output_folder, output_filename)
-    helpers_params.update_params_user_option(params, user_params=(("output_path", output_path),), is_resume=is_resume)
+        ref = 'noref'
+
+
+    output_filename = f"pix2pix_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
+
+    helpers_params.update_params_user_option(params, user_params=(("ref", output),), is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=(("output_folder", output_folder),), is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=(("output_pth", output_filename),), is_resume=is_resume)
 
 
     helpers_params.check_params(params)
@@ -120,7 +124,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
 
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
-            DeepPVEModel.plot_losses(save = False)
+            DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
             id_test = np.random.randint(0, nb_testing_data)
             testdata = testdataset[id_test]
             input = testdata[0,:,:]
@@ -150,7 +154,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
     DeepPVEModel.save_model()
     if plot_at_end:
-        DeepPVEModel.plot_losses(save = False)
+        DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
 
 
 

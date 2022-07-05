@@ -45,14 +45,11 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, mse):
         model.load_model(one_pth)
         model.switch_device("cpu")
         model.switch_eval()
-        formatted_json = model.show_infos()
+        model.show_infos()
         list_models.append(model)
         if losses:
             model.plot_losses(save=False, wait = True, title = one_pth)
-        # jsonString = json.dumps(model.params)
-        jsonFile = open("test_json.json", "w")
-        jsonFile.write(formatted_json)
-        jsonFile.close()
+
 
     if losses:
         plt.show()
