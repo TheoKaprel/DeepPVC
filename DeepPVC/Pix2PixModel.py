@@ -14,9 +14,14 @@ class PVEPix2PixModel():
         self.is_resume = is_resume
         self.params = params
         self.device = helpers.get_auto_device(self.params['device'])
-        # self.output_path = self.params['output_path']
-        self.output_folder = self.params['output_folder']
-        self.output_pth = self.params['output_pth']
+
+        if 'output_folder' in self.params:
+            self.output_folder = self.params['output_folder']
+            self.output_pth = self.params['output_pth']
+
+        else:
+            self.output_folder = None
+            self.output_path = self.params['output_path']
 
         if self.is_resume:
             if pth is None:
@@ -145,11 +150,16 @@ class PVEPix2PixModel():
     def plot_losses(self, save, wait, title):
         plots.plot_losses(self.discriminator_losses, self.generator_losses, self.test_mse, save=save, wait = wait, title = title)
 
-    def save_model(self):
+    def save_model(self, output_path=None):
         self.params['start_epoch'] = self.start_epoch
         self.params['current_epoch'] = self.current_epoch
 
-        output_path = os.path.join(self.output_folder, self.output_pth)
+        if not output_path:
+            if self.output_folder:
+                output_path = os.path.join(self.output_folder, self.output_pth)
+            else:
+                output_path = self.output_path
+
 
         torch.save({'saving_date': time.asctime(),
                     'epoch': self.current_epoch,
@@ -164,12 +174,12 @@ class PVEPix2PixModel():
                     }, output_path )
         print(f'Model saved at : {output_path}')
 
-        output_json = self.output_pth[:-4]+'.json'
-
-        formatted_params = self.format_params()
-        jsonFile = open(os.path.join(self.output_folder, output_json), "w")
-        jsonFile.write(formatted_params)
-        jsonFile.close()
+        if self.output_folder:
+            output_json = self.output_pth[:-4]+'.json'
+            formatted_params = self.format_params()
+            jsonFile = open(os.path.join(self.output_folder, output_json), "w")
+            jsonFile.write(formatted_params)
+            jsonFile.close()
 
 
 

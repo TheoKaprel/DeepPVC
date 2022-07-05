@@ -88,14 +88,23 @@ def check_params(params, fatal_on_unknown=False):
 
 
 
-def make_and_print_params_info_table(lparams):
+def make_and_print_params_info_table(lparams, mse=False):
     data_table = PrettyTable(align="l")
     data_table.title = "DATA PARAMETERS"
     data_table.field_names = ["Ref", "Train Dataset", "Test Dataset", "training_batchsize", "test_batchsize", "nb Train data", "nb Test data", "Comment"]
 
     train_table = PrettyTable()
-    train_table.title = "TRAIN PARAMETERS"
-    train_table.field_names = ["Ref","n_epochs", "data_normalisation", "generator_activation","generator_norm", "norm", "training_duration"]
+    train_table.title = "MAIN INFORMATIONS"
+
+    train_table_field_names = ["Ref","n_epochs", "data_normalisation", "generator_activation","generator_norm", "norm", "training_duration"]
+
+    if mse:
+        k = 1
+        for dataset_filename,MSE_value in lparams[0]['MSE']:
+            train_table_field_names.append(f'MSE on {dataset_filename.replace("/",".")}')
+            k+=1
+        train_table.field_names = train_table_field_names
+
 
     model_table = PrettyTable()
     model_table.title = "MODEL PARAMETERS"
@@ -117,8 +126,14 @@ def make_and_print_params_info_table(lparams):
             elif ntest_dataset>min_data:
                 for k in range(min_data, ntest_dataset):
                     data_table.add_row(['', '', fill(param['test_dataset_path'][k], width=50), '', '', '', '', ''])
-
-        train_table.add_row([param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'], param['generator_norm'], param['norm'], param['training_duration']])
+        if mse:
+            row = [param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'],param['generator_norm'], param['norm'], param['training_duration']]
+            lmse = param['MSE']
+            lmse_val = [k[1] for k in lmse]
+            row = [*row, *lmse_val]
+            train_table.add_row(row)
+        else:
+            train_table.add_row([param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'], param['generator_norm'], param['norm'], param['training_duration']])
 
         model_table.add_row([param['ref'], param['learning_rate'], param['input_channels'], param['hidden_channels_gen'], param['hidden_channels_disc'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
 
