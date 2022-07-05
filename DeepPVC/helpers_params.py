@@ -1,3 +1,6 @@
+from prettytable import PrettyTable
+from textwrap import fill
+
 
 not_updatable_paramter_list_when_resume_training = ['dataset_path', 'training_batchsize', 'test_batchsize', 'training_prct',
                                                     'learning_rate','input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
@@ -85,4 +88,44 @@ def check_params(params, fatal_on_unknown=False):
 
 
 
+def make_and_print_params_info_table(lparams):
+    data_table = PrettyTable(align="l")
+    data_table.title = "DATA PARAMETERS"
+    data_table.field_names = ["Ref", "Train Dataset", "Test Dataset", "training_batchsize", "test_batchsize", "nb Train data", "nb Test data", "Comment"]
+
+    train_table = PrettyTable()
+    train_table.title = "TRAIN PARAMETERS"
+    train_table.field_names = ["Ref","n_epochs", "data_normalisation", "generator_activation","generator_norm", "norm", "training_duration"]
+
+    model_table = PrettyTable()
+    model_table.title = "MODEL PARAMETERS"
+    model_table.field_names = ["Ref", "learning rate", "input channels", "hidden channels generator", "hidden channels discriminator", "generator update", "discriminator update", "optimizer", "device", "adversarial loss", "recon loss", "lambda recon"]
+
+    for param in lparams:
+        ntrain_dataset = len(param['dataset_path'])
+        ntest_dataset = len(param['test_dataset_path'])
+        min_data = min((ntrain_dataset,ntest_dataset))
+
+        data_table.add_row([param['ref'], fill(param['dataset_path'][0], width=50), fill(param['test_dataset_path'][0], width=50), param['training_batchsize'], param['test_batchsize'], param['nb_training_data'], param['nb_testing_data'], param['comment']])
+        if min_data>0:
+            for k in range(1,min_data):
+                data_table.add_row(['', fill(param['dataset_path'][k], width=50),
+                                    fill(param['test_dataset_path'][k], width=50), '','', '', '',''])
+            if ntrain_dataset>min_data:
+                for k in range(min_data, ntrain_dataset):
+                    data_table.add_row(['', fill(param['dataset_path'][k], width=50),'', '', '', '', '', ''])
+            elif ntest_dataset>min_data:
+                for k in range(min_data, ntest_dataset):
+                    data_table.add_row(['', '', fill(param['test_dataset_path'][k], width=50), '', '', '', '', ''])
+
+        train_table.add_row([param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'], param['generator_norm'], param['norm'], param['training_duration']])
+
+        model_table.add_row([param['ref'], param['learning_rate'], param['input_channels'], param['hidden_channels_gen'], param['hidden_channels_disc'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
+
+
+    print(data_table)
+    print('\n \n')
+    print(train_table)
+    print('\n \n')
+    print(model_table)
 

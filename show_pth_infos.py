@@ -1,34 +1,28 @@
 import torch
 import click
 
-from DeepPVC import Pix2PixModel, helpers
+
+from DeepPVC import Pix2PixModel, helpers,helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('pth')
-def show_click(pth):
-    show_pth(pth)
+@click.option('--pth', 'lpth', multiple = True)
+def show_click(lpth):
+    show_pth(lpth)
 
 
-def show_pth(pth):
+def show_pth(lpth):
+    lparams = []
+    device = helpers.get_auto_device("cpu")
 
-    device = helpers.get_auto_device("auto")
-    nn = torch.load(pth,map_location=device)
-    print('-'*80)
-    print(f'Showing informations about file {pth} : ')
-
-    print(f'Saved at : {nn["saving_date"]}')
-    print(f'Number of Epochs : {nn["epoch"]}')
-
-    params = nn['params']
-
-    pix2pix = Pix2PixModel.PVEPix2PixModel(params, is_resume=True, pth=pth)
-    pix2pix.show_infos()
+    for pth in lpth:
+        nn = torch.load(pth,map_location=device)
+        params = nn['params']
+        lparams.append(params)
 
 
-    print('-'*80)
-
+    helpers_params.make_and_print_params_info_table(lparams)
 
 
 if __name__ == '__main__':

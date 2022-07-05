@@ -5,7 +5,7 @@ from torch import optim
 import json
 import copy
 
-from . import networks, losses,plots, helpers
+from . import networks, losses,plots, helpers, helpers_params
 
 
 class PVEPix2PixModel():
@@ -225,6 +225,7 @@ class PVEPix2PixModel():
         print('PARAMETRES (json param file) : \n')
         print(formatted_params)
         print('*' * 80)
+
         print('MEAN SQUARE ERROR on TEST DATA')
         print(f'list of MSE on test data :{self.test_mse} ')
         print('*' * 80)
