@@ -1,5 +1,8 @@
+import os.path
+
 import torch
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import numpy as np
 import time
 
@@ -102,7 +105,7 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, w
         plt.show()
 
 
-def show_images_profiles(images,profile = None, save=True, is_tensor=True, title = None):
+def show_images_profiles(images,profile = None, save=False,folder = None, is_tensor=True, title = None, labels = None):
     if is_tensor:
         images = images.cpu().numpy()
 
@@ -110,54 +113,75 @@ def show_images_profiles(images,profile = None, save=True, is_tensor=True, title
     shape = array_image.shape
     nb_image = shape[0]
 
-    # def of colors and labels
+    if (labels and len(labels)!= nb_image):
+        print('ERROR: Ya un probleme entre le nombre d images et le nombre de labels donné')
+        exit(0)
+    elif nb_image<2:
+        print('ERROR: CA SERT A RIEN DE DONNER MOINS DE DEUX IMAGES HEIN')
+    elif not labels:
+        if nb_image==2:
+            labels = ['PVE', 'Pix2Pix']
+        elif nb_image==3:
+            labels = ['PVE', 'PVfree', 'Pix2Pix']
+        elif nb_image>3:
+            labels = ['PVE', 'PVfree']
+
+
     if nb_image==2:
-        labels = ['PVE', 'PVC']
         colors = ['red', 'blue']
     elif nb_image==3:
-        labels = ['PVE', 'PVfree', 'PVC']
-        colors = ['red','green', 'blue']
+        colors = ['red', 'green', 'blue']
+    elif nb_image>3:
+        colors = ['red', 'green']
+        for k in range(nb_image - 2):
+            labels.append(f'Pix2Pix{k}')
+            colors.append(tuple(np.random.random(size=3)))  # random color
+
+    if profile:
+        nrows = 3
     else:
-        print('Error : incorrect number of images')
-        exit(0)
-
-
-    if profile==False:
         nrows = 1
-    else:
-        nrows = 2
 
-    fig = plt.figure(figsize=(5.5,3.5))
-    spec = fig.add_gridspec(nrows,nb_image)
+    fig = plt.figure(figsize=(12,8))
+    gs = GridSpec(nrows,nb_image, figure=fig)
 
-    ax_imgs = []
+
     _vmin = np.min(array_image)
     _vmax = np.max(array_image)
     for i in range(nb_image):
-        ax_imgs_i = fig.add_subplot(spec[0,i])
-        ax_imgs.append(ax_imgs_i)
+        ax_imgs_i = fig.add_subplot(gs[0,i])
         ax_imgs_i.imshow(array_image[i,:,:], vmin=_vmin, vmax = _vmax)
         ax_imgs_i.set_title(labels[i])
 
 
     # compute and plot profiles
-    if nrows>1:
+    if profile:
         ref_img = array_image[0,:,:]
         center_indexes = np.where(ref_img == np.amax(ref_img))
         center_i = (np.mean(center_indexes[0])).astype(int)
         center_j = (np.mean(center_indexes[1])).astype(int)
 
-        ax_pfls = fig.add_subplot(spec[1,:])
+        ax_pfl_i = fig.add_subplot(gs[1, :])
+        ax_pfl_j = fig.add_subplot(gs[2, :])
         for i in range(nb_image):
-            ax_pfls.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
-        ax_pfls.legend()
+            ax_pfl_i.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
+            ax_pfl_j.plot(array_image[i,:,center_j], color = colors[i], label = labels[i])
+        ax_pfl_i.legend()
+        ax_pfl_j.legend()
 
     if title!=None:
         plt.suptitle(title)
 
     if save:
-        figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
-        plt.savefig(figname)
+        if title:
+            figname = title.replace(" ", "")+'.png'
+        else:
+            figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
+        if not folder:
+            folder = '.'
+
+        figpath = os.path.join(folder,figname)
+        plt.savefig(figpath)
     else:
         plt.show()
 

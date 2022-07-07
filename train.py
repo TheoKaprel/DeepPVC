@@ -23,7 +23,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='overwrite numeric int parameter of the json file',
               multiple=True, type=(str, int))
 @click.option('--plot_at_end', is_flag = True, default = False)
-@click.option('--output', '-o', help='Output filename', default = None)
+@click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
 def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):
     train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder)
@@ -35,8 +35,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
         exit(0)
 
     if json and resume:
-        print('WARNING : the json file will be ignored. The parameter file used will be the one from the pth file')
-
+        print('WARNING : the json file will be ignored. The parameter file used will be the one contained in the pth file')
 
     if resume:
         is_resume = True
@@ -52,7 +51,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
         params['start_pth'] = []
         start_epoch = 0
     else:
-        print('ERROR : Absence of params not detected earlier ...')
+        print('ERROR : Absence of params not detected earlier my bad ...')
         params = None
         is_resume=None
         start_epoch = 0
@@ -67,26 +66,19 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     if output:
         ref = output
     else:
-        ref = 'noref'
+        ref = 'NOREF'
 
 
     output_filename = f"pix2pix_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
-
-    helpers_params.update_params_user_option(params, user_params=(("ref", output),), is_resume=is_resume)
-    helpers_params.update_params_user_option(params, user_params=(("output_folder", output_folder),), is_resume=is_resume)
-    helpers_params.update_params_user_option(params, user_params=(("output_pth", output_filename),), is_resume=is_resume)
-
+    helpers_params.update_params_user_option(params, user_params=(("ref", output),("output_folder", output_folder),("output_pth", output_filename)), is_resume=is_resume)
 
     helpers_params.check_params(params)
 
-    save_every_n_epoch = params['save_every_n_epoch']
-    show_every_n_epoch = params['show_every_n_epoch']
-    test_every_n_epoch = params['test_every_n_epoch']
+    save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
-    nb_testing_data = params['nb_testing_data']
-    testdataset = test_dataloader.dataset
+
 
     DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
     DeepPVEModel.show_infos()
@@ -95,8 +87,27 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
     t0 = time.time()
+
+    # the data which will be used for show/test
+    nb_testing_data = params['nb_testing_data']
+    testdataset = test_dataloader.dataset
+    id_test = np.random.randint(0, nb_testing_data)
+    show_test_data = testdataset[id_test][None,:,:,:] #(1,2,128,128)
+    show_test_input = show_test_data[:,0, :, :][:, None, :, :] # (1,1,128,128)
+    show_test_denormalized_PVE_PVfree = helpers_data.denormalize(show_test_data, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (1,2,128,128)
+    show_test_keep_data = show_test_denormalized_PVE_PVfree
+    show_test_keep_labels = ['PVE', 'PVfree']
+    output = DeepPVEModel.test(show_test_input)  # (1,1,128,128)
+    denormalized_output = helpers_data.denormalize(output, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (1,1,128,128)
+    show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=1)  # (1,2+n,128,128)
+    show_test_keep_labels.append('Pix2Pix:0')
+
     print('Begining of the training .....')
     for epoch in range(DeepPVEModel.n_epochs):
+
+
+
+
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch}')
 
         # Optimisation loop
@@ -115,33 +126,27 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
                 DeepPVEModel.input_data(batch)
                 fakePVfree = DeepPVEModel.test(DeepPVEModel.truePVE)
 
-                denormalized_input = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
+                denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                 denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                MSE += np.sum(np.mean((denormalized_output - denormalized_input)**2, axis=(2,3)))/nb_testing_data
+                MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(2,3)))/nb_testing_data
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')
 
 
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
-            DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
-            id_test = np.random.randint(0, nb_testing_data)
-            testdata = testdataset[id_test]
-            input = testdata[0,:,:]
-            input = input[None, None, :,:]
-            output = DeepPVEModel.test(input)
-
-            denormalized_input = helpers_data.denormalize(testdata[None,:,:,:], normtype=params['data_normalisation'],
-                                                          norm=params['norm'], to_numpy=True)
-            denormalized_output = helpers_data.denormalize(output, normtype=params['data_normalisation'],
-                                                           norm=params['norm'], to_numpy=True)
-            imgs = np.concatenate((denormalized_input,denormalized_output), axis=1)
-
-            plots.show_images_profiles(imgs, profile=True, save = False, is_tensor=False)
+            DeepPVEModel.switch_eval()
+            show_test_output = DeepPVEModel.test(show_test_input) # (1,1,128,128)
+            show_test_denormalized_output = helpers_data.denormalize(show_test_output, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True) # (1,1,128,128)
+            show_test_keep_data = np.concatenate((show_test_keep_data,show_test_denormalized_output), axis=1) # (1,2+n,128,128)
+            show_test_keep_labels.append(f'Pix2Pix:{DeepPVEModel.current_epoch}')
 
 
-        if (DeepPVEModel.current_epoch % save_every_n_epoch==0):
-            DeepPVEModel.save_model()
+        if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
+            current_time = round(time.time() - t0)
+            DeepPVEModel.params['training_duration'] = current_time
+            temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'{DeepPVEModel.current_epoch}'+'.pth')
+            DeepPVEModel.save_model(output_path=temp_output_filename)
 
 
     tf = time.time()
@@ -150,12 +155,13 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     DeepPVEModel.params['training_endtime'] = time.asctime()
     DeepPVEModel.params['training_duration'] = total_time
 
+    if show_every_n_epoch<DeepPVEModel.n_epochs:
+        plots.show_images_profiles(show_test_keep_data[0,:,:,:],profile = True, save=True,folder = DeepPVEModel.params['output_folder'], is_tensor=False, title = f'Saved Images For {ref}', labels=show_test_keep_labels)
 
+    DeepPVEModel.save_model(save_json=True)
 
-    DeepPVEModel.save_model()
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
-
 
 
 if __name__ == '__main__':

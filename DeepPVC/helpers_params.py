@@ -37,9 +37,9 @@ def check_params(params, fatal_on_unknown=False):
                 'optimizer', 'device', 'lambda_recon', 'save_every_n_epoch']
     ballek = ['comment']
 
-    automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','training_duration','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data']
+    automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data']
 
-    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10]]
+    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
     default_params = [param for param, value in default_params_values]
 
     for req in required:
@@ -103,7 +103,7 @@ def make_and_print_params_info_table(lparams, mse=False):
         for dataset_filename,MSE_value in lparams[0]['MSE']:
             train_table_field_names.append(f'MSE on {dataset_filename.replace("/",".")}')
             k+=1
-        train_table.field_names = train_table_field_names
+    train_table.field_names = train_table_field_names
 
 
     model_table = PrettyTable()

@@ -96,8 +96,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
             input_array = helpers_data.load_image(input, is_ref)
             normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
 
-            tensor_PVE = normalized_input_tensor[:,0,:,:]
-            tensor_PVE = tensor_PVE[:,None,:,:]
+            tensor_PVE = normalized_input_tensor[:,0,:,:][:,None,:,:]
             output_tensor = model.test(tensor_PVE)
 
             denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
