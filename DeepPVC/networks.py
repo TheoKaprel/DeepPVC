@@ -117,6 +117,7 @@ class UNetGenerator(nn.Module):
 
 
     def forward(self, x):
+        x = x.float()
         # ----------------------------------------------------------
         #first feature extraction
         x0 = self.init_feature(x) # nhc
@@ -169,7 +170,7 @@ class NLayerDiscriminator(nn.Module):
         self.model = nn.Sequential(*sequence)
 
     def forward(self, A, B):
-        x = torch.cat([A, B], 1)
+        x = torch.cat([A.float(), B.float()], 1)
         return self.model(x)
 
     def get_receptive_field(self):

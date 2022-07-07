@@ -51,7 +51,7 @@ def apply(pth, input, output_filename):
     for proj in range(N_proj):
         tensor_PVE_proj = normalized_input_tensor[:, proj, :, :]
         tensor_PVE_proj = tensor_PVE_proj[:, None, :, :]
-        output_tensor_proj = model.test(tensor_PVE_proj)
+        output_tensor_proj = model.Generator(tensor_PVE_proj)
         normalized_output_tensor[:,proj,:,:] = output_tensor_proj
 
     output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True)

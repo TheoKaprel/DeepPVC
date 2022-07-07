@@ -71,18 +71,19 @@ def eval(pth, input,n,dataset,ref, save, mse):
 
         if do_mse:
             MSE = 0
-            for test_data in list_of_all_images:
-                input_array = helpers_data.load_image(test_data, True)
-                normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
-                tensor_PVE = normalized_input_tensor[:, 0, :, :]
-                tensor_PVE = tensor_PVE[:, None, :, :]
-                output_tensor = model.test(tensor_PVE)
+            with torch.no_grad():
+                for test_data in list_of_all_images:
+                    input_array = helpers_data.load_image(test_data, True)
+                    normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
+                    tensor_PVE = normalized_input_tensor[:, 0, :, :]
+                    tensor_PVE = tensor_PVE[:, None, :, :]
+                    output_tensor = model.Generator(tensor_PVE)
 
-                denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
+                    denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
 
-                projPVfree = input_array[0,1,:,:]
-                projDeepPVC = denormalized_output_array[0,0,:,:]
-                MSE += (np.mean((projDeepPVC - projPVfree) ** 2)) / Nimages
+                    projPVfree = input_array[0,1,:,:]
+                    projDeepPVC = denormalized_output_array[0,0,:,:]
+                    MSE += (np.mean((projDeepPVC - projPVfree) ** 2)) / Nimages
             print(f'MSE on the test dataset {dataset}:'+ "{:.3e}".format(MSE))
             print('*' * 80)
 
@@ -93,13 +94,14 @@ def eval(pth, input,n,dataset,ref, save, mse):
 
         for input in list_of_images:
             is_ref = ref
-            input_array = helpers_data.load_image(input, is_ref)
-            normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+            with torch.no_grad():
+                input_array = helpers_data.load_image(input, is_ref)
+                normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
 
-            tensor_PVE = normalized_input_tensor[:,0,:,:][:,None,:,:]
-            output_tensor = model.test(tensor_PVE)
+                tensor_PVE = normalized_input_tensor[:,0,:,:][:,None,:,:]
+                output_tensor = model.Generator(tensor_PVE)
 
-            denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+                denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 
 
             imgs = np.concatenate((input_array,denormalized_output_array), axis=1)

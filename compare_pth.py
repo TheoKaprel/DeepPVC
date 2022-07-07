@@ -97,16 +97,17 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_ms
                 for test_dataloader,nb_testing_data,dataset_filename in list_dataloaders:
 
                     mse = 0
-                    for test_it, batch in enumerate(test_dataloader):
-                        normalized_batch = helpers_data.normalize(batch,normtype=model.params['data_normalisation'], norm=model.params['norm'], to_torch=False, device=device)
-                        model.input_data(normalized_batch)
-                        fakePVfree = model.test(model.truePVE)
+                    with torch.no_grad():
+                        for test_it, batch in enumerate(test_dataloader):
+                            normalized_batch = helpers_data.normalize(batch,normtype=model.params['data_normalisation'], norm=model.params['norm'], to_torch=False, device=device)
+                            model.input_data(normalized_batch)
+                            fakePVfree = model.Generator(model.truePVE)
 
-                        denormalized_input = helpers_data.denormalize(model.truePVfree,normtype=model.params['data_normalisation'], norm=model.params['norm'],to_numpy=True)
-                        denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
+                            denormalized_input = helpers_data.denormalize(model.truePVfree,normtype=model.params['data_normalisation'], norm=model.params['norm'],to_numpy=True)
+                            denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
 
 
-                        mse+= np.sum(np.mean((denormalized_output - denormalized_input) ** 2, axis=(2, 3))) / nb_testing_data
+                            mse+= np.sum(np.mean((denormalized_output - denormalized_input) ** 2, axis=(2, 3))) / nb_testing_data
                     model.params['MSE'].append([dataset_filename,mse])
 
                 model.save_model(pth[m], save_json=False)
@@ -126,14 +127,15 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_ms
                 normalisation = model.params['data_normalisation']
                 norm = model.params['norm']
 
-                normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm,to_torch=True, device='cpu')
-                tensor_PVE = normalized_input_tensor[:, 0, :, :][:, None, :, :]
+                with torch.no_grad():
+                    normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm,to_torch=True, device='cpu')
+                    tensor_PVE = normalized_input_tensor[:, 0, :, :][:, None, :, :]
 
-                output_tensor = model.test(tensor_PVE)
+                    output_tensor = model.Generator(tensor_PVE)
 
-                denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+                    denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 
-                projs_DeepPVC[idpth] = np.squeeze(denormalized_output_array)
+                    projs_DeepPVC[idpth] = np.squeeze(denormalized_output_array)
 
 
             fig, ax = plt.subplots(2,nPth)

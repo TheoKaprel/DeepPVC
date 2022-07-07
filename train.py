@@ -82,33 +82,32 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
     DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
     DeepPVEModel.show_infos()
-    DeepPVEModel.switch_train()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
     t0 = time.time()
 
-    # the data which will be used for show/test
-    nb_testing_data = params['nb_testing_data']
-    testdataset = test_dataloader.dataset
-    id_test = np.random.randint(0, nb_testing_data)
-    show_test_data = testdataset[id_test][None,:,:,:] #(1,2,128,128)
-    show_test_input = show_test_data[:,0, :, :][:, None, :, :] # (1,1,128,128)
-    show_test_denormalized_PVE_PVfree = helpers_data.denormalize(show_test_data, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (1,2,128,128)
-    show_test_keep_data = show_test_denormalized_PVE_PVfree
-    show_test_keep_labels = ['PVE', 'PVfree']
-    output = DeepPVEModel.test(show_test_input)  # (1,1,128,128)
-    denormalized_output = helpers_data.denormalize(output, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (1,1,128,128)
-    show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=1)  # (1,2+n,128,128)
-    show_test_keep_labels.append('Pix2Pix:0')
+
+    DeepPVEModel.switch_eval()
+    with torch.no_grad():
+        # the data which will be used for show/test
+        nb_testing_data = params['nb_testing_data']
+        testdataset = test_dataloader.dataset
+        id_test = np.random.randint(0, nb_testing_data)
+        show_test_data = testdataset[id_test][None,:,:,:] #(1,2,128,128)
+        show_test_PVE = show_test_data[:,0, :, :][:, None, :, :] # (1,1,128,128)
+        show_test_denormalized_PVE_PVfree = helpers_data.denormalize(show_test_data, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (1,2,128,128)
+        show_test_keep_data = show_test_denormalized_PVE_PVfree
+        show_test_keep_labels = ['PVE', 'PVfree']
+        show_test_fakePVfree = DeepPVEModel.Generator(show_test_PVE)  # (1,1,128,128)
+        denormalized_output = helpers_data.denormalize(show_test_fakePVfree, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (1,1,128,128)
+        show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=1)  # (1,2+n,128,128)
+        show_test_keep_labels.append('Pix2Pix:0')
+
 
     print('Begining of the training .....')
-    for epoch in range(DeepPVEModel.n_epochs):
-
-
-
-
-        print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch}')
+    for epoch in range(1,DeepPVEModel.n_epochs+1):
+        print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
 
         # Optimisation loop
         DeepPVEModel.switch_train()
@@ -116,19 +115,17 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
-
-        DeepPVEModel.update_epoch()
-
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()
-            MSE= 0
-            for test_it,batch in enumerate(test_dataloader):
-                DeepPVEModel.input_data(batch)
-                fakePVfree = DeepPVEModel.test(DeepPVEModel.truePVE)
+            MSE = 0
+            with torch.no_grad():
+                for test_it,batch in enumerate(test_dataloader):
+                    DeepPVEModel.input_data(batch)
+                    fakePVfree = DeepPVEModel.Generator(DeepPVEModel.truePVE)
 
-                denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(2,3)))/nb_testing_data
+                    denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
+                    denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
+                    MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(2,3)))/nb_testing_data
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')
@@ -136,10 +133,11 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
             DeepPVEModel.switch_eval()
-            show_test_output = DeepPVEModel.test(show_test_input) # (1,1,128,128)
-            show_test_denormalized_output = helpers_data.denormalize(show_test_output, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True) # (1,1,128,128)
-            show_test_keep_data = np.concatenate((show_test_keep_data,show_test_denormalized_output), axis=1) # (1,2+n,128,128)
-            show_test_keep_labels.append(f'Pix2Pix:{DeepPVEModel.current_epoch}')
+            with torch.no_grad():
+                show_test_output = DeepPVEModel.Generator(show_test_PVE) # (1,1,128,128)
+                show_test_denormalized_output = helpers_data.denormalize(show_test_output, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True) # (1,1,128,128)
+                show_test_keep_data = np.concatenate((show_test_keep_data,show_test_denormalized_output), axis=1) # (1,2+n,128,128)
+                show_test_keep_labels.append(f'Pix2Pix:{DeepPVEModel.current_epoch}')
 
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
@@ -147,6 +145,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
             DeepPVEModel.params['training_duration'] = current_time
             temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'{DeepPVEModel.current_epoch}'+'.pth')
             DeepPVEModel.save_model(output_path=temp_output_filename)
+
+        DeepPVEModel.update_epoch()
 
 
     tf = time.time()
@@ -156,7 +156,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     DeepPVEModel.params['training_duration'] = total_time
 
     if show_every_n_epoch<DeepPVEModel.n_epochs:
-        plots.show_images_profiles(show_test_keep_data[0,:,:,:],profile = True, save=True,folder = DeepPVEModel.params['output_folder'], is_tensor=False, title = f'Saved Images For {ref}', labels=show_test_keep_labels)
+        plots.show_images_profiles(show_test_keep_data[0,:,:,:],profile = True, save=True,folder = DeepPVEModel.params['output_folder'], is_tensor=False, title = f'Saved Images {ref}', labels=show_test_keep_labels)
 
     DeepPVEModel.save_model(save_json=True)
 

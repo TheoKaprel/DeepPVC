@@ -32,8 +32,8 @@ class PVEPix2PixModel():
             self.discriminator_losses = []
             self.test_mse = []
 
-            self.current_epoch = 0
-            self.start_epoch=0
+            self.current_epoch = 1
+            self.start_epoch=1
 
         self.current_iteration = 0
         self.mean_generator_loss = 0
@@ -92,42 +92,43 @@ class PVEPix2PixModel():
         self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.device)
         self.truePVfree = batch[:, 1, :, :].unsqueeze(1).to(self.device)
 
-    def forward(self):
+    def forward_D(self):
         ## Update Discriminator
         with torch.no_grad():
-            self.fakePVfree = self.Generator(self.truePVE.float())
+            self.DfakePVfree = self.Generator(self.truePVE)
 
-        self.disc_fake_hat = self.Discriminator(self.fakePVfree.detach().float(), self.truePVE.float())
-        self.disc_real_hat = self.Discriminator(self.truePVfree.float(), self.truePVE.float())
+        self.Ddisc_fake_hat = self.Discriminator(self.DfakePVfree.detach(), self.truePVE)
+        self.Ddisc_real_hat = self.Discriminator(self.truePVfree, self.truePVE)
 
-    def backward_D(self, back=True):
-        disc_fake_loss = self.losses.adv_loss(self.disc_fake_hat, torch.zeros_like(self.disc_fake_hat))
-        disc_real_loss = self.losses.adv_loss(self.disc_real_hat, torch.ones_like(self.disc_real_hat))
+    def backward_D(self):
+        disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, torch.zeros_like(self.Ddisc_fake_hat))
+        disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, torch.ones_like(self.Ddisc_real_hat))
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
-        if back:
-            self.disc_loss.backward(retain_graph=True)
-            self.discriminator_optimizer.step()
 
-    def backward_G(self, back=True):
-        ## Update Generator
+        self.disc_loss.backward(retain_graph=True)
+        self.discriminator_optimizer.step()
 
-        self.gen_loss = self.losses.get_gen_loss(self.Generator, self.Discriminator, self.truePVfree, self.truePVE)
-        if back:
-            self.gen_loss.backward()
-            self.generator_optimizer.step()
+    def forward_G(self):
+        self.GfakePVfree = self.Generator(self.truePVE)
+        self.Gdisc_fake_hat = self.Discriminator(self.GfakePVfree, self.truePVE)
+
+    def backward_G(self):
+        self.gen_loss = self.losses.get_gen_loss(self.Gdisc_fake_hat, self.truePVfree, self.GfakePVfree)
+        self.gen_loss.backward()
+        self.generator_optimizer.step()
 
     def optimize_parameters(self):
-
         # Discriminator Updates
         for _ in range(self.discriminator_update):
             self.discriminator_optimizer.zero_grad()
-            self.forward()
-            self.backward_D(back=True)
+            self.forward_D()
+            self.backward_D()
 
         # Generator Updates
         for _ in range(self.generator_update):
             self.generator_optimizer.zero_grad()
-            self.backward_G(back=True)
+            self.forward_G()
+            self.backward_G()
 
         self.mean_generator_loss+=self.gen_loss.item()
         self.mean_discriminator_loss+=self.disc_loss.item()
@@ -214,10 +215,6 @@ class PVEPix2PixModel():
         self.Generator.to(device=device)
         self.Discriminator.to(device=device)
 
-    def test(self, img):
-        with torch.no_grad():
-            output = self.Generator(img.float())
-        return output
 
     def format_params(self):
         formatted_params = copy.deepcopy(self.params)
