@@ -2,30 +2,31 @@ import itk
 import torch
 import numpy as np
 import glob
+import time
 
 from . import helpers_data, helpers
 
 def construct_dataset_from_path(dataset_path):
     print(f'Loading data from {dataset_path} ...')
-    first = True
-    dataset = None
-    for filename_ in glob.glob(f'{dataset_path}/?????.mhd'): # selects files having exactly 5 characters before the .mhd
-        filename_PVE = f'{filename_[:-4]}_PVE.mhd'
+    t0 = time.time()
+    dataset_is_set = False
+    for filename_PVE in glob.glob(f'{dataset_path}/?????_PVE.mhd'): # selects files having exactly 5 characters before the .mhd
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
 
-        filename_PVf = f'{filename_[:-4]}_PVfree.mhd'
+        filename_PVf = f'{filename_PVE[:-8]}_PVfree.mhd'
         img_PVf = itk.array_from_image(itk.imread(filename_PVf))
 
-        if min((np.max(img_PVE), np.max(img_PVf)))>0:
-            cat_PVf_PVE = np.concatenate((img_PVE,img_PVf), axis =0)
-            cat_PVf_PVE = np.expand_dims(cat_PVf_PVE,axis = 0)
-
-            if first:
-                dataset = cat_PVf_PVE
-                first = False
+        cat_PVf_PVE = np.concatenate((img_PVE, img_PVf), axis=0)
+        cat_PVf_PVE = np.expand_dims(cat_PVf_PVE, axis=0)
+        if np.max(cat_PVf_PVE)>0:
+            if dataset_is_set:
+                dataset = np.concatenate((dataset, cat_PVf_PVE), 0)
             else:
-                dataset = np.concatenate((dataset,cat_PVf_PVE),0)
-    print('Done!')
+                dataset = cat_PVf_PVE
+                dataset_is_set = True
+    t1 = time.time()
+    elapsed_time1 = t1-t0
+    print(f'Done! in {elapsed_time1} s')
     return dataset
 
 
