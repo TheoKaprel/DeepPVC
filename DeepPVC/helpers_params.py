@@ -88,7 +88,7 @@ def check_params(params, fatal_on_unknown=False):
 
 
 
-def make_and_print_params_info_table(lparams, mse=False):
+def make_and_print_params_info_table(lparams):
     data_table = PrettyTable(align="l")
     data_table.title = "DATA PARAMETERS"
     data_table.field_names = ["Ref", "Train Dataset", "Test Dataset", "training_batchsize", "test_batchsize", "nb Train data", "nb Test data", "Comment"]
@@ -98,11 +98,12 @@ def make_and_print_params_info_table(lparams, mse=False):
 
     train_table_field_names = ["Ref","n_epochs", "data_normalisation", "generator_activation","generator_norm", "norm", "training_duration"]
 
-    if mse:
-        k = 1
+    if 'MSE'in lparams[0]:
+        mse = True
         for dataset_filename,MSE_value in lparams[0]['MSE']:
-            train_table_field_names.append(f'MSE on {dataset_filename.replace("/",".")}')
-            k+=1
+            train_table_field_names.append(f'MSE on {dataset_filename}')
+    else:
+        mse = False
     train_table.field_names = train_table_field_names
 
 

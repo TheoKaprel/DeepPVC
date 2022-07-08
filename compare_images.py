@@ -22,12 +22,13 @@ def comparison_click(folder, ref, slice, profile):
     comparison(folder, ref, slice, profile)
 
 def comparison(folder, ref, slice, profile):
-    src_file = os.path.join(folder, f'{ref}.mhd')
-    img_rec_PVE_PVC_file = os.path.join(folder, f'{ref}_rec_PVE_PVC.mhd')
-    img_rec_PVE_noPVC_file = os.path.join(folder, f'{ref}_rec_PVE_noPVC.mhd')
-    img_rec_noPVE_noPVC_file = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
 
-    list_of_img_rec_DeepPVC_file = glob.glob( os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_*.mhd'))
+    src_file = os.path.join(folder, f'{ref}/{ref}.mhd')
+    img_rec_PVE_PVC_file = os.path.join(folder, f'{ref}/{ref}_rec_PVE_PVC.mhd')
+    img_rec_PVE_noPVC_file = os.path.join(folder, f'{ref}/{ref}_rec_PVE_noPVC.mhd')
+    img_rec_noPVE_noPVC_file = os.path.join(folder, f'{ref}/{ref}_rec_noPVE_noPVC.mhd')
+
+    list_of_img_rec_DeepPVC_file = glob.glob( os.path.join(folder, f'{ref}/{ref}_rec_PVE_DeepPVC_*.mhd'))
     nDeepPVC = len(list_of_img_rec_DeepPVC_file)
     list_refs_pix2pix = [get_ref(imgdeepfile) for imgdeepfile in list_of_img_rec_DeepPVC_file]
 

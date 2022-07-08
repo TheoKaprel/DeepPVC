@@ -20,15 +20,14 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--ref/--no-ref', default = True)
 @click.option('--losses', is_flag = True, default = False)
 @click.option('--calc_mse', is_flag = True, default = False, help = 'Compute mse on --dataset')
-@click.option('--show_mse', is_flag = True, default = False, help = 'Show the mse on --dataset (if and only if --calc_mse or already computed)')
-def compare_proj_pth_click(pth,proj, input, n, dataset, ref, losses, calc_mse, show_mse):
-    compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_mse)
+def compare_proj_pth_click(pth,proj, input, n, dataset, ref, losses, calc_mse):
+    compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse)
 
 
 
 
 
-def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_mse):
+def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
 
     # load models
     device = helpers.get_auto_device("cpu")
@@ -76,8 +75,9 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_ms
             list_of_images = []
             exit(0)
 
-    if show_mse:
 
+
+    if calc_mse:
         list_dataloaders = []
         for one_dataset in dataset:
             test_dataset = ds.construct_dataset_from_path(dataset_path=one_dataset)
@@ -88,31 +88,32 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_ms
             test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=list_models[0].params['test_batchsize'], shuffle=True)
             list_dataloaders.append([test_dataloader,nb_testing_data, one_dataset])
 
-        if calc_mse:
-            for m in range(nPth):
-                model = list_models[m]
-                print(model.test_mse)
 
-                model.params['MSE'] = []
-                for test_dataloader,nb_testing_data,dataset_filename in list_dataloaders:
+        for m in range(nPth):
+            model = list_models[m]
+            print(model.test_mse)
 
-                    mse = 0
-                    with torch.no_grad():
-                        for test_it, batch in enumerate(test_dataloader):
-                            normalized_batch = helpers_data.normalize(batch,normtype=model.params['data_normalisation'], norm=model.params['norm'], to_torch=False, device=device)
-                            model.input_data(normalized_batch)
-                            fakePVfree = model.Generator(model.truePVE)
+            model.params['MSE'] = []
+            for test_dataloader,nb_testing_data,dataset_filename in list_dataloaders:
 
-                            denormalized_input = helpers_data.denormalize(model.truePVfree,normtype=model.params['data_normalisation'], norm=model.params['norm'],to_numpy=True)
-                            denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
+                mse = 0
+                with torch.no_grad():
+                    for test_it, batch in enumerate(test_dataloader):
+                        normalized_batch = helpers_data.normalize(batch,normtype=model.params['data_normalisation'], norm=model.params['norm'], to_torch=False, device=device)
+                        model.input_data(normalized_batch)
+                        fakePVfree = model.Generator(model.truePVE)
+
+                        denormalized_input = helpers_data.denormalize(model.truePVfree,normtype=model.params['data_normalisation'], norm=model.params['norm'],to_numpy=True)
+                        denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
 
 
-                            mse+= np.sum(np.mean((denormalized_output - denormalized_input) ** 2, axis=(2, 3))) / nb_testing_data
-                    model.params['MSE'].append([dataset_filename,mse])
+                        mse+= np.sum(np.mean((denormalized_output - denormalized_input) ** 2, axis=(2, 3))) / nb_testing_data
+                model.params['MSE'].append([dataset_filename,mse])
 
-                model.save_model(pth[m], save_json=False)
+            model.save_model(pth[m], save_json=False)
 
-        helpers_params.make_and_print_params_info_table([model.params for model in list_models], mse=True)
+
+    helpers_params.make_and_print_params_info_table([model.params for model in list_models])
 
 
     if proj:
@@ -162,7 +163,6 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse, show_ms
             fig,ax = plt.subplots()
             ax.bar(list_refs, lmse)
             ax.set_ylabel('MSE')
-
 
             plt.show()
 

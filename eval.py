@@ -9,7 +9,7 @@ from DeepPVC import plots, helpers_data, helpers, Pix2PixModel
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--pth', multiple = True) # 'path/to/saved/model.pth'
-@click.option('--input', '-i')
+@click.option('--input', '-i', multiple = True)
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--ref/--no-ref', default = True)
@@ -32,15 +32,14 @@ def eval(pth, input,n,dataset,ref, save, mse):
     print('Evaluation of the model on an image')
 
     if input:
-        list_of_images = [input]
+        list_of_images = list(input)
         do_mse = False
     elif n:
         n = int(n)
         list_of_all_images = glob.glob(f'{dataset}/?????.mhd')
         Nimages = len(list_of_all_images)
-        list_index = [random.randint(0,Nimages) for _ in range(n)]
-        list_of_images = [list_of_all_images[list_index[i]][:-4] for i in range(len(list_index))]
         list_of_all_images = [list_of_all_images[i][:-4] for i in range(Nimages)]
+        list_of_images = random.sample(list_of_all_images, n)
         if mse:
             do_mse = True
         else:
@@ -66,7 +65,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
         model.load_model(one_pth)
         model.switch_device("cpu")
         model.switch_eval()
-        model.show_infos()
+
         model.plot_losses(save, wait = False, title = one_pth)
 
         if do_mse:
@@ -85,12 +84,17 @@ def eval(pth, input,n,dataset,ref, save, mse):
                     projDeepPVC = denormalized_output_array[0,0,:,:]
                     MSE += (np.mean((projDeepPVC - projPVfree) ** 2)) / Nimages
             print(f'MSE on the test dataset {dataset}:'+ "{:.3e}".format(MSE))
+            if 'MSE' in model.params:
+                model.params['MSE'].append([dataset, MSE])
+            else:
+                model.params['MSE'] = [[dataset,MSE]]
+            model.save_model(output_path=one_pth, save_json=True)
             print('*' * 80)
 
         else:
             print(f'No calculation of MSE as no dataset is provided')
 
-
+        model.show_infos()
 
         for input in list_of_images:
             is_ref = ref

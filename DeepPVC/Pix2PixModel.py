@@ -222,7 +222,7 @@ class PVEPix2PixModel():
         formatted_params['norm'] = str(listnorm)
         return json.dumps(formatted_params, indent=4)
 
-    def show_infos(self):
+    def show_infos(self, mse = False):
         formatted_params = self.format_params()
         print('*'*80)
         print('PARAMETRES (json param file) : \n')
@@ -236,7 +236,7 @@ class PVEPix2PixModel():
         print(self.Discriminator)
         print('*' * 80)
 
-        helpers_params.make_and_print_params_info_table([self.params], mse = False)
+        helpers_params.make_and_print_params_info_table([self.params])
 
 
 
