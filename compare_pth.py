@@ -65,10 +65,10 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
             n = int(n)
             list_of_all_images = []
             for d in dataset:
-                list_of_all_images = [*list_of_all_images, *glob.glob(f'{d}/?????.mhd')]
+                list_of_all_images = [*list_of_all_images, *glob.glob(f'{d}/?????_PVE.mhd')]
             Nimages = len(list_of_all_images)
-            list_index = [random.randint(0, Nimages) for _ in range(n)]
-            list_of_images = [list_of_all_images[list_index[i]][:-4] for i in range(len(list_index))]
+            list_of_all_images = [list_of_all_images[i][:-8] for i in range(Nimages)]
+            list_of_images = random.sample(list_of_all_images, n)
         else:
             print(
                 'ERROR : no input nor n/dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image and a --dataset /pth/to/dataset to select randomly in the dataset')

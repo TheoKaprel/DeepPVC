@@ -36,9 +36,9 @@ def eval(pth, input,n,dataset,ref, save, mse):
         do_mse = False
     elif n:
         n = int(n)
-        list_of_all_images = glob.glob(f'{dataset}/?????.mhd')
+        list_of_all_images = glob.glob(f'{dataset}/?????_PVE.mhd')
         Nimages = len(list_of_all_images)
-        list_of_all_images = [list_of_all_images[i][:-4] for i in range(Nimages)]
+        list_of_all_images = [list_of_all_images[i][:-8] for i in range(Nimages)]
         list_of_images = random.sample(list_of_all_images, n)
         if mse:
             do_mse = True
@@ -74,8 +74,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
                 for test_data in list_of_all_images:
                     input_array = helpers_data.load_image(test_data, True)
                     normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
-                    tensor_PVE = normalized_input_tensor[:, 0, :, :]
-                    tensor_PVE = tensor_PVE[:, None, :, :]
+                    tensor_PVE = normalized_input_tensor[:, 0, :, :][:, None, :, :]
                     output_tensor = model.Generator(tensor_PVE)
 
                     denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
