@@ -143,7 +143,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
             current_time = round(time.time() - t0)
             DeepPVEModel.params['training_duration'] = current_time
-            temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'{DeepPVEModel.current_epoch}'+'.pth')
+            temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
             DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()

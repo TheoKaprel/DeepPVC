@@ -9,21 +9,19 @@ from . import helpers_data, helpers
 def construct_dataset_from_path(dataset_path):
     print(f'Loading data from {dataset_path} ...')
     t0 = time.time()
-    dataset_is_set = False
-    for filename_PVE in glob.glob(f'{dataset_path}/?????_PVE.mhd'): # selects files having exactly 5 characters before the .mhd
+
+    list_files = glob.glob(f'{dataset_path}/?????_PVE.mhd')
+    N = len(list_files)
+    dataset = np.zeros((N, 2, 128, 128))
+    for i in range(N): # selects files having exactly 5 characters before the .mhd
+        filename_PVE = list_files[i]
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
+        dataset[i,0,:,:] = img_PVE
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.mhd'
         img_PVf = itk.array_from_image(itk.imread(filename_PVf))
+        dataset[i,1,:,:] = img_PVf
 
-        cat_PVf_PVE = np.concatenate((img_PVE, img_PVf), axis=0)
-        cat_PVf_PVE = np.expand_dims(cat_PVf_PVE, axis=0)
-        if np.max(cat_PVf_PVE)>0:
-            if dataset_is_set:
-                dataset = np.concatenate((dataset, cat_PVf_PVE), 0)
-            else:
-                dataset = cat_PVf_PVE
-                dataset_is_set = True
     t1 = time.time()
     elapsed_time1 = t1-t0
     print(f'Done! in {elapsed_time1} s')
