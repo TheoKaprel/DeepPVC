@@ -44,12 +44,18 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
         params = checkpoint['params']
         params['start_pth'].append(resume)
         start_epoch = checkpoint['epoch']
+        ref = params['ref']
     elif json:
         is_resume = False
         params_file = open(json).read()
         params = js.loads(params_file)
         params['start_pth'] = []
         start_epoch = 0
+
+        if output:
+            ref = output
+        else:
+            ref = 'NOREF'
     else:
         print('ERROR : Absence of params not detected earlier my bad ...')
         params = None
@@ -63,14 +69,11 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
     helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
 
-    if output:
-        ref = output
-    else:
-        ref = 'NOREF'
+
 
 
     output_filename = f"pix2pix_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
-    helpers_params.update_params_user_option(params, user_params=(("ref", output),("output_folder", output_folder),("output_pth", output_filename)), is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=is_resume)
 
     helpers_params.check_params(params)
 

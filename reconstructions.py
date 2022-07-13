@@ -2,18 +2,31 @@ import click
 import apply
 import os
 import subprocess
+import json
 
-def get_ref(pth):
-    i1 = pth.rfind('pix2pix_') + 8
-    i2 = i1
-    while pth[i2]!='_':
-        i2+=1
-    return pth[i1:i2]
+def get_ref(pth, ffrom='filename'):
+    if ffrom=='filename':
+        i1 = pth.rfind('pix2pix_') + 8
+        i2 = i1
+        while pth[i2]!='_':
+            i2+=1
+        return pth[i1:i2]
+    elif ffrom=='json':
+        json_filename = pth[:-4]+'.json'
+        with open(json_filename, "r") as f:
+            json_data = json.load(f)
+            ref = json_data['ref']
+            return ref
+    else:
+        print(f'ERROR : Wrong way to get the ref of {pth}. Specify ffrom = ...')
+        exit(0)
+
+
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--folder')
-@click.option('--ref')
+@click.option('--ref', help = 'In the folder there should be ref.mhd, ref_PVE.mhd, ref_')
 @click.option('--pth', help = 'model to apply to the PVE projections before reconstruction (if --deeppvc') # 'path/to/saved/model.pth'
 @click.option('--nopvc',is_flag = True, default = False, help = 'Reconstruct the image from the PVE sinogram without any PVC algorithm')
 @click.option('--pvc',is_flag = True, default = False, help = 'Reconstruct the image from the PVE sinogram with a classical PVC algorithm (Zeng)')
@@ -24,9 +37,6 @@ def reconstructions_click(pth,folder,ref,nopvc, pvc, deeppvc,nopve_nopvc, data_f
     reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder)
 
 def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder):
-
-
-
 
     src_img_file =  f'{ref}.mhd'
     src_img_path = os.path.join(folder,src_img_file)
@@ -70,7 +80,7 @@ def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folde
     if deeppvc:
         # Reconstruction with DeepPVC projections
 
-        ref_pix2pix = get_ref(pth)
+        ref_pix2pix = get_ref(pth, ffrom='json')
 
         proj_DeepPVC_file = f'{ref}_projDeepPVC_{ref_pix2pix}.mhd'
         proj_DeepPVC_path = os.path.join(folder, proj_DeepPVC_file)

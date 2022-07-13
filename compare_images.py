@@ -17,7 +17,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--folder')
 @click.option('--ref')
 @click.option('--slice', type = int, multiple = True)
-@click.option('--profile')
+@click.option('--profile', type = int, multiple = True)
 def comparison_click(folder, ref, slice, profile):
     comparison(folder, ref, slice, profile)
 
@@ -75,7 +75,7 @@ def comparison(folder, ref, slice, profile):
         vmax = max([np.max(img[s, :, :]) for img in list_of_all_images])
         vmin = min([np.min(img[s, :, :]) for img in list_of_all_images])
 
-        fig,ax = plt.subplots(2,nDeepPVC+1)
+        fig,ax = plt.subplots(2,nDeepPVC+2)
         ax[0,0].imshow(img_src[s,:,:], vmin = vmin, vmax=vmax)
         ax[0,0].set_title('Source')
         ax[0,1].imshow(img_rec_PVE_noPVC[s,:,:], vmin = vmin, vmax=vmax)
@@ -91,6 +91,24 @@ def comparison(folder, ref, slice, profile):
             ax[1,i+1].set_title(f'DeepPVC_{ref_i}')
 
         plt.suptitle(f'Slice : {s}')
+
+        if len(profile)>0:
+            nb_profiles = len(profile)
+            fig_pr,ax_pr = plt.subplots(nb_profiles,1)
+            if nb_profiles==1:
+                ax_pr = [ax_pr]
+            for p in range(nb_profiles):
+                ax_pr[p].plot(img_src[s,profile[p],:], label = 'Source')
+                ax_pr[p].plot(img_rec_PVE_noPVC[s,profile[p],:], label = 'PVE/noPVC')
+                ax_pr[p].plot(img_rec_PVE_PVC[s,profile[p],:], label = 'PVE/PVC')
+                ax_pr[p].plot(img_rec_noPVE_noPVC[s,profile[p],:], label = 'noPVE/noPVC')
+                for i in range(nDeepPVC):
+                    ax_pr[p].plot(list_of_img_rec_DeepPVC[i][s,profile[p],:], label = f'DeepPVC_{list_refs_pix2pix[i]}')
+
+    
+
+
+    plt.legend()
     plt.show()
 
 
