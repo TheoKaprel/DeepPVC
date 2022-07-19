@@ -19,6 +19,7 @@ def show_pth(lpth):
     for pth in lpth:
         nn = torch.load(pth,map_location=device)
         params = nn['params']
+        helpers_params.check_params(params)
         lparams.append(params)
 
 

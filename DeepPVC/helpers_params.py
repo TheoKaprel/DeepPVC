@@ -39,7 +39,8 @@ def check_params(params, fatal_on_unknown=False):
 
     automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
 
-    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
+    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ['nb_ed_layers',4],
+                             ["generator_activation", "sigmoid"],["generator_norm","batch_norm"], ['adv_loss','BCE'], ['recon_loss', 'L1'], ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
     default_params = [param for param, value in default_params_values]
 
     for req in required:
@@ -67,7 +68,7 @@ def check_params(params, fatal_on_unknown=False):
             params[defparam] = defvalue
             print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
 
-    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels', 'generator_update', 'discriminator_update']:
+    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers', 'generator_update', 'discriminator_update']:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
@@ -109,7 +110,7 @@ def make_and_print_params_info_table(lparams):
 
     model_table = PrettyTable()
     model_table.title = "MODEL PARAMETERS"
-    model_table.field_names = ["Ref", "learning rate", "input channels", "hidden channels generator", "hidden channels discriminator", "generator update", "discriminator update", "optimizer", "device", "adversarial loss", "recon loss", "lambda recon"]
+    model_table.field_names = ["Ref", "learning rate", "input channels", "hidden channels generator", "hidden channels discriminator","nb_ed_layers", "generator update", "discriminator update", "optimizer", "device", "adversarial loss", "recon loss", "lambda recon"]
 
     for param in lparams:
         ntrain_dataset = len(param['dataset_path'])
@@ -136,7 +137,7 @@ def make_and_print_params_info_table(lparams):
         else:
             train_table.add_row([param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'], param['generator_norm'], param['norm'], param['training_duration']])
 
-        model_table.add_row([param['ref'], param['learning_rate'], param['input_channels'], param['hidden_channels_gen'], param['hidden_channels_disc'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
+        model_table.add_row([param['ref'], param['learning_rate'], param['input_channels'], param['hidden_channels_gen'], param['hidden_channels_disc'],param['nb_ed_layers'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
 
 
     print(data_table)

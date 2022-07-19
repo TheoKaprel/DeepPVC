@@ -4,7 +4,7 @@ import click
 import glob
 import random
 
-from DeepPVC import plots, helpers_data, helpers, Pix2PixModel
+from DeepPVC import plots, helpers_data,helpers_params, helpers, Pix2PixModel
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -50,7 +50,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
         print('ERROR : no input nor n specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
         exit(0)
 
-    device = helpers.get_auto_device("auto")
+    device = helpers.get_auto_device("cpu")
 
 
 
@@ -58,9 +58,12 @@ def eval(pth, input,n,dataset,ref, save, mse):
 
         pth_file = torch.load(one_pth, map_location=device)
         params = pth_file['params']
+        helpers_params.check_params(params)
+
         norm = params['norm']
         print(norm)
         normalisation = params['data_normalisation']
+
         model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
         model.load_model(one_pth)
         model.switch_device("cpu")

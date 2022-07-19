@@ -49,6 +49,7 @@ class PVEPix2PixModel():
         params = self.params
 
         self.input_channels = params['input_channels']
+        self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_gen = params['hidden_channels_gen']
         self.hidden_channels_disc = params['hidden_channels_disc']
         self.generator_activation = params['generator_activation']
@@ -60,8 +61,9 @@ class PVEPix2PixModel():
         else:
             vmin = None
 
+
         self.Generator = networks.UNetGenerator(input_channel=self.input_channels,
-                                                ngc = self.hidden_channels_gen,
+                                                ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel=self.input_channels,generator_activation = self.generator_activation, norm = self.generator_norm, vmin=vmin).to(device=self.device)
 
         self.Discriminator = networks.NLayerDiscriminator(input_channel=2*self.input_channels,

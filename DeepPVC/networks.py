@@ -84,22 +84,35 @@ class UNetGenerator(nn.Module):
     - input_channel : number of channels in input data
     - ngc : number of channels/features after first feature extraction
     - output_channel : number of channels desired for the output
-    FIXME : ajouter options : nb_layers, dropout, normlayer...
-
+    - nb_ed_layers
+    - generator_activation
+    - norm
+    - vmin = None
+    FIXME : ajouter options :  dropout
     """
-    def __init__(self,input_channel, ngc, output_channel,generator_activation, norm, vmin = None):
+    def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation, norm, vmin = None):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
-        self.down1 = DownSamplingBlock(ngc, 2 * ngc, norm=norm)
-        self.down2 = DownSamplingBlock(2 * ngc, 4 * ngc, norm=norm)
-        self.down3 = DownSamplingBlock(4 * ngc, 8 * ngc, norm=norm)
-        self.down4 = DownSamplingBlock(8 * ngc, 16 * ngc, norm=norm)
+        self.nb_ed_layers = nb_ed_layers
+        down_layers = []
+        up_layers = []
+        # Contracting layers :
+        k = 1
+        for _ in range(self.nb_ed_layers):
+            down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm))
+            k = 2 * k
+        self.down_layers = nn.Sequential(*down_layers)
 
-        self.up1 = UpSamplingBlock(16 * ngc, 8 * ngc, norm=norm)
-        self.up2 = UpSamplingBlock(16 * ngc, 4 * ngc, norm=norm)
-        self.up3 = UpSamplingBlock(8 * ngc, 2 * ngc, norm=norm)
-        self.up4 = UpSamplingBlock(4 * ngc, ngc, norm=norm)
+        # Core layer
+        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm))
+
+        # Extracting layers :
+        for _ in range(self.nb_ed_layers - 1):
+            up_layers.append(UpSamplingBlock(k * ngc, int(k / 4) * ngc, norm = norm))
+            k = int( k / 2)
+
+        self.up_layers = nn.Sequential(*up_layers)
 
         self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
@@ -123,21 +136,16 @@ class UNetGenerator(nn.Module):
         x0 = self.init_feature(x) # nhc
         # ----------------------------------------------------------
         # Contracting layers :
-        x1 = self.down1(x0) # 2*nhc
-        x2 = self.down2(x1) # 4*nhc
-        x3 = self.down3(x2) # 8*nhc
-        x4 = self.down4(x3) # 16*nhc
+        xk  = [x0]
+        for l in range(self.nb_ed_layers):
+            xk.append(self.down_layers[l](xk[-1]))
         # ----------------------------------------------------------
         # Extracting layers :
-        y4 = self.up1(x4)  # 8*nhc
-        xy4 = torch.cat([x3,y4],1) #16*nhc
-        y3 = self.up2(xy4) # 4*nhc
-        xy3 = torch.cat([x2,y3],1) # 8*nhc
-        y2 = self.up3(xy3) # 2*nhc
-        xy2 = torch.cat([x1,y2],1) # 4*nhc
-        y1 = self.up4(xy2) # nhc
+        xy = xk[-1]
+        for l in range(self.nb_ed_layers):
+            y = self.up_layers[l](xy)
+            xy = torch.cat([xk[-l-2],y],1)
 
-        xy = torch.cat([x0,y1],1) # 2*nhc
         # ----------------------------------------------------------
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
@@ -162,7 +170,6 @@ class NLayerDiscriminator(nn.Module):
         #contracting lagers
         sequence += [DownSamplingBlock(ndc, 2 * ndc)]
         sequence += [DownSamplingBlock(2 * ndc, 4 * ndc)]
-        # sequence += [DownSamplingBlock(4 * ndc, 8 * ndc)]
 
         sequence += [DownSamplingBlock(4*ndc, 8*ndc, stride = 1)]
 
