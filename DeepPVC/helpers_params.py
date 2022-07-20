@@ -30,7 +30,6 @@ def check_params(params, fatal_on_unknown=False):
     - warning if unknown parameter
     """
 
-
     required = ['dataset_path','data_normalisation', 'n_epochs', 'learning_rate',
                 'hidden_channels_gen', 'hidden_channels_disc',
                 'generator_update', 'discriminator_update',
@@ -48,19 +47,14 @@ def check_params(params, fatal_on_unknown=False):
             print(f'Error, the parameters "{req}" is required in {params}')
             exit(0)
 
-    assert(type(params['n_epochs'])==int)
-    assert((type(params['learning_rate'])==float) or (type(params['lambda_recon'])==int))
+
+    assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
-    assert(type(params['hidden_channels_gen'])==int)
-    assert(params['hidden_channels_gen']>1)
 
-    assert(type(params['optimizer'])==str)
-    assert(params['optimizer'] in ["Adam"])
-
-    assert((type(params['lambda_recon'])==float) or (type(params['lambda_recon'])==int))
+    assert((type(params['lambda_recon']) in [int, float]))
     assert(params['lambda_recon']>=0)
-    assert(type(params['save_every_n_epoch'])==int)
-    assert(params['save_every_n_epoch']>0)
+
+    assert(params['optimizer'] in ["Adam"])
 
 
     for defparam, defvalue in default_params_values:
@@ -68,7 +62,7 @@ def check_params(params, fatal_on_unknown=False):
             params[defparam] = defvalue
             print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
 
-    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers', 'generator_update', 'discriminator_update']:
+    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'generator_update', 'discriminator_update', 'n_epochs', 'save_every_n_epoch']:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
@@ -79,6 +73,7 @@ def check_params(params, fatal_on_unknown=False):
     assert (params['recon_loss'] in ["L1", "L2"])
     assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
     assert (params['generator_norm'] in ["none", "batch_norm", "inst_norm"])
+
 
     for p in params:
         if p not in (required+automated+default_params+ballek):
