@@ -44,7 +44,7 @@ def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folde
     proj_PVE_path = os.path.join(folder,proj_PVE_file)
 
 
-    geom = os.path.join(data_folder, 'geom_60.xml')
+    geom = os.path.join(data_folder, 'geom_120.xml')
     attmap = os.path.join(data_folder, 'acf_ct_air.mhd')
 
     if pvc:
@@ -77,6 +77,24 @@ def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folde
         else:
             print(f'Reconstruction done ! Output: {output_PVE_noPVC}')
 
+
+    if nopve_nopvc:
+        # Reconstruction with PVfree projections
+        proj_PVfree_file = f'{ref}_PVfree.mhd'
+        output_noPVE_noPVC = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
+        recPVE_noPVE_noPVC = subprocess.run(
+            ['rtkosem',"-v", "-g", geom,"-o", output_noPVE_noPVC,"--path",folder,"--regexp", proj_PVfree_file,
+             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
+             "--sigmazero", "0", "--alphapsf", "0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if (recPVE_noPVE_noPVC.returncode != 0):
+            print(f'ERROR in the reconstruction noPVE/noPVC')
+            print(recPVE_noPVE_noPVC.stdout)
+            print(recPVE_noPVE_noPVC.stderr)
+            exit()
+        else:
+            print(f'Reconstruction done ! Output: {output_noPVE_noPVC}')
+
+
     if deeppvc:
         # Reconstruction with DeepPVC projections
 
@@ -100,22 +118,6 @@ def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folde
         else:
             print(f'Reconstruction done ! Output: {output_PVE_DeepPVC}')
 
-
-    if nopve_nopvc:
-        # Reconstruction with PVfree projections
-        proj_PVfree_file = f'{ref}_PVfree.mhd'
-        output_noPVE_noPVC = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
-        recPVE_noPVE_noPVC = subprocess.run(
-            ['rtkosem',"-v", "-g", geom,"-o", output_noPVE_noPVC,"--path",folder,"--regexp", proj_PVfree_file,
-             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
-             "--sigmazero", "0", "--alphapsf", "0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if (recPVE_noPVE_noPVC.returncode != 0):
-            print(f'ERROR in the reconstruction noPVE/noPVC')
-            print(recPVE_noPVE_noPVC.stdout)
-            print(recPVE_noPVE_noPVC.stderr)
-            exit()
-        else:
-            print(f'Reconstruction done ! Output: {output_noPVE_noPVC}')
 
 
 if __name__ =='__main__':

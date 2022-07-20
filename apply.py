@@ -2,10 +2,10 @@ import torch
 import numpy as np
 import click
 import itk
-import glob
 
 
-from DeepPVC import Pix2PixModel, helpers_data, helpers
+
+from DeepPVC import Pix2PixModel, helpers_data, helpers, helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -24,6 +24,8 @@ def apply(pth, input, output_filename):
     device = helpers.get_auto_device("auto")
     pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
+    helpers_params.check_params(params)
+
     norm = params['norm']
     normalisation = params['data_normalisation']
 
