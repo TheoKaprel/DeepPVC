@@ -107,11 +107,11 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, w
 
 def show_images_profiles(images,profile = None, save=False,folder = None, is_tensor=True, title = None, labels = None):
     if is_tensor:
-        images = images.cpu().numpy()
-
-    array_image = images.squeeze()
+        array_image = images.cpu().numpy()
+    else:
+        array_image = images
     shape = array_image.shape
-    nb_image = shape[0]
+    nb_image,nb_channels = shape[0], shape[1]
 
     if (labels and len(labels)!= nb_image):
         print('ERROR: Ya un probleme entre le nombre d images et le nombre de labels donné')
@@ -137,10 +137,10 @@ def show_images_profiles(images,profile = None, save=False,folder = None, is_ten
             labels.append(f'Pix2Pix{k}')
             colors.append(tuple(np.random.random(size=3)))  # random color
 
+    nrows = nb_channels
     if profile:
-        nrows = 3
-    else:
-        nrows = 1
+        nrows+=2
+
 
     fig = plt.figure(figsize=(12,8))
     gs = GridSpec(nrows,nb_image, figure=fig)
@@ -148,24 +148,26 @@ def show_images_profiles(images,profile = None, save=False,folder = None, is_ten
 
     _vmin = np.min(array_image)
     _vmax = np.max(array_image)
-    for i in range(nb_image):
-        ax_imgs_i = fig.add_subplot(gs[0,i])
-        ax_imgs_i.imshow(array_image[i,:,:], vmin=_vmin, vmax = _vmax)
-        ax_imgs_i.set_title(labels[i])
+    for c in range(nb_channels):
+        for i in range(nb_image):
+            ax_imgs_i = fig.add_subplot(gs[c,i])
+            ax_imgs_i.imshow(array_image[i,c,:,:], vmin=_vmin, vmax = _vmax)
+            ax_imgs_i.set_title(labels[i])
 
 
     # compute and plot profiles
     if profile:
-        ref_img = array_image[0,:,:]
+        channel = 0
+        ref_img = array_image[0,channel,:,:]
         center_indexes = np.where(ref_img == np.amax(ref_img))
         center_i = (np.mean(center_indexes[0])).astype(int)
         center_j = (np.mean(center_indexes[1])).astype(int)
 
-        ax_pfl_i = fig.add_subplot(gs[1, :])
-        ax_pfl_j = fig.add_subplot(gs[2, :])
+        ax_pfl_i = fig.add_subplot(gs[nb_channels, :])
+        ax_pfl_j = fig.add_subplot(gs[nb_channels+1, :])
         for i in range(nb_image):
-            ax_pfl_i.plot(array_image[i,center_i,:], color = colors[i], label = labels[i])
-            ax_pfl_j.plot(array_image[i,:,center_j], color = colors[i], label = labels[i])
+            ax_pfl_i.plot(array_image[i,channel,center_i,:], color = colors[i], label = labels[i])
+            ax_pfl_j.plot(array_image[i,channel,:,center_j], color = colors[i], label = labels[i])
         ax_pfl_i.legend()
         ax_pfl_j.legend()
 
