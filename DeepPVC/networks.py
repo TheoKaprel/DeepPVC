@@ -46,10 +46,11 @@ class UpSamplingBlock(nn.Module):
     si dim(x) = (I,I) et y = ConvTranspose2d(x)
     alors dim(y) = (I-1)stride - 2*padding + kernel_size =  (I-1)*2 - 2 * 1 + 4 = 2 I
     """
-    def __init__(self, input_nc, output_nc, norm="batch_norm"):
+    def __init__(self, input_nc, output_nc, norm="batch_norm", use_dropout = False):
         super(UpSamplingBlock, self).__init__()
         self.do_norm = (norm!="none")
         self.normtype = norm
+        self.use_dropout = use_dropout
 
         self.upConv = nn.ConvTranspose2d(input_nc, output_nc, kernel_size=(4,4), stride=(2,2), padding = (1,1))
         self.upRelu = nn.ReLU(True)
@@ -59,9 +60,15 @@ class UpSamplingBlock(nn.Module):
         elif self.normtype=="inst_norm":
             self.upNorm = nn.InstanceNorm2d(output_nc)
 
+        if self.use_dropout:
+            self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
         x = self.upConv(x)
+
+        if self.use_dropout:
+            x = self.dropout(x)
+
         x = self.upRelu(x)
         if self.do_norm :
             x = self.upNorm(x)
@@ -90,7 +97,7 @@ class UNetGenerator(nn.Module):
     - vmin = None
     FIXME : ajouter options :  dropout
     """
-    def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation, norm, vmin = None):
+    def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation,use_dropout, norm, vmin = None):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
@@ -105,7 +112,8 @@ class UNetGenerator(nn.Module):
         self.down_layers = nn.Sequential(*down_layers)
 
         # Core layer
-        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm))
+        # If any dropout layer is used, it is here
+        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout))
 
         # Extracting layers :
         for _ in range(self.nb_ed_layers - 1):

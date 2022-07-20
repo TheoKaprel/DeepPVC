@@ -22,14 +22,17 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--user_param_int', '-pi',
               help='overwrite numeric int parameter of the json file',
               multiple=True, type=(str, int))
+@click.option('--user_param_bool', '-pb',
+              help='overwrite boolean parameter of the json file',
+              multiple=True, type=(str, bool))
 @click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):
-    train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder)
+def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
+    train(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder)
 
 
-def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_end, output, output_folder):
+def train(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
     if (json==None) and (resume ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
@@ -49,6 +52,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
         is_resume = False
         params_file = open(json).read()
         params = js.loads(params_file)
+
         params['start_pth'] = []
         start_epoch = 0
 
@@ -68,8 +72,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     helpers_params.update_params_user_option(params, user_params=user_param_str, is_resume=is_resume)
     helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
     helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
-
-
+    helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=is_resume)
 
 
     output_filename = f"pix2pix_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
@@ -80,7 +83,6 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
-
 
 
     DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
