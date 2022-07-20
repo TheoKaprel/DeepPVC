@@ -94,9 +94,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
     DeepPVEModel.switch_eval()
     with torch.no_grad():
         # the data which will be used for show/test
-        nb_testing_data = params['nb_testing_data']
         testdataset = test_dataloader.dataset
-        id_test = np.random.randint(0, nb_testing_data)
+        id_test = np.random.randint(0, params['nb_testing_data'])
         show_test_data = testdataset[id_test][None,:,:,:] #(1,2,128,128)
         show_test_PVE = show_test_data[:,0, :, :][:, None, :, :] # (1,1,128,128)
         show_test_denormalized_PVE_PVfree = helpers_data.denormalize(show_test_data, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (1,2,128,128)
@@ -128,7 +127,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,plot_at_e
 
                     denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                     denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                    MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(2,3)))/nb_testing_data
+                    MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(2,3)))/params['nb_testing_data']
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')
