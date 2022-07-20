@@ -17,11 +17,11 @@
   "discriminator_update": 1,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,
-  "test_every_n_epoch": 10,
+  "test_every_n_epoch": 2,
   "optimizer":"Adam",
   "device":"cuda",
   "adv_loss":"BCE",
-  "recon_loss":"L1",
+  "recon_loss":"L2",
   "lambda_recon":100,
-  "comment": "test parametrizable nb ED layers"
+  "comment": "test L2 loss"
 }

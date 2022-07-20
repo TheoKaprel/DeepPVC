@@ -8,6 +8,8 @@ class Pix2PixLosses:
 
         if losses_params['recon_loss']=='L1':
             self.recon_loss = nn.L1Loss()
+        elif losses_params['recon_loss']=='L2':
+            self.recon_loss = nn.MSELoss()
 
         self.lambda_recon = losses_params['lambda_recon']
 

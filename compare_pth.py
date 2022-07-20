@@ -2,12 +2,11 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import click
-import itk
 import glob
 import random
-import json
 
-from DeepPVC import plots, helpers_data, helpers, Pix2PixModel, helpers_params
+
+from DeepPVC import helpers_data, helpers, Pix2PixModel, helpers_params
 from DeepPVC import dataset as ds
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -22,8 +21,6 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--calc_mse', is_flag = True, default = False, help = 'Compute mse on --dataset')
 def compare_proj_pth_click(pth,proj, input, n, dataset, ref, losses, calc_mse):
     compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse)
-
-
 
 
 

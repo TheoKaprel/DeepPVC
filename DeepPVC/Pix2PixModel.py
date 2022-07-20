@@ -91,8 +91,8 @@ class PVEPix2PixModel():
         self.losses = losses.Pix2PixLosses(self.losses_params)
 
     def input_data(self, batch):
-        self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.device)
-        self.truePVfree = batch[:, 1, :, :].unsqueeze(1).to(self.device)
+        self.truePVE = batch[:, 0, :, :].unsqueeze(1).to(self.device).float()
+        self.truePVfree = batch[:, 1, :, :].unsqueeze(1).to(self.device).float()
 
     def forward_D(self):
         ## Update Discriminator

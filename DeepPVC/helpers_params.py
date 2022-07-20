@@ -76,7 +76,7 @@ def check_params(params, fatal_on_unknown=False):
     assert (params['device'] in ["cpu", "cuda", "auto"])
     assert(params['generator_activation'] in ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"])
     assert (params['adv_loss'] in ["BCE"])
-    assert (params['recon_loss'] in ["L1"])
+    assert (params['recon_loss'] in ["L1", "L2"])
     assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
     assert (params['generator_norm'] in ["none", "batch_norm", "inst_norm"])
 
