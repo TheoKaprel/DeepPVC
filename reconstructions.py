@@ -1,8 +1,11 @@
 import click
-import apply
 import os
 import subprocess
 import json
+import itk
+from itk import RTK as rtk
+
+import apply
 
 def get_ref(pth, ffrom='filename'):
     if ffrom=='filename':
@@ -26,98 +29,118 @@ def get_ref(pth, ffrom='filename'):
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--folder')
-@click.option('--ref', help = 'In the folder there should be ref.mhd, ref_PVE.mhd, ref_')
+@click.option('--like')
+@click.option('--nprojpersubset', type = int, default = 10)
+@click.option('--niterations', type = int, default = 5)
+@click.option('--ref', help = 'In the folder there should be ref.mhd, ref_PVE.mhd, ref_PVfree.mhd')
 @click.option('--pth', help = 'model to apply to the PVE projections before reconstruction (if --deeppvc') # 'path/to/saved/model.pth'
 @click.option('--nopvc',is_flag = True, default = False, help = 'Reconstruct the image from the PVE sinogram without any PVC algorithm')
 @click.option('--pvc',is_flag = True, default = False, help = 'Reconstruct the image from the PVE sinogram with a classical PVC algorithm (Zeng)')
 @click.option('--deeppvc',is_flag = True, default = False, help = 'Reconstruct the image from Pix2Pix corrected projections')
 @click.option('--nopve_nopvc',is_flag = True, default = False, help = 'Reconstruct the image from PVfree projections without correction during reconstruction')
 @click.option('--data_folder', help = 'Location of the folder containing : geom_60.xml and acf_ct_air.mhd')
-def reconstructions_click(pth,folder,ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder):
-    reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder)
+def reconstructions_click(pth,folder,like,nprojpersubset,niterations, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder):
+    reconstructions(pth, folder,like,nprojpersubset,niterations, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder)
 
-def reconstructions(pth, folder, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder):
+def reconstructions(pth, folder,like,nprojpersubset,niterations, ref,nopvc, pvc, deeppvc,nopve_nopvc, data_folder):
+    #Types
+    Dimension = 3
+    pixelType = itk.F
+    imageType = itk.Image[pixelType, Dimension]
 
-    src_img_file =  f'{ref}.mhd'
-    src_img_path = os.path.join(folder,src_img_file)
-    proj_PVE_file = f'{ref}_PVE.mhd'
-    proj_PVE_path = os.path.join(folder,proj_PVE_file)
+    # Volume
+    like_image = itk.imread(like, pixelType)
+    volume_image = rtk.ConstantImageSource[imageType].New()
+    volume_image.SetSpacing(like_image.GetSpacing())
+    volume_image.SetOrigin(like_image.GetOrigin())
+    volume_image.SetSize(itk.size(like_image))
+    volume_image.SetConstant(1)
 
+    # Input Projections
+    if (pvc or nopvc or deeppvc):
+        proj_PVE_path = os.path.join(folder, f'{ref}_PVE.mhd')
+        projections_PVE = itk.imread(proj_PVE_path, pixelType)
+        nproj = itk.size(projections_PVE)[2]
+    if nopve_nopvc:
+        proj_PVfree_path = os.path.join(folder, f'{ref}_PVfree.mhd')
+        projections_PVfree = itk.imread(proj_PVfree_path, pixelType)
+        nproj = itk.size(projections_PVfree)[2]
 
-    geom = os.path.join(data_folder, 'geom_120.xml')
-    attmap = os.path.join(data_folder, 'acf_ct_air.mhd')
+    # Geometry
+    geom_filename = os.path.join(data_folder, f'geom_{nproj}.xml')
+    xmlReader = rtk.ThreeDCircularProjectionGeometryXMLFileReader.New()
+    xmlReader.SetFilename(geom_filename)
+    xmlReader.GenerateOutputInformation()
+    geometry = xmlReader.GetOutputObject()
+
+    # Attenuation
+    attmap_filename = os.path.join(data_folder, f'acf_ct_air.mhd')
+    attenuation_map = itk.imread(attmap_filename, pixelType)
+
+    # Common OSEM parameters
+    OSEMType = rtk.OSEMConeBeamReconstructionFilter[imageType, imageType]
+    osem = OSEMType.New()
+    osem.SetInput(0, volume_image.GetOutput())
+    osem.SetInput(2, attenuation_map)
+    osem.SetGeometry(geometry)
+    osem.SetNumberOfIterations(niterations)
+    osem.SetNumberOfProjectionsPerSubset(nprojpersubset)
+    osem.SetForwardProjectionFilter(osem.ForwardProjectionType_FP_ZENG)
+    osem.SetBackProjectionFilter(osem.BackProjectionType_BP_ZENG)
+
 
     if pvc:
-        # Reconstruction with classical PVC
-        output_PVE_PVC = os.path.join(folder, f'{ref}_rec_PVE_PVC.mhd')
-        recPVE_PVC = subprocess.run(
-            ['rtkosem',"-v", "-g", geom,"-o", output_PVE_PVC,"--path",folder,"--regexp", proj_PVE_file,
-             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
-             "--sigmazero", "0.9008418065898374", "--alphapsf", "0.025745123547513887"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if (recPVE_PVC.returncode != 0):
-            print(f'ERROR in the reconstruction PVE/PVC')
-            print(recPVE_PVC.stdout)
-            print(recPVE_PVC.stderr)
-            exit()
-        else:
-            print(f'Reconstruction done ! Output: {output_PVE_PVC}')
+        print('Reconstruction with PVE and PVC...')
+        output_PVE_PVC_filename = os.path.join(folder, f'{ref}_rec_PVE_PVC.mhd')
+
+        osem.SetInput(1, projections_PVE)
+        osem.SetSigmaZero(0.9008418065898374)
+        osem.SetAlpha(0.025745123547513887)
+        osem.Update()
+        itk.imwrite(osem.GetOutput(), output_PVE_PVC_filename)
+        print(f'Done ! Output: {output_PVE_PVC_filename}')
 
     if nopvc:
-        # Reconstruction with no PVC
-        output_PVE_noPVC = os.path.join(folder, f'{ref}_rec_PVE_noPVC.mhd')
-        recPVE_noPVC = subprocess.run(
-            ['rtkosem',"-v", "-g", geom,"-o", output_PVE_noPVC,"--path",folder,"--regexp", proj_PVE_file,
-             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
-             "--sigmazero", "0", "--alphapsf", "0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if (recPVE_noPVC.returncode != 0):
-            print(f'ERROR in the reconstruction PVE/noPVC')
-            print(recPVE_noPVC.stdout)
-            print(recPVE_noPVC.stderr)
-            exit()
-        else:
-            print(f'Reconstruction done ! Output: {output_PVE_noPVC}')
+        print('Reconstruction with PVE but without PVC...')
+        output_PVE_noPVC_filename = os.path.join(folder, f'{ref}_rec_PVE_noPVC.mhd')
 
+        osem.SetInput(1, projections_PVE)
+        osem.SetSigmaZero(0)
+        osem.SetAlpha(0)
+        osem.Update()
+        itk.imwrite(osem.GetOutput(), output_PVE_noPVC_filename)
+        print(f'Done ! Output: {output_PVE_noPVC_filename}')
 
     if nopve_nopvc:
-        # Reconstruction with PVfree projections
-        proj_PVfree_file = f'{ref}_PVfree.mhd'
-        output_noPVE_noPVC = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
-        recPVE_noPVE_noPVC = subprocess.run(
-            ['rtkosem',"-v", "-g", geom,"-o", output_noPVE_noPVC,"--path",folder,"--regexp", proj_PVfree_file,
-             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
-             "--sigmazero", "0", "--alphapsf", "0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if (recPVE_noPVE_noPVC.returncode != 0):
-            print(f'ERROR in the reconstruction noPVE/noPVC')
-            print(recPVE_noPVE_noPVC.stdout)
-            print(recPVE_noPVE_noPVC.stderr)
-            exit()
-        else:
-            print(f'Reconstruction done ! Output: {output_noPVE_noPVC}')
+        print('Reconstruction without PVE and without PVC...')
+        output_noPVE_noPVC_filename = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
 
+        osem.SetInput(1, projections_PVfree)
+        osem.SetSigmaZero(0)
+        osem.SetAlpha(0)
+        osem.Update()
+        itk.imwrite(osem.GetOutput(), output_noPVE_noPVC_filename)
+        print(f'Done ! Output: {output_noPVE_noPVC_filename}')
 
     if deeppvc:
-        # Reconstruction with DeepPVC projections
-
+        print('Reconstruction with DeepPVC corrected projections...')
         ref_pix2pix = get_ref(pth, ffrom='json')
 
-        proj_DeepPVC_file = f'{ref}_projDeepPVC_{ref_pix2pix}.mhd'
-        proj_DeepPVC_path = os.path.join(folder, proj_DeepPVC_file)
+        proj_DeepPVC_path = os.path.join(folder, f'{ref}_projDeepPVC_{ref_pix2pix}.mhd')
 
         apply.apply(pth=pth, input=proj_PVE_path, output_filename=proj_DeepPVC_path)
 
-        output_PVE_DeepPVC = os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_{ref_pix2pix}.mhd')
-        recPVE_DeepPVC = subprocess.run(
-            ['rtkosem',"-v", "-g", geom,"-o", output_PVE_DeepPVC,"--path",folder,"--regexp", proj_DeepPVC_file,
-             "--like", src_img_path,"-f", "Zeng", "-b", "Zeng", "--attenuationmap", attmap,
-             "--sigmazero", "0", "--alphapsf", "0"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if (recPVE_DeepPVC.returncode != 0):
-            print(f'ERROR in the reconstruction PVE/DeepPVC')
-            print(recPVE_DeepPVC.stdout)
-            print(recPVE_DeepPVC.stderr)
-            exit()
-        else:
-            print(f'Reconstruction done ! Output: {output_PVE_DeepPVC}')
+        projections_DeepPVC = itk.imread(proj_DeepPVC_path, pixelType)
 
+        output_PVE_DeepPVC_filename = os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_{ref_pix2pix}.mhd')
+
+        osem.SetInput(1, projections_DeepPVC)
+        osem.SetSigmaZero(0)
+        osem.SetAlpha(0)
+        osem.Update()
+        itk.imwrite(osem.GetOutput(), output_PVE_DeepPVC_filename)
+
+        print(f'Done ! Output: {output_PVE_DeepPVC_filename}')
 
 
 if __name__ =='__main__':
