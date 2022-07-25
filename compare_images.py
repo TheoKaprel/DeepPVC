@@ -15,19 +15,25 @@ def get_ref(file):
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--folder')
+@click.option('--auto', is_flag = True, default = False, help = 'If --auto, the selected images will be {ref}.mhd for the source and {ref}_rec_PVE_PVC.mhd, {ref}_rec_PVE_noPVC.mhd, {ref}_rec_noPVE_noPVC.mhd and all the {ref}_rec_PVE_DeepPVC_*.mhd')
 @click.option('--ref')
+@click.option('--source', help = 'If not --auto mode, specify the source here')
+@click.option('--image', '-i', multiple = True, help = 'If not --auto mode, specify images to compare')
 @click.option('--slice', type = int, multiple = True)
 @click.option('--profile', type = int, multiple = True)
-def comparison_click(folder, ref, slice, profile):
-    comparison(folder, ref, slice, profile)
+@click.option('--error', is_flag = True, default = False)
+def comparison_click(folder, auto, ref,source, image, slice, profile, error):
+    if auto:
+        comparison_auto(folder, ref,slice, profile)
+    else:
+        comparison_manual(folder, source, image, slice, error)
 
-def comparison(folder, ref, slice, profile):
+def comparison_auto(folder, ref,slice, profile):
 
     src_file = os.path.join(folder, f'{ref}.mhd')
     img_rec_PVE_PVC_file = os.path.join(folder, f'{ref}_rec_PVE_PVC.mhd')
     img_rec_PVE_noPVC_file = os.path.join(folder, f'{ref}_rec_PVE_noPVC.mhd')
     img_rec_noPVE_noPVC_file = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
-
     list_of_img_rec_DeepPVC_file = glob.glob( os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_*.mhd'))
     nDeepPVC = len(list_of_img_rec_DeepPVC_file)
     list_refs_pix2pix = [get_ref(imgdeepfile) for imgdeepfile in list_of_img_rec_DeepPVC_file]
@@ -104,18 +110,82 @@ def comparison(folder, ref, slice, profile):
                 ax_pr[p].plot(img_rec_noPVE_noPVC[s,profile[p],:], label = 'noPVE/noPVC')
                 for i in range(nDeepPVC):
                     ax_pr[p].plot(list_of_img_rec_DeepPVC[i][s,profile[p],:], label = f'DeepPVC_{list_refs_pix2pix[i]}')
-
-    
-
-
     plt.legend()
     plt.show()
 
 
+def comparison_manual(folder, source, image, slice, error):
+    src_fn = os.path.join(folder, source)
+    img_src = itk.array_from_image(itk.imread(src_fn))
+    norm = np.sum(img_src**2)
+    list_of_all_images = []
+    list_of_labels = []
+    for i in image:
+        img_fn = os.path.join(folder, i)
+        list_of_all_images.append(itk.array_from_image(itk.imread(img_fn)))
+        list_of_labels.append(i)
+
+    list_of_mse = []
+    for img in list_of_all_images:
+        list_of_mse.append(np.sum((img - img_src) **2) / norm)
+
+
+    fig_mse, ax_mse = plt.subplots()
+    ax_mse.bar(list_of_labels, list_of_mse)
+    ax_mse.set_ylabel('MSE')
 
 
 
 
+    if (slice==None or len(slice)==0):
+        idxmax = np.argwhere(list_of_all_images[0]==np.max(list_of_all_images[0]))
+        slice,_,__ = idxmax[0]
+        slice = (slice,)
+
+
+
+    for s in slice:
+        vmax = max([np.max(img[s, :, :]) for img in list_of_all_images])
+        vmin = min([np.min(img[s, :, :]) for img in list_of_all_images])
+
+        plt.figure(figsize=(15, 12))
+        plt.subplots_adjust(hspace=0.2)
+
+        # set number of columns (use 3 to demonstrate the change)
+        ncols = 3
+        # calculate number of rows
+        nrows = len(list_of_all_images) // ncols + (len(list_of_all_images) % ncols > 0)
+
+        # loop through the length of tickers and keep track of index
+        for n, img in enumerate(list_of_all_images):
+            # add a new subplot iteratively using nrows and cols
+            ax = plt.subplot(nrows, ncols, n + 1)
+
+            # filter df and plot ticker on the new subplot axis
+            ax.imshow(img[s,:,:],vmin = vmin, vmax=vmax)
+            ax.set_title(list_of_labels[n])
+            ax.set_xlabel("")
+
+        plt.show()
+
+        if error:
+            plt.figure(figsize=(15, 12))
+            plt.subplots_adjust(hspace=0.2)
+            plt.suptitle('ERROR images')
+
+            ncols = 3
+            nrows = len(list_of_all_images) // ncols + (len(list_of_all_images) % ncols > 0)
+            emax = max([np.max((img[s, :, :] - img_src[s,:,:])**2) for img in list_of_all_images])
+
+            for n, img in enumerate(list_of_all_images):
+                error_img = (img - img_src) **2
+                ax = plt.subplot(nrows, ncols, n + 1)
+
+                ax.imshow(error_img[s, :, :], vmin=0, vmax=emax)
+                ax.set_title(list_of_labels[n])
+                ax.set_xlabel("")
+
+            plt.show()
 
 
 if __name__=='__main__':
