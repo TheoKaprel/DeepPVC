@@ -26,7 +26,7 @@ def comparison_click(folder, auto, ref,source, image, slice, profile, error):
     if auto:
         comparison_auto(folder, ref,slice, profile)
     else:
-        comparison_manual(folder, source, image, slice, error)
+        comparison_manual(folder, source, image, slice, profile,error)
 
 def comparison_auto(folder, ref,slice, profile):
 
@@ -114,7 +114,7 @@ def comparison_auto(folder, ref,slice, profile):
     plt.show()
 
 
-def comparison_manual(folder, source, image, slice, error):
+def comparison_manual(folder, source, image, slice,profile, error):
     src_fn = os.path.join(folder, source)
     img_src = itk.array_from_image(itk.imread(src_fn))
     norm = np.sum(img_src**2)
@@ -167,6 +167,17 @@ def comparison_manual(folder, source, image, slice, error):
             ax.set_xlabel("")
 
         plt.show()
+
+        for pr in profile:
+            fig_pr,ax_pr = plt.subplots()
+
+            for n,img in enumerate(list_of_all_images):
+                ax_pr.plot(img[s,pr,:], label = list_of_labels[n])
+            plt.legend()
+            plt.show()
+
+
+
 
         if error:
             plt.figure(figsize=(15, 12))

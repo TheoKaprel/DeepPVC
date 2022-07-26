@@ -67,28 +67,12 @@ def load_image(filename, is_ref):
 
 
 def load_from_mhd(filename_mhd):
-    """
-    1° Loads the mhd projection
-    2° Adds a dimension
-    3° Normalizes by max value
-    4° Converts into tensor
-
-    :param filename_mhd: input filename (.mhd)
-    :return: If Input is a (N,N) projection, output is the normalised (1,1,N,N) tensor
-    """
     img = itk.array_from_image(itk.imread(filename_mhd))
-    img = np.expand_dims(img, axis=0)
+    img = np.expand_dims(img, axis=(0,1)) # (1,1,nb_channels,128,128)
     return img
 
 
 def load_PVE_PVfree(ref):
-    """
-    1° Loads the two projections (PVE/PVfree)
-    2° Concatenates both on first dim
-
-    :param filename_mhd: input filename (.mhd)
-    :return: If Input is a (N,N) projection, output is the normalised (1,1,N,N) tensor and the list of norms
-    """
 
     proj_PVE_filename = f'{ref}_PVE.mhd'
     proj_PVfree_filename = f'{ref}_PVfree.mhd'
@@ -96,6 +80,6 @@ def load_PVE_PVfree(ref):
     imgPVE = load_from_mhd(proj_PVE_filename)
 
     imgPVfree = load_from_mhd(proj_PVfree_filename)
-    array = np.concatenate((imgPVE, imgPVfree), axis=1)
+    array = np.concatenate((imgPVE, imgPVfree), axis=1) # (1,2,nb_channels,128,128)
 
     return array
