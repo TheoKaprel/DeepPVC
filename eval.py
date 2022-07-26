@@ -70,7 +70,6 @@ def eval(pth, input,n,dataset,ref, save, mse):
         model.switch_eval()
 
         model.plot_losses(save, wait = False, title = one_pth)
-        print(model.params['MSE'])
         if do_mse:
             MSE = 0
             with torch.no_grad():
@@ -97,7 +96,12 @@ def eval(pth, input,n,dataset,ref, save, mse):
             #     if not done:
             #         model.params['MSE'].append([dataset, MSE])
             # else:
-            model.params['MSE'] = [[dataset,MSE]]
+
+            if 'MSE' in model.params:
+                model.params['MSE'].append([dataset, MSE])
+            else:
+                model.params['MSE'] = [[dataset,MSE]]
+
             model.save_model(output_path=one_pth, save_json=True)
             print('*' * 80)
 
