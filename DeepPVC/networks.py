@@ -88,6 +88,7 @@ class myminRelu(nn.ReLU):
 def mySumNormAtivationFct(x0,x):
     sum_x = x.sum(dim=(2, 3), keepdims=True)
     x = x / sum_x
+    x = torch.nan_to_num(x, nan=0.0)
     sum_x0 = x0.sum(dim=(2, 3), keepdims=True)
     x = x * sum_x0
     return x

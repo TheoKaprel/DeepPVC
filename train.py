@@ -5,7 +5,7 @@ import os
 import numpy as np
 import click
 
-from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, plots
+from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, helpers_functions, plots
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -120,15 +120,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()
-            MSE = 0
-            with torch.no_grad():
-                for test_it,batch in enumerate(test_dataloader):
-                    DeepPVEModel.input_data(batch)
-                    fakePVfree = DeepPVEModel.Generator(DeepPVEModel.truePVE)
 
-                    denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                    denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                    MSE += np.sum(np.sum((denormalized_output - denormalized_target)**2, axis=(1,2,3)) / np.sum(denormalized_target**2, axis=(1,2,3)))/params['nb_testing_data']
+            MSE = helpers_functions.mean_square_error(test_dataloader,DeepPVEModel).cpu().numpy()
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')

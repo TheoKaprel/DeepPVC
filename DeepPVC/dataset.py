@@ -17,6 +17,8 @@ def construct_dataset_from_path(dataset_path, nb_channels=1):
         filename_PVE = list_files[i]
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
         assert(img_PVE.shape==(nb_channels,128,128))
+        assert(np.max(img_PVE)>0)
+
         dataset[i,0,:,:,:] = img_PVE
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.mhd'
