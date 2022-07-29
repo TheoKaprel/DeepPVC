@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/test_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/test_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_dataset", "/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_bg_ell"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_dataset", "/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_bg_ell"],
   "training_batchsize":5,
   "test_batchsize":5,
   "data_normalisation": "none",
@@ -12,17 +12,18 @@
   "hidden_channels_gen":64,
   "hidden_channels_disc":9,
   "generator_activation": "relu",
-  "generator_norm": "none",
-  "use_dropout": true,
+  "generator_norm": "batch_norm",
+  "use_dropout": false,
+  "sum_norm": true,
   "generator_update": 1,
   "discriminator_update": 1,
   "save_every_n_epoch": 9999,
-  "show_every_n_epoch": 5,
-  "test_every_n_epoch": 3,
+  "show_every_n_epoch": 99,
+  "test_every_n_epoch": 2,
   "optimizer":"Adam",
   "device":"cuda",
   "adv_loss":"BCE",
   "recon_loss":"L1",
   "lambda_recon":100,
-  "comment": "test dropout"
+  "comment": "test sum norm"
 }

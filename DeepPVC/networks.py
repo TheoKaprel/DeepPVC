@@ -85,6 +85,15 @@ class myminRelu(nn.ReLU):
 
 
 
+def mySumNormAtivationFct(x0,x):
+    sum_x = x.sum(dim=(2, 3), keepdims=True)
+    x = x / sum_x
+    sum_x0 = x0.sum(dim=(2, 3), keepdims=True)
+    x = x * sum_x0
+    return x
+
+
+
 class UNetGenerator(nn.Module):
     """UNet shaped Generator
     Parameters :
@@ -97,7 +106,7 @@ class UNetGenerator(nn.Module):
     - vmin = None
     FIXME : ajouter options :  dropout
     """
-    def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation,use_dropout, norm, vmin = None):
+    def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation,use_dropout,sum_norm, norm, vmin = None):
         super(UNetGenerator, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
@@ -124,6 +133,7 @@ class UNetGenerator(nn.Module):
 
         self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
+
         if generator_activation=="sigmoid":
             self.activation = nn.Sigmoid()
         elif generator_activation=="tanh":
@@ -134,6 +144,8 @@ class UNetGenerator(nn.Module):
             self.activation = nn.Identity()
         elif generator_activation=='relu_min':
             self.activation = myminRelu(vmin)
+
+        self.sum_norm = sum_norm
 
 
 
@@ -158,6 +170,8 @@ class UNetGenerator(nn.Module):
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
         y = self.activation(y)
+        if self.sum_norm:
+            y = mySumNormAtivationFct(x, y)
         # ----------------------------------------------------------
         return(y)
 

@@ -39,7 +39,7 @@ def check_params(params, fatal_on_unknown=False):
     automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
 
     default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ['nb_ed_layers',4],
-                             ["generator_activation", "sigmoid"],["generator_norm","batch_norm"],["use_dropout", False], ['adv_loss','BCE'], ['recon_loss', 'L1'],
+                             ["generator_activation", "sigmoid"],["generator_norm","batch_norm"],["use_dropout", False],["sum_norm", False],['adv_loss','BCE'], ['recon_loss', 'L1'],
                              ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
 
     default_params = [param for param, value in default_params_values]
@@ -50,6 +50,7 @@ def check_params(params, fatal_on_unknown=False):
             exit(0)
 
     assert(type(params['use_dropout'])==bool)
+    assert(type(params['sum_norm'])==bool)
 
     assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
