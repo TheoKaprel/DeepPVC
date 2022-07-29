@@ -83,22 +83,19 @@ def eval(pth, input,n,dataset,ref, save, mse):
 
                     projPVfree = input_array[:,1,:,:,:]
                     projDeepPVC = denormalized_output_array
-                    MSE += (np.mean((projDeepPVC - projPVfree) ** 2)) / Nimages
+                    MSE += np.sum(np.sum((projDeepPVC - projPVfree) ** 2, axis=(1,2,3)) / np.sum(projPVfree**2, axis = (1,2,3))) / Nimages
+
             print(f'MSE on the test dataset {dataset}:'+ "{:.3e}".format(MSE))
 
-            #FIXME
-            # if 'MSE' in model.params:
-            #     done = False
-            #     for n,ds_mse in enumerate(model.params['MSE']):
-            #         if ds_mse[n][0]==dataset:
-            #             ds_mse[n][1] = MSE
-            #             done = True
-            #     if not done:
-            #         model.params['MSE'].append([dataset, MSE])
-            # else:
-
             if 'MSE' in model.params:
-                model.params['MSE'].append([dataset, MSE])
+                # model.params['MSE'].append([dataset, MSE])
+                done = False
+                for n,ds_mse in enumerate(model.params['MSE']):
+                    if ds_mse[0]==dataset:
+                        ds_mse[1] = MSE
+                        done = True
+                if not done:
+                    model.params['MSE'].append([dataset, MSE])
             else:
                 model.params['MSE'] = [[dataset,MSE]]
 

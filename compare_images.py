@@ -151,30 +151,29 @@ def comparison_manual(folder, source, image, slice,profile, error):
         plt.figure(figsize=(15, 12))
         plt.subplots_adjust(hspace=0.2)
 
-        # set number of columns (use 3 to demonstrate the change)
         ncols = 3
-        # calculate number of rows
         nrows = len(list_of_all_images) // ncols + (len(list_of_all_images) % ncols > 0)
+        ax = plt.subplot(nrows,ncols,1)
+        ax.imshow(img_src[s,:,:], vmin = vmin, vmax = vmax)
+        ax.set_title('src')
+        ax.set_xlabel("")
 
-        # loop through the length of tickers and keep track of index
+
         for n, img in enumerate(list_of_all_images):
-            # add a new subplot iteratively using nrows and cols
-            ax = plt.subplot(nrows, ncols, n + 1)
-
-            # filter df and plot ticker on the new subplot axis
+            ax = plt.subplot(nrows, ncols, n + 2)
             ax.imshow(img[s,:,:],vmin = vmin, vmax=vmax)
             ax.set_title(list_of_labels[n])
             ax.set_xlabel("")
 
-        plt.show()
+
 
         for pr in profile:
             fig_pr,ax_pr = plt.subplots()
-
+            ax_pr.plot(img_src[s,pr,:], label = 'src')
             for n,img in enumerate(list_of_all_images):
                 ax_pr.plot(img[s,pr,:], label = list_of_labels[n])
             plt.legend()
-            plt.show()
+
 
 
 
@@ -196,7 +195,8 @@ def comparison_manual(folder, source, image, slice,profile, error):
                 ax.set_title(list_of_labels[n])
                 ax.set_xlabel("")
 
-            plt.show()
+
+        plt.show()
 
 
 if __name__=='__main__':

@@ -128,7 +128,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
 
                     denormalized_target = helpers_data.denormalize(DeepPVEModel.truePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
                     denormalized_output = helpers_data.denormalize(fakePVfree, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)
-                    MSE += np.sum(np.mean((denormalized_output - denormalized_target)**2, axis=(1,2,3)))/params['nb_testing_data']
+                    MSE += np.sum(np.sum((denormalized_output - denormalized_target)**2, axis=(1,2,3)) / np.sum(denormalized_target**2, axis=(1,2,3)))/params['nb_testing_data']
 
             DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
             print(f'Current MSE  =  {MSE}')

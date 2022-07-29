@@ -104,7 +104,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
                         denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
 
 
-                        mse+= np.sum(np.mean((denormalized_output - denormalized_input) ** 2, axis=(2, 3))) / nb_testing_data
+                        mse+= np.sum(np.sum((denormalized_output - denormalized_input) ** 2, axis=(1, 2, 3)) / np.sum(denormalized_input **2, axis=(1,2,3))) / nb_testing_data
                 model.params['MSE'].append([dataset_filename,mse])
 
             model.save_model(pth[m], save_json=False)
@@ -152,7 +152,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
                 ax[1,k].imshow(projs_DeepPVC[k,:,:], vmin=vmin, vmax=vmax)
                 # ax[1,k].imshow((projs_DeepPVC[k,:,:] - input_array_sq[1,:,:])**2)
                 ax[1,k].set_title(pth[k])
-                mse = np.mean((projs_DeepPVC[k,:,:] - input_array_sq[1,:,:])**2)
+                mse = np.sum((projs_DeepPVC[k,:,:] - input_array_sq[1,:,:])**2) / np.sum(input_array_sq[1,:,:]**2)
                 ax[1,k].set_ylabel("MSE = {}".format(mse))
                 lmse.append(mse)
             plt.suptitle(img)
