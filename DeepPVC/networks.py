@@ -86,12 +86,12 @@ class myminRelu(nn.ReLU):
 
 
 def mySumNormAtivationFct(x0,x):
-    sum_x = x.sum(dim=(2, 3), keepdims=True)
-    x = x / sum_x
-    x = torch.nan_to_num(x, nan=0.0)
+    y = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)
+
     sum_x0 = x0.sum(dim=(2, 3), keepdims=True)
-    x = x * sum_x0
-    return x
+    z = y * sum_x0
+
+    return z
 
 
 
@@ -145,6 +145,7 @@ class UNetGenerator(nn.Module):
             self.activation = nn.Identity()
         elif generator_activation=='relu_min':
             self.activation = myminRelu(vmin)
+
 
         self.sum_norm = sum_norm
 

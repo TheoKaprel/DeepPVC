@@ -12,9 +12,9 @@
   "hidden_channels_gen":64,
   "hidden_channels_disc":9,
   "generator_activation": "relu",
-  "generator_norm": "none",
+  "generator_norm": "batch_norm",
   "use_dropout": false,
-  "sum_norm": true,
+  "sum_norm": false,
   "generator_update": 1,
   "discriminator_update": 1,
   "save_every_n_epoch": 9999,
@@ -25,5 +25,5 @@
   "adv_loss":"BCE",
   "recon_loss":"L1",
   "lambda_recon":100,
-  "comment": "test sum norm"
+  "comment": "test sum norm v2"
 }
