@@ -38,7 +38,7 @@ def check_params(params, fatal_on_unknown=False):
 
     automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
 
-    default_params_values = [['test_dataset_path', params['dataset_path']] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ['nb_ed_layers',4],
+    default_params_values = [['test_dataset_path', params['dataset_path']], ["datatype", "mhd"] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ['nb_ed_layers',4],
                              ["generator_activation", "sigmoid"],["generator_norm","batch_norm"],["use_dropout", False],["sum_norm", False],['adv_loss','BCE'], ['recon_loss', 'L1'],
                              ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
 
@@ -70,7 +70,7 @@ def check_params(params, fatal_on_unknown=False):
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
-
+    assert(params["datatype"] in ["mhd", "mha"])
     assert (params['device'] in ["cpu", "cuda", "auto"])
     assert(params['generator_activation'] in ["sigmoid", "tanh","relu", "linear", "none", "relu_min"])
     assert (params['adv_loss'] in ["BCE"])

@@ -17,14 +17,15 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset',multiple = True, help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--ref/--no-ref', default = True)
+@click.option('--type', default = 'mhd', help = "mhd or mha", show_default = True)
 @click.option('--losses', is_flag = True, default = False)
 @click.option('--calc_mse', is_flag = True, default = False, help = 'Compute mse on --dataset')
-def compare_proj_pth_click(pth,proj, input, n, dataset, ref, losses, calc_mse):
-    compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse)
+def compare_proj_pth_click(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
+    compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse)
 
 
 
-def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
+def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
 
     # load models
     device = helpers.get_auto_device("cpu")
@@ -77,7 +78,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
     if calc_mse:
         list_dataloaders = []
         for one_dataset in dataset:
-            test_dataset = ds.construct_dataset_from_path(dataset_path=one_dataset)
+            test_dataset = ds.construct_dataset_from_path(dataset_path=one_dataset, datatype=type)
             nb_testing_data = test_dataset.shape[0]
             print(f'nb_test : {nb_testing_data}')
 
@@ -116,7 +117,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref, losses, calc_mse):
     if proj:
         for img in list_of_images:
             is_ref = ref
-            input_array = helpers_data.load_image(img, is_ref)
+            input_array = helpers_data.load_image(img, is_ref, type)
 
             projs_DeepPVC = np.zeros((n,128,128))
 

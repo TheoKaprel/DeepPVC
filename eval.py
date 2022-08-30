@@ -12,17 +12,18 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--input', '-i', multiple = True)
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
 @click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
+@click.option('--type', default = 'mhd', help = "mhd or mha", show_default = True)
 @click.option('--ref/--no-ref', default = True)
 @click.option('--save', is_flag=True, help = "Wheter or not to save the corrected image")
 @click.option('--mse', is_flag=True, help="Compute the MSE on the provided dataset")
-def eval_click(pth, input, n, dataset, ref, save, mse):
-    eval(pth, input, n, dataset, ref, save, mse)
+def eval_click(pth, input, n, dataset,type, ref, save, mse):
+    eval(pth, input, n, dataset,type, ref, save, mse)
 
 
 
 
 
-def eval(pth, input,n,dataset,ref, save, mse):
+def eval(pth, input,n,dataset,type,ref, save, mse):
     """ Evaluate visually a trained Pix2Pix (pth) on a given projection \n
         Output is the corrected projection
 
@@ -36,7 +37,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
         do_mse = False
     elif n:
         n = int(n)
-        list_of_all_images = glob.glob(f'{dataset}/?????_PVE.mhd')
+        list_of_all_images = glob.glob(f'{dataset}/?????_PVE.{type}')
         Nimages = len(list_of_all_images)
         list_of_all_images = [list_of_all_images[i][:-8] for i in range(Nimages)]
         list_of_images = random.sample(list_of_all_images, n)
@@ -74,7 +75,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
             MSE = 0
             with torch.no_grad():
                 for test_data in list_of_all_images:
-                    input_array = helpers_data.load_image(test_data, True)
+                    input_array = helpers_data.load_image(test_data, True, type)
                     normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
                     tensor_PVE = normalized_input_tensor[:, 0,:, :, :]
                     output_tensor = model.Generator(tensor_PVE)
@@ -110,7 +111,7 @@ def eval(pth, input,n,dataset,ref, save, mse):
         for input in list_of_images:
             is_ref = ref
             with torch.no_grad():
-                input_array = helpers_data.load_image(input, is_ref)
+                input_array = helpers_data.load_image(input, is_ref, type)
                 normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
 
                 tensor_PVE = normalized_input_tensor[:,0,:,:,:]

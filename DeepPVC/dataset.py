@@ -6,11 +6,12 @@ import time
 
 from . import helpers_data, helpers
 
-def construct_dataset_from_path(dataset_path, nb_channels=1):
+def construct_dataset_from_path(dataset_path,datatype, nb_channels=1):
     print(f'Loading data from {dataset_path} ...')
     t0 = time.time()
 
-    list_files = glob.glob(f'{dataset_path}/?????_PVE.mhd')
+
+    list_files = glob.glob(f'{dataset_path}/?????_PVE.{datatype}')
     N = len(list_files)
     dataset = np.zeros((N, 2, nb_channels, 128, 128))
     for i in range(N): # selects files having exactly 5 characters before the .mhd
@@ -21,7 +22,7 @@ def construct_dataset_from_path(dataset_path, nb_channels=1):
 
         dataset[i,0,:,:,:] = img_PVE
 
-        filename_PVf = f'{filename_PVE[:-8]}_PVfree.mhd'
+        filename_PVf = f'{filename_PVE[:-8]}_PVfree.{datatype}'
         img_PVf = itk.array_from_image(itk.imread(filename_PVf))
         assert (img_PVf.shape == (nb_channels, 128, 128))
         dataset[i,1,:,:,:] = img_PVf
@@ -46,7 +47,7 @@ def load_data(params):
     '''
 
     dataset_path = params['dataset_path']
-
+    datatype = params["datatype"]
     test_dataset_path = params['test_dataset_path']
     training_batchsize = params['training_batchsize']
     testing_batchsize = params['test_batchsize']
@@ -57,7 +58,7 @@ def load_data(params):
 
     dataset_is_set = False
     for path in dataset_path:
-        tmp_dataset = construct_dataset_from_path(dataset_path=path, nb_channels=input_channels)
+        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels)
         if dataset_is_set:
             dataset = np.concatenate((dataset, tmp_dataset), axis=0)
         else:
@@ -73,7 +74,7 @@ def load_data(params):
 
     test_dataset_is_set = False
     for path in test_dataset_path:
-        tmp_dataset = construct_dataset_from_path(dataset_path=path, nb_channels=input_channels)
+        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels)
         if test_dataset_is_set:
             test_dataset = np.concatenate((test_dataset, tmp_dataset), axis=0)
         else:

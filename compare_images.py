@@ -17,24 +17,25 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--folder')
 @click.option('--auto', is_flag = True, default = False, help = 'If --auto, the selected images will be {ref}.mhd for the source and {ref}_rec_PVE_PVC.mhd, {ref}_rec_PVE_noPVC.mhd, {ref}_rec_noPVE_noPVC.mhd and all the {ref}_rec_PVE_DeepPVC_*.mhd')
 @click.option('--ref')
+@click.option('--type', default = 'mhd', help = "mhd or mha", show_default = True)
 @click.option('--source', help = 'If not --auto mode, specify the source here')
 @click.option('--image', '-i', multiple = True, help = 'If not --auto mode, specify images to compare')
 @click.option('--slice', type = int, multiple = True)
 @click.option('--profile', type = int, multiple = True)
 @click.option('--error', is_flag = True, default = False)
-def comparison_click(folder, auto, ref,source, image, slice, profile, error):
+def comparison_click(folder, auto, ref,type,source, image, slice, profile, error):
     if auto:
-        comparison_auto(folder, ref,slice, profile)
+        comparison_auto(folder, ref,type,slice, profile)
     else:
         comparison_manual(folder, source, image, slice, profile,error)
 
-def comparison_auto(folder, ref,slice, profile):
+def comparison_auto(folder, ref,type,slice, profile):
 
-    src_file = os.path.join(folder, f'{ref}.mhd')
-    img_rec_PVE_PVC_file = os.path.join(folder, f'{ref}_rec_PVE_PVC.mhd')
-    img_rec_PVE_noPVC_file = os.path.join(folder, f'{ref}_rec_PVE_noPVC.mhd')
-    img_rec_noPVE_noPVC_file = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.mhd')
-    list_of_img_rec_DeepPVC_file = glob.glob( os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_*.mhd'))
+    src_file = os.path.join(folder, f'{ref}.{type}')
+    img_rec_PVE_PVC_file = os.path.join(folder, f'{ref}_rec_PVE_PVC.{type}')
+    img_rec_PVE_noPVC_file = os.path.join(folder, f'{ref}_rec_PVE_noPVC.{type}')
+    img_rec_noPVE_noPVC_file = os.path.join(folder, f'{ref}_rec_noPVE_noPVC.{type}')
+    list_of_img_rec_DeepPVC_file = glob.glob( os.path.join(folder, f'{ref}_rec_PVE_DeepPVC_*.{type}'))
     nDeepPVC = len(list_of_img_rec_DeepPVC_file)
     list_refs_pix2pix = [get_ref(imgdeepfile) for imgdeepfile in list_of_img_rec_DeepPVC_file]
 

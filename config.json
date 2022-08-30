@@ -1,6 +1,7 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_dataset", "/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_bg_ell"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_dataset", "/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/test_bg_ell"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/new_dataset"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/new_dataset"],
+  "datatype": "mha",
   "training_batchsize":5,
   "test_batchsize":5,
   "data_normalisation": "none",
@@ -25,5 +26,5 @@
   "adv_loss":"BCE",
   "recon_loss":"L1",
   "lambda_recon":100,
-  "comment": "test sum norm v2"
+  "comment": "test mha"
 }

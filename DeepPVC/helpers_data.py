@@ -59,27 +59,27 @@ def denormalize(dataset_or_img,normtype,norm, to_numpy):
 
 
 
-def load_image(filename, is_ref):
+def load_image(filename, is_ref, type):
     if is_ref:
-        return load_PVE_PVfree(filename)
+        return load_PVE_PVfree(ref = filename, type=type)
     else:
-        return load_from_mhd(filename)
+        return load_from_filename(filename)
 
 
-def load_from_mhd(filename_mhd):
-    img = itk.array_from_image(itk.imread(filename_mhd))
+def load_from_filename(filename):
+    img = itk.array_from_image(itk.imread(filename))
     img = np.expand_dims(img, axis=(0,1)) # (1,1,nb_channels,128,128)
     return img
 
 
-def load_PVE_PVfree(ref):
+def load_PVE_PVfree(ref, type):
 
-    proj_PVE_filename = f'{ref}_PVE.mhd'
-    proj_PVfree_filename = f'{ref}_PVfree.mhd'
+    proj_PVE_filename = f'{ref}_PVE.{type}'
+    proj_PVfree_filename = f'{ref}_PVfree.{type}'
 
-    imgPVE = load_from_mhd(proj_PVE_filename)
+    imgPVE = load_from_filename(proj_PVE_filename)
 
-    imgPVfree = load_from_mhd(proj_PVfree_filename)
+    imgPVfree = load_from_filename(proj_PVfree_filename)
     array = np.concatenate((imgPVE, imgPVfree), axis=1) # (1,2,nb_channels,128,128)
 
     return array
