@@ -68,33 +68,40 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, wait = False, title = None):
+    fontsize = 20
+
     fig,ax1 = plt.subplots(figsize=(8,6))
     fig.subplots_adjust(right=0.75)
 
-    p1 = ax1.plot(generator_losses, color = 'orange', label = 'Generator Loss')
-    ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = 14)
-    ax1.legend(loc=2) #upper left legend
+    p1 = ax1.plot(generator_losses, color = 'orange',linewidth = 2, label = 'Generator Loss')
+    ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = fontsize)
+    # ax1.set_ylim([1,16])
+    ax1.set_xlabel("# of epochs", fontsize=fontsize)
+    ax1.legend(loc=2, fontsize = fontsize) #upper left legend
 
     ax2 = ax1.twinx()
-    p2 = ax2.plot(discriminator_losses,color = 'blue', label= 'Discriminator Loss')
-    ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=14)
-    ax2.legend(loc=1) #upper right legend
+    p2 = ax2.plot(discriminator_losses,color = 'blue',linewidth = 2, label= 'Discriminator Loss')
+    ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=fontsize)
+    # ax2.set_ylim([0.62, 0.7])
+    ax2.legend(loc=1, fontsize = fontsize) #upper right legend
 
     if len(test_mse)>0:
         ax3 = ax1.twinx()
         ax3.spines.right.set_position(("axes", 1.2))
-
+        # ax3.set_ylim([0.0033, 0.0042])
         test_epochs = [k[0] for k in test_mse]
         test_mse = [k[1] for k in test_mse]
-        p3 = ax3.plot(test_epochs, test_mse, color = 'green', label = 'MSE on test dataset')
-        ax3.set_ylabel("MSE test", color = p3[0].get_color(), fontsize = 14)
-        ax3.legend(loc = 'upper center')
+        p3 = ax3.plot(test_epochs, test_mse, color = 'green',linewidth = 2, label = 'MSE on test dataset')
+        ax3.set_ylabel("MSE test", color = p3[0].get_color(), fontsize = fontsize)
+
+        ax3.legend(loc = 'upper center', fontsize = fontsize)
+
 
     ax2.set_xlabel('Iterations')
     if title:
         ax2.set_title('Losses '+title)
     else:
-        ax2.set_title('Losses')
+        ax2.set_title('Losses', fontsize = fontsize)
 
     if save:
         figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
@@ -122,9 +129,9 @@ def show_images_profiles(images,profile = None, save=False,folder = None, is_ten
         if nb_image==2:
             labels = ['PVE', 'Pix2Pix']
         elif nb_image==3:
-            labels = ['PVE', 'PVfree', 'Pix2Pix']
+            labels = ['PVE', 'noPVE', 'DeepPVC']
         elif nb_image>3:
-            labels = ['PVE', 'PVfree']
+            labels = ['PVE', 'noPVE']
 
 
     if nb_image==2:
@@ -142,37 +149,42 @@ def show_images_profiles(images,profile = None, save=False,folder = None, is_ten
         nrows+=2
 
 
-    fig = plt.figure(figsize=(12,8))
+    fig = plt.figure(figsize=(8,7))
     gs = GridSpec(nrows,nb_image, figure=fig)
+    plt.subplots_adjust(bottom=0.052, top = 0.943)
 
-
-    _vmin = np.min(array_image)
+    # _vmin = np.min(array_image)
     _vmax = np.max(array_image)
+    _vmin = -_vmax/8
+
+    channel = 0
+    ref_img = array_image[0, channel, :, :]
+    center_indexes = np.where(ref_img == np.amax(ref_img))
+    center_i = (np.mean(center_indexes[0])).astype(int)
+    center_j = (np.mean(center_indexes[1])).astype(int)
+
     for c in range(nb_channels):
         for i in range(nb_image):
             ax_imgs_i = fig.add_subplot(gs[c,i])
-            ax_imgs_i.imshow(array_image[i,c,:,:], vmin=_vmin, vmax = _vmax)
-            ax_imgs_i.set_title(labels[i])
+            ax_imgs_i.imshow(array_image[i,c,:,:], vmin=_vmin, vmax = _vmax, cmap=plt.get_cmap('inferno'))
+            ax_imgs_i.set_title(labels[i], fontsize = 15)
+
+            ax_imgs_i.axvline(x=center_j, color='white', linewidth=0.4)
+            ax_imgs_i.axhline(y=center_i, color='white', linewidth=0.4)
 
 
     # compute and plot profiles
     if profile:
-        channel = 0
-        ref_img = array_image[0,channel,:,:]
-        center_indexes = np.where(ref_img == np.amax(ref_img))
-        center_i = (np.mean(center_indexes[0])).astype(int)
-        center_j = (np.mean(center_indexes[1])).astype(int)
-
         ax_pfl_i = fig.add_subplot(gs[nb_channels, :])
         ax_pfl_j = fig.add_subplot(gs[nb_channels+1, :])
         for i in range(nb_image):
-            ax_pfl_i.plot(array_image[i,channel,center_i,:], color = colors[i], label = labels[i])
-            ax_pfl_j.plot(array_image[i,channel,:,center_j], color = colors[i], label = labels[i])
-        ax_pfl_i.legend()
-        ax_pfl_j.legend()
+            ax_pfl_i.plot(array_image[i,channel,center_i,:], color = colors[i], label = labels[i], linewidth = 1.5)
+            ax_pfl_j.plot(array_image[i,channel,:,center_j], color = colors[i], label = labels[i], linewidth = 1.5)
+        ax_pfl_i.legend(fontsize = 15)
+        ax_pfl_j.legend(fontsize = 15)
 
-    if title!=None:
-        plt.suptitle(title)
+    # if title!=None:
+    #     plt.suptitle(title)
 
     if save:
         if title:

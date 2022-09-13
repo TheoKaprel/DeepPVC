@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+import matplotlib
 import itk
 import click
 import glob
@@ -131,9 +133,13 @@ def comparison_manual(folder, source, image, slice,profile, error):
         list_of_mse.append(np.sum((img - img_src) **2) / norm)
 
 
+    list_of_labels = ['PVE/noPVC', 'PVE/PVC','noPVE/noPVC', 'PVE/DeepPVC', 'noPVE/noPVC (298 pixels detector)']
+
     fig_mse, ax_mse = plt.subplots()
-    ax_mse.bar(list_of_labels, list_of_mse)
-    ax_mse.set_ylabel('MSE')
+    ax_mse.bar([1,2,3,4,5],list_of_mse, tick_label = list_of_labels, color = 'black')
+    ax_mse.set_ylabel('MSE', fontsize = 20)
+    # plt.xticks(fontsize=20, rotation=0)
+
 
 
 
@@ -147,25 +153,34 @@ def comparison_manual(folder, source, image, slice,profile, error):
 
     for s in slice:
         vmax = max([np.max(img[s, :, :]) for img in list_of_all_images])
-        vmin = min([np.min(img[s, :, :]) for img in list_of_all_images])
+        # vmin = min([np.min(img[s, :, :]) for img in list_of_all_images])
+        vmin = -vmax/8
 
-        plt.figure(figsize=(15, 12))
-        plt.subplots_adjust(hspace=0.2)
+        plt.figure(figsize=(16, 11))
+        plt.subplots_adjust(left=0.01,
+                            bottom=0.03,
+                            right=0.852,
+                            top=0.965,
+                            wspace=0,
+                            hspace=0.107)
 
         ncols = 3
-        nrows = len(list_of_all_images) // ncols + (len(list_of_all_images) % ncols > 0)
+        nrows = (len(list_of_all_images)+1) // ncols + ((len(list_of_all_images)+1) % ncols > 0)
         ax = plt.subplot(nrows,ncols,1)
-        ax.imshow(img_src[s,:,:], vmin = vmin, vmax = vmax)
-        ax.set_title('src')
+        ax.imshow(img_src[s,:,:], vmin = vmin, vmax = vmax, cmap = plt.get_cmap('inferno'))
+        ax.set_title('Source', fontsize = 20)
         ax.set_xlabel("")
 
 
         for n, img in enumerate(list_of_all_images):
             ax = plt.subplot(nrows, ncols, n + 2)
-            ax.imshow(img[s,:,:],vmin = vmin, vmax=vmax)
-            ax.set_title(list_of_labels[n])
+            im = ax.imshow(img[s,:,:],vmin = vmin, vmax=vmax, cmap=plt.get_cmap('inferno'))
+            ax.set_title(list_of_labels[n], fontsize = 20)
             ax.set_xlabel("")
 
+
+        cax = plt.axes([0.85, 0.1, 0.075, 0.8])
+        plt.colorbar(mappable=im, cax=cax)
 
 
         for pr in profile:

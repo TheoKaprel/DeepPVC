@@ -111,6 +111,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
         for input in list_of_images:
             is_ref = ref
             with torch.no_grad():
+                print(input)
                 input_array = helpers_data.load_image(input, is_ref, type)
                 normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
 
