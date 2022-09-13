@@ -5,7 +5,7 @@ import itk
 
 
 
-from DeepPVC import Pix2PixModel, helpers_data, helpers, helpers_params
+from DeepPVC import Models, helpers_data, helpers, helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -29,7 +29,12 @@ def apply(pth, input, output_filename):
     norm = params['norm']
     normalisation = params['data_normalisation']
 
-    model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
+    if params['network'] == 'pix2pix':
+        model = Models.Pix2PixModel(params=params, is_resume=False)
+    elif params['network'] == 'unet':
+        model = Models.UNetModel(params=params, is_resume=False)
+
+
     model.load_model(pth)
     model.switch_device("cpu")
     model.switch_eval()
@@ -46,7 +51,7 @@ def apply(pth, input, output_filename):
         normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation, norm=norm,
                                                      to_torch=True, device='cpu')
 
-        normalized_output_tensor = model.Generator(normalized_input_tensor)
+        normalized_output_tensor = model.forward(normalized_input_tensor)
 
         output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True).squeeze()
         output_image = itk.image_from_array(output_array)

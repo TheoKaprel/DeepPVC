@@ -20,7 +20,7 @@ class Models(ABC):
         self.input_channels = params['input_channels']
         self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_gen = params['hidden_channels_gen']
-        self.hidden_channels_disc = params['hidden_channels_disc']
+
         self.generator_activation = params['generator_activation']
         self.generator_norm = params['generator_norm']
         self.use_dropout = params['use_dropout']
@@ -33,8 +33,6 @@ class Models(ABC):
             self.vmin = None
 
         self.learning_rate = params['learning_rate']
-        self.generator_update = params['generator_update']
-        self.discriminator_update = params['discriminator_update']
         self.optimizer = params['optimizer']
 
 
@@ -76,6 +74,10 @@ class Models(ABC):
         pass
 
     @abstractmethod
+    def forward(self, batch):
+        pass
+
+    @abstractmethod
     def save_model(self, output_path=None, save_json=False):
         pass
 
@@ -100,6 +102,9 @@ class Models(ABC):
 class Pix2PixModel(Models):
     def __init__(self, params, is_resume, pth=None, eval=False):
         super().__init__(params, is_resume)
+        self.hidden_channels_disc = params['hidden_channels_disc']
+        self.generator_update = params['generator_update']
+        self.discriminator_update = params['discriminator_update']
 
         if self.is_resume:
             if pth is None:
@@ -174,6 +179,17 @@ class Pix2PixModel(Models):
         self.gen_loss.backward()
         self.generator_optimizer.step()
 
+    def forward(self, batch):
+        if (batch.dim()==5) and (batch.shape[1]==2):
+            self.input_data(batch=batch)
+        elif batch.dim()==4:
+            self.truePVE = batch[:, :, :, :].to(self.device).float()
+        elif batch.dim()==5 and (batch.shape[1]==1):
+            self.truePVE = batch[:, 0, :, :].to(self.device).float()
+        
+        fakePVfree = self.Generator(self.truePVE)
+        return fakePVfree
+
     def optimize_parameters(self):
         # Discriminator Updates
         for _ in range(self.discriminator_update):
@@ -202,7 +218,7 @@ class Pix2PixModel(Models):
         self.mean_discriminator_loss = 0
 
     def plot_losses(self, save, wait, title):
-        plots.plot_losses(self.discriminator_losses, self.generator_losses, self.test_mse, save=save, wait = wait, title = title)
+        plots.plot_losses_G_D(self.discriminator_losses, self.generator_losses, self.test_mse, save=save, wait = wait, title = title)
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
@@ -286,3 +302,160 @@ class Pix2PixModel(Models):
         print('*' * 80)
 
         helpers_params.make_and_print_params_info_table([self.params])
+
+
+class UNetModel(Models):
+    def __init__(self, params, is_resume, pth=None, eval=False):
+        super().__init__(params, is_resume)
+        if self.is_resume:
+            if pth is None:
+                pth = self.params['start_pth'][-1]
+            self.load_model(pth)
+        else:
+            self.init_model()
+            self.init_optimization()
+            self.init_losses()
+
+            self.unet_losses = []
+            self.test_mse = []
+
+            self.current_epoch = 1
+            self.start_epoch=1
+
+        self.current_iteration = 0
+        self.mean_unetlosses = 0
+
+
+        if eval:
+            self.switch_eval()
+        else:
+            self.switch_train()
+
+
+    def init_model(self):
+        self.UNet = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
+                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+
+    def init_optimization(self):
+        if self.optimizer == 'Adam':
+            self.unet_optimizer = optim.Adam(self.UNet.parameters(), lr=self.learning_rate)
+        else:
+            raise ValueError("Unknown optimizer. Choose between : Adam")
+
+    def init_losses(self):
+        self.losses_params = {'recon_loss': self.params['recon_loss']}
+
+        # self.losses = losses.Pix2PixLosses(self.losses_params)
+        self.losses = losses.UNetLosses(self.losses_params)
+
+    def forward_UNet(self):
+        self.fakePVfree = self.UNet(self.truePVE)
+
+    def backward_UNet(self):
+        self.gen_loss = self.losses.get_unet_loss(self.truePVfree, self.fakePVfree)
+        self.gen_loss.backward()
+        self.unet_optimizer.step()
+
+    def forward(self, batch):
+        if (batch.dim()==5) and (batch.shape[1]==2):
+            self.input_data(batch=batch)
+        elif batch.dim()==4:
+            self.truePVE = batch[:, :, :, :].to(self.device).float()
+        elif batch.dim()==5 and (batch.shape[1]==1):
+            self.truePVE = batch[:, 0, :, :].to(self.device).float()
+
+        fakePVfree = self.UNet(self.truePVE)
+        return fakePVfree
+
+    def optimize_parameters(self):
+        # UNET Updats
+
+        self.unet_optimizer.zero_grad()
+        self.forward_UNet()
+        self.backward_UNet()
+
+        self.mean_unetlosses+=self.gen_loss.item()
+
+        self.current_iteration+=1
+
+    def update_epoch(self):
+        self.unet_losses.append(self.mean_unetlosses / self.current_iteration)
+
+        self.current_epoch+=1
+        self.current_iteration=0
+        self.mean_unetlosses = 0
+
+    def plot_losses(self, save, wait, title):
+        plots.plot_losses_UNet(self.unet_losses, self.test_mse, save=save, wait = wait, title = title)
+
+    def save_model(self, output_path=None, save_json=False):
+        self.params['start_epoch'] = self.start_epoch
+        self.params['current_epoch'] = self.current_epoch
+
+        if not output_path:
+            if self.output_folder:
+                output_path = os.path.join(self.output_folder, self.output_pth)
+            else:
+                raise ValueError("Error: no output_folder specified")
+
+        torch.save({'saving_date': time.asctime(),
+                    'epoch': self.current_epoch,
+                    'unet': self.UNet.state_dict(),
+                    'unet_opt': self.unet_optimizer.state_dict(),
+                    'unet_losses': self.unet_losses,
+                    'test_mse': self.test_mse,
+                    'params': self.params
+                    }, output_path )
+        print(f'Model saved at : {output_path}')
+
+        if save_json:
+            output_json = output_path[:-4]+'.json'
+            formatted_params = self.format_params()
+            jsonFile = open(output_json, "w")
+            jsonFile.write(formatted_params)
+            jsonFile.close()
+
+    def load_model(self,pth_path):
+
+        print(f'Loading Model from {pth_path}... ')
+        checkpoint = torch.load(pth_path, map_location=self.device)
+
+        self.init_model()
+        self.init_optimization()
+        self.init_losses()
+
+        self.UNet.load_state_dict(checkpoint['unet'])
+
+
+        self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])
+
+        self.unet_losses = checkpoint['unet_losses']
+        self.test_mse = checkpoint['test_mse']
+        self.current_epoch = checkpoint['epoch']
+        self.start_epoch=self.current_epoch
+
+    def switch_eval(self):
+        self.UNet.eval()
+
+    def switch_train(self):
+        self.UNet.train()
+
+    def switch_device(self, device):
+        self.device = device
+        self.UNet.to(device=device)
+
+    def show_infos(self, mse = False):
+        formatted_params = self.format_params()
+        print('*'*80)
+        print('PARAMETRES (json param file) : \n')
+        print(formatted_params)
+        print('*' * 80)
+
+        print('MEAN SQUARE ERROR on TEST DATA')
+        print(f'list of MSE on test data :{self.test_mse} ')
+        print('*' * 80)
+        print(self.UNet)
+        print('*' * 80)
+
+        # helpers_params.make_and_print_params_info_table([self.params])

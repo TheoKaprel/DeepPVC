@@ -6,7 +6,7 @@ import glob
 import random
 
 
-from DeepPVC import helpers_data, helpers, Pix2PixModel, helpers_params
+from DeepPVC import helpers_data, helpers, Models, helpers_params
 from DeepPVC import dataset as ds
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -43,7 +43,10 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
         params = pth_file['params']
         list_params.append(params)
         list_refs.append(params['ref'])
-        model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
+        if params['network']=='pix2pix':
+            model = Models.Pix2PixModel(params=params, is_resume=False)
+        elif params['network']=='unet':
+            model = Models.UNetModel(params=params, is_resume=False)
         model.load_model(one_pth)
         model.switch_device("cpu")
         model.switch_eval()
@@ -98,8 +101,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
                 with torch.no_grad():
                     for test_it, batch in enumerate(test_dataloader):
                         normalized_batch = helpers_data.normalize(batch,normtype=model.params['data_normalisation'], norm=model.params['norm'], to_torch=False, device=device)
-                        model.input_data(normalized_batch)
-                        fakePVfree = model.Generator(model.truePVE)
+                        fakePVfree = model.forward(batch=normalized_batch)
 
                         denormalized_input = helpers_data.denormalize(model.truePVfree,normtype=model.params['data_normalisation'], norm=model.params['norm'],to_numpy=True)
                         denormalized_output = helpers_data.denormalize(fakePVfree, normtype=model.params['data_normalisation'],norm=model.params['norm'], to_numpy=True)
@@ -128,9 +130,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
 
                 with torch.no_grad():
                     normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm,to_torch=True, device='cpu')
-                    tensor_PVE = normalized_input_tensor[:, 0, :, :][:, None, :, :]
-
-                    output_tensor = model.Generator(tensor_PVE)
+                    output_tensor = model.forward(normalized_input_tensor)
 
                     denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 

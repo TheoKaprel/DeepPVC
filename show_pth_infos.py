@@ -2,7 +2,7 @@ import torch
 import click
 
 
-from DeepPVC import Pix2PixModel, helpers,helpers_params
+from DeepPVC import helpers,helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])

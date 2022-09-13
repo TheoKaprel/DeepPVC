@@ -11,8 +11,7 @@ def mean_square_error(dataset_loader, model):
     MSE = 0
     with torch.no_grad():
         for test_it, batch in enumerate(dataset_loader):
-            model.input_data(batch)
-            fakePVfree = model.Generator(model.truePVE)
+            fakePVfree = model.forward(batch)
 
             denormalized_target = helpers_data.denormalize(model.truePVfree,
                                                            normtype=params['data_normalisation'], norm=params['norm'],

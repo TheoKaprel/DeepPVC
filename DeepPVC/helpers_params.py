@@ -6,8 +6,25 @@ not_updatable_paramter_list_when_resume_training = ['dataset_path', 'training_ba
                                                     'learning_rate','input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
+required = ['dataset_path', 'test_dataset_path', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
+            'hidden_channels_gen', 'optimizer', 'device', 'save_every_n_epoch']
 
+ballek = ['comment']
 
+automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
+             'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
+
+default_params_values = [["datatype", "mhd"], ['training_batchsize', 5],
+                         ['test_batchsize', 5], ['input_channels', 1], ['nb_ed_layers', 4],
+                         ["generator_activation", "sigmoid"], ["generator_norm", "batch_norm"], ["use_dropout", False],
+                         ["sum_norm", False], ['recon_loss', 'L1'],
+                         ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
+default_params = [param for param, value in default_params_values]
+
+required_pix2pix = ['hidden_channels_disc', 'generator_update', 'discriminator_update', 'lambda_recon']
+
+default_params_values_pix2pix = [['adv_loss', 'BCE']]
+default_params_pix2pix = [param_ for param_, value_ in default_params_values_pix2pix]
 
 def update_params_user_option(params, user_params, is_resume):
     """
@@ -30,24 +47,13 @@ def check_params(params, fatal_on_unknown=False):
     - warning if unknown parameter
     """
 
-    required = ['dataset_path','data_normalisation', 'n_epochs', 'learning_rate',
-                'hidden_channels_gen', 'hidden_channels_disc',
-                'generator_update', 'discriminator_update',
-                'optimizer', 'device', 'lambda_recon', 'save_every_n_epoch']
-    ballek = ['comment']
 
-    automated = ['training_start_time', 'start_epoch','current_epoch', 'training_endtime','ref', 'output_folder', 'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
-
-    default_params_values = [['test_dataset_path', params['dataset_path']], ["datatype", "mhd"] ,['training_batchsize', 5], ['test_batchsize', 5], ['input_channels',1], ['nb_ed_layers',4],
-                             ["generator_activation", "sigmoid"],["generator_norm","batch_norm"],["use_dropout", False],["sum_norm", False],['adv_loss','BCE'], ['recon_loss', 'L1'],
-                             ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
-
-    default_params = [param for param, value in default_params_values]
 
     for req in required:
         if (req not in params or req in [[], ""]):
             print(f'Error, the parameters "{req}" is required in {params}')
             exit(0)
+
 
     assert(type(params['use_dropout'])==bool)
     assert(type(params['sum_norm'])==bool)
@@ -55,8 +61,6 @@ def check_params(params, fatal_on_unknown=False):
     assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
 
-    assert((type(params['lambda_recon']) in [int, float]))
-    assert(params['lambda_recon']>=0)
 
     assert(params['optimizer'] in ["Adam"])
 
@@ -66,25 +70,51 @@ def check_params(params, fatal_on_unknown=False):
             params[defparam] = defvalue
             print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
 
-    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'generator_update', 'discriminator_update', 'n_epochs', 'save_every_n_epoch']:
+    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'n_epochs', 'save_every_n_epoch']:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
     assert(params["datatype"] in ["mhd", "mha"])
     assert (params['device'] in ["cpu", "cuda", "auto"])
     assert(params['generator_activation'] in ["sigmoid", "tanh","relu", "linear", "none", "relu_min"])
-    assert (params['adv_loss'] in ["BCE"])
+
     assert (params['recon_loss'] in ["L1", "L2"])
     assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
     assert (params['generator_norm'] in ["none", "batch_norm", "inst_norm"])
 
 
-    for p in params:
-        if p not in (required+automated+default_params+ballek):
-            print(f'WARNING Unknown keynamed "{p}" in the params')
-            if fatal_on_unknown:
-                exit(0)
+    if params['network']=='pix2pix':
+        check_params_pix2pix(params=params)
 
+    for p in params:
+        if p not in (required+required_pix2pix+automated+default_params+default_params_pix2pix+ballek):
+            if fatal_on_unknown:
+                print(f'ERROR Unknown key named "{p}" in the params')
+                exit(0)
+            else:
+                print(f'WARNING Unknown key named "{p}" in the params')
+
+
+
+def check_params_pix2pix(params):
+
+    for req in required_pix2pix:
+        if (req not in params or req in [[], ""]):
+            print(f'Error, the parameters "{req}" is required in {params} for Pix2Pix')
+            exit(0)
+    for defparam, defvalue in default_params_values_pix2pix:
+        if (defparam not in params) or (params[defparam] in [""]):
+            params[defparam] = defvalue
+            print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
+
+    assert ((type(params['lambda_recon']) in [int, float]))
+    assert (params['lambda_recon'] >= 0)
+
+    assert (params['adv_loss'] in ["BCE"])
+
+    for int_param in ['generator_update', 'discriminator_update']:
+        assert(type(params[int_param])==int)
+        assert(params[int_param]>0)
 
 
 

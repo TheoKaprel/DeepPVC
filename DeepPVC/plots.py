@@ -67,7 +67,7 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, wait = False, title = None):
+def plot_losses_G_D(discriminator_losses,generator_losses, test_mse, save = False, wait = False, title = None):
     fontsize = 20
 
     fig,ax1 = plt.subplots(figsize=(8,6))
@@ -110,6 +110,53 @@ def plot_losses(discriminator_losses,generator_losses, test_mse, save = False, w
         print('')
     else:
         plt.show()
+
+
+def plot_losses_UNet(unet_losses, test_mse, save = False, wait = False, title = None):
+    fontsize = 20
+
+    fig,ax1 = plt.subplots(figsize=(8,6))
+    fig.subplots_adjust(right=0.75)
+
+    p1 = ax1.plot(unet_losses, color = 'orange',linewidth = 2, label = 'UNet Loss')
+    ax1.set_ylabel("UNet Loss", color = p1[0].get_color(), fontsize = fontsize)
+    # ax1.set_ylim([1,16])
+    ax1.set_xlabel("# of epochs", fontsize=fontsize)
+    ax1.legend(loc=2, fontsize = fontsize) #upper left legend
+
+    # ax2 = ax1.twinx()
+    # p2 = ax2.plot(discriminator_losses,color = 'blue',linewidth = 2, label= 'Discriminator Loss')
+    # ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=fontsize)
+    # # ax2.set_ylim([0.62, 0.7])
+    # ax2.legend(loc=1, fontsize = fontsize) #upper right legend
+
+    if len(test_mse)>0:
+        ax3 = ax1.twinx()
+        ax3.spines.right.set_position(("axes", 1.2))
+        # ax3.set_ylim([0.0033, 0.0042])
+        test_epochs = [k[0] for k in test_mse]
+        test_mse = [k[1] for k in test_mse]
+        p3 = ax3.plot(test_epochs, test_mse, color = 'green',linewidth = 2, label = 'MSE on test dataset')
+        ax3.set_ylabel("MSE test", color = p3[0].get_color(), fontsize = fontsize)
+
+        ax3.legend(loc = 'upper center', fontsize = fontsize)
+
+
+    ax1.set_xlabel('Iterations')
+    if title:
+        ax1.set_title('Losses '+title)
+    else:
+        ax1.set_title('Losses', fontsize = fontsize)
+
+    if save:
+        figname = time.strftime("%Y%m%d-%H%M%S")+'.png'
+        plt.savefig(figname)
+    elif wait:
+        print('')
+    else:
+        plt.show()
+
+
 
 
 def show_images_profiles(images,profile = None, save=False,folder = None, is_tensor=True, title = None, labels = None):

@@ -5,7 +5,7 @@ import os
 import numpy as np
 import click
 
-from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, helpers_functions, plots, Models
+from DeepPVC import dataset, helpers, helpers_data, helpers_params, helpers_functions, plots, Models
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -75,7 +75,9 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
     helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=is_resume)
 
 
-    output_filename = f"pix2pix_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
+    network_architecture = params['network']
+
+    output_filename = f"{network_architecture}_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=is_resume)
 
     helpers_params.check_params(params)
@@ -84,9 +86,11 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
+    if network_architecture=='pix2pix':
+        DeepPVEModel = Models.Pix2PixModel(params=params, is_resume=is_resume)
+    elif network_architecture=='unet':
+        DeepPVEModel = Models.UNetModel(params=params, is_resume=is_resume)
 
-    # DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
-    DeepPVEModel = Models.Pix2PixModel(params=params, is_resume=is_resume)
     DeepPVEModel.show_infos()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
@@ -99,11 +103,12 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
         # the data which will be used for show/test
         testdataset = test_dataloader.dataset
         id_test = np.random.randint(0, params['nb_testing_data'])
-        show_test_data = testdataset[id_test] #(2,input_channels,128,128)
-        show_test_PVE = show_test_data[0,:,:,:][None,:,:,:] #(1,input_channels,128,128)
-        show_test_keep_data = helpers_data.denormalize(show_test_data, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (input_channels,128,128)
+        show_test_data = testdataset[id_test][None,:,:,:,:] #(1,2,input_channels,128,128)
+        show_test_fakePVfree = DeepPVEModel.forward(show_test_data)
+        show_test_keep_data = helpers_data.denormalize(show_test_data[0,:,:,:,:], normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (input_channels,128,128)
         show_test_keep_labels = ['PVE', 'PVfree']
-        show_test_fakePVfree = DeepPVEModel.Generator(show_test_PVE)  # (1,input_channels,128,128)
+
+
         denormalized_output = helpers_data.denormalize(show_test_fakePVfree, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (input_channels,128,128)
         show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=0)
         show_test_keep_labels.append(f'Pix2Pix:{start_epoch}')
@@ -131,7 +136,7 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
             DeepPVEModel.switch_eval()
             with torch.no_grad():
-                show_test_output = DeepPVEModel.Generator(show_test_PVE)
+                show_test_output = DeepPVEModel.forward(show_test_data)
                 show_test_denormalized_output = helpers_data.denormalize(show_test_output, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True) # (input_channels,128,128)
                 show_test_keep_data = np.concatenate((show_test_keep_data,show_test_denormalized_output), axis=0) # (n+1,input_channels,128,128)
                 show_test_keep_labels.append(f'Pix2Pix:{DeepPVEModel.current_epoch}')

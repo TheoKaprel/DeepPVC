@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class Pix2PixLosses:
     def __init__(self, losses_params):
         if losses_params['adv_loss']=='BCE':
@@ -23,3 +24,16 @@ class Pix2PixLosses:
         gen_rec_loss = self.recon_loss(truePVfree, fakePVfree)
         gen_loss = gen_adv_loss + self.lambda_recon * gen_rec_loss
         return gen_loss
+
+
+
+class UNetLosses:
+    def __init__(self, losses_params):
+        if losses_params['recon_loss']=='L1':
+            self.recon_loss = nn.L1Loss()
+        elif losses_params['recon_loss']=='L2':
+            self.recon_loss = nn.MSELoss()
+
+    def get_unet_loss(self, truePVfree, fakePVfree):
+        unet_loss = self.recon_loss(truePVfree, fakePVfree)
+        return unet_loss

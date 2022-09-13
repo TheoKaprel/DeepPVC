@@ -4,7 +4,7 @@ import click
 import glob
 import random
 
-from DeepPVC import plots, helpers_data,helpers_params, helpers, Pix2PixModel
+from DeepPVC import plots, helpers_data,helpers_params, helpers, Models
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -65,7 +65,11 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
         print(norm)
         normalisation = params['data_normalisation']
 
-        model = Pix2PixModel.PVEPix2PixModel(params=params, is_resume=False)
+        if params['network']=='pix2pix':
+            model = Models.Pix2PixModel(params=params, is_resume=False)
+        elif params['network']=='unet':
+            model = Models.UNetModel(params=params, is_resume=False)
+
         model.load_model(one_pth)
         model.switch_device("cpu")
         model.switch_eval()
@@ -77,8 +81,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
                 for test_data in list_of_all_images:
                     input_array = helpers_data.load_image(test_data, True, type)
                     normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
-                    tensor_PVE = normalized_input_tensor[:, 0,:, :, :]
-                    output_tensor = model.Generator(tensor_PVE)
+                    output_tensor = model.forward(normalized_input_tensor)
 
                     denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
 
@@ -114,9 +117,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
                 print(input)
                 input_array = helpers_data.load_image(input, is_ref, type)
                 normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
-
-                tensor_PVE = normalized_input_tensor[:,0,:,:,:]
-                output_tensor = model.Generator(tensor_PVE)
+                output_tensor = model.forward(normalized_input_tensor)
 
                 denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 
