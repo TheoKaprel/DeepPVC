@@ -5,7 +5,7 @@ import os
 import numpy as np
 import click
 
-from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, helpers_functions, plots
+from DeepPVC import dataset, Pix2PixModel, helpers, helpers_data, helpers_params, helpers_functions, plots, Models
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -85,7 +85,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
 
-    DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
+    # DeepPVEModel = Pix2PixModel.PVEPix2PixModel(params, is_resume)
+    DeepPVEModel = Models.Pix2PixModel(params=params, is_resume=is_resume)
     DeepPVEModel.show_infos()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()

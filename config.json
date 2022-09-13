@@ -25,5 +25,5 @@
   "adv_loss":"BCE",
   "recon_loss":"L1",
   "lambda_recon":100,
-  "comment": "test mha"
+  "comment": "test new structure..."
 }
