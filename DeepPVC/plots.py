@@ -67,21 +67,21 @@ def show_two_images(img_PVE, img_PVC,slice):
 
 
 
-def plot_losses_G_D(discriminator_losses,generator_losses, test_mse, save = False, wait = False, title = None):
+def plot_losses_double_model(losses1,losses2, test_mse,labels, save = False, wait = False, title = None):
     fontsize = 20
 
     fig,ax1 = plt.subplots(figsize=(8,6))
     fig.subplots_adjust(right=0.75)
 
-    p1 = ax1.plot(generator_losses, color = 'orange',linewidth = 2, label = 'Generator Loss')
-    ax1.set_ylabel("Generator Loss", color = p1[0].get_color(), fontsize = fontsize)
+    p1 = ax1.plot(losses1, color = 'orange',linewidth = 2, label = labels[0])
+    ax1.set_ylabel(labels[0], color = p1[0].get_color(), fontsize = fontsize)
     # ax1.set_ylim([1,16])
     ax1.set_xlabel("# of epochs", fontsize=fontsize)
     ax1.legend(loc=2, fontsize = fontsize) #upper left legend
 
     ax2 = ax1.twinx()
-    p2 = ax2.plot(discriminator_losses,color = 'blue',linewidth = 2, label= 'Discriminator Loss')
-    ax2.set_ylabel("Discriminator Loss", color = p2[0].get_color(),fontsize=fontsize)
+    p2 = ax2.plot(losses2,color = 'blue',linewidth = 2, label= labels[1])
+    ax2.set_ylabel(labels[1], color = p2[0].get_color(),fontsize=fontsize)
     # ax2.set_ylim([0.62, 0.7])
     ax2.legend(loc=1, fontsize = fontsize) #upper right legend
 
@@ -159,7 +159,7 @@ def plot_losses_UNet(unet_losses, test_mse, save = False, wait = False, title = 
 
 
 
-def show_images_profiles(images,profile = None, save=False,folder = None, is_tensor=True, title = None, labels = None):
+def show_images_profiles(images,profile = None,noisy=False, save=False,folder = None, is_tensor=True, title = None, labels = None):
     if is_tensor:
         array_image = images.cpu().numpy()
     else:
@@ -178,14 +178,19 @@ def show_images_profiles(images,profile = None, save=False,folder = None, is_ten
         elif nb_image==3:
             labels = ['PVE', 'noPVE', 'DeepPVC']
         elif nb_image>3:
-            labels = ['PVE', 'noPVE']
+            if noisy and (nb_image==4):
+                labels = ['noisyPVE', 'PVE', 'PVfree', 'DeepPVC']
+            else:
+                labels = ['PVE', 'noPVE']
 
 
     if nb_image==2:
         colors = ['red', 'blue']
     elif nb_image==3:
         colors = ['red', 'green', 'blue']
-    elif nb_image>3:
+    elif (nb_image==4 and noisy==True):
+        colors = ['grey','red', 'green', 'blue']
+    elif nb_image>=4:
         colors = ['red', 'green']
         for k in range(nb_image - 2):
             labels.append(f'Pix2Pix{k}')

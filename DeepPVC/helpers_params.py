@@ -47,13 +47,17 @@ def check_params(params, fatal_on_unknown=False):
     - warning if unknown parameter
     """
 
-
-
     for req in required:
         if (req not in params or req in [[], ""]):
             print(f'Error, the parameters "{req}" is required in {params}')
             exit(0)
 
+    for defparam, defvalue in default_params_values:
+        if (defparam not in params) or (params[defparam] in [""]):
+            params[defparam] = defvalue
+            print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
+
+    assert (params['network'] in ['pix2pix', 'unet', 'denoiser_pvc'])
 
     assert(type(params['use_dropout'])==bool)
     assert(type(params['sum_norm'])==bool)
@@ -65,10 +69,9 @@ def check_params(params, fatal_on_unknown=False):
     assert(params['optimizer'] in ["Adam"])
 
 
-    for defparam, defvalue in default_params_values:
-        if (defparam not in params) or (params[defparam] in [""]):
-            params[defparam] = defvalue
-            print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
+
+
+
 
     for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'n_epochs', 'save_every_n_epoch']:
         assert(type(params[int_param])==int)

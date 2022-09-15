@@ -6,14 +6,17 @@ import time
 
 from . import helpers_data, helpers
 
-def construct_dataset_from_path(dataset_path,datatype, nb_channels=1):
+def construct_dataset_from_path(dataset_path,datatype, nb_channels=1, noisy = False):
     print(f'Loading data from {dataset_path} ...')
     t0 = time.time()
 
 
     list_files = glob.glob(f'{dataset_path}/?????_PVE.{datatype}')
     N = len(list_files)
-    dataset = np.zeros((N, 2, nb_channels, 128, 128))
+    if noisy:
+        dataset = np.zeros((N, 3, nb_channels, 128, 128))
+    else:
+        dataset = np.zeros((N, 2, nb_channels, 128, 128))
     for i in range(N): # selects files having exactly 5 characters before the .mhd
         filename_PVE = list_files[i]
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
@@ -26,6 +29,13 @@ def construct_dataset_from_path(dataset_path,datatype, nb_channels=1):
         img_PVf = itk.array_from_image(itk.imread(filename_PVf))
         assert (img_PVf.shape == (nb_channels, 128, 128))
         dataset[i,1,:,:,:] = img_PVf
+
+        if noisy:
+            filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{datatype}'
+            img_noisy = itk.array_from_image(itk.imread(filename_noisy))
+            assert (img_noisy.shape == (nb_channels, 128, 128))
+            img_noisy = np.expand_dims(img_noisy, axis=0)
+            dataset[i, :, :, :, :] = np.concatenate((img_noisy,dataset[i,0:2,:,:,:]), axis = 0)
 
     t1 = time.time()
     elapsed_time1 = t1-t0
@@ -51,6 +61,9 @@ def load_data(params):
     test_dataset_path = params['test_dataset_path']
     training_batchsize = params['training_batchsize']
     testing_batchsize = params['test_batchsize']
+
+    noisy = (params['network']=='denoiser_pvc')
+
     input_channels = params['input_channels']
 
     normalisation = params['data_normalisation']
@@ -58,7 +71,7 @@ def load_data(params):
 
     dataset_is_set = False
     for path in dataset_path:
-        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels)
+        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels, noisy=noisy)
         if dataset_is_set:
             dataset = np.concatenate((dataset, tmp_dataset), axis=0)
         else:
@@ -74,7 +87,7 @@ def load_data(params):
 
     test_dataset_is_set = False
     for path in test_dataset_path:
-        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels)
+        tmp_dataset = construct_dataset_from_path(dataset_path=path,datatype=datatype, nb_channels=input_channels, noisy=noisy)
         if test_dataset_is_set:
             test_dataset = np.concatenate((test_dataset, tmp_dataset), axis=0)
         else:

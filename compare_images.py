@@ -133,10 +133,10 @@ def comparison_manual(folder, source, image, slice,profile, error):
         list_of_mse.append(np.sum((img - img_src) **2) / norm)
 
 
-    list_of_labels = ['PVE/noPVC', 'PVE/PVC','noPVE/noPVC', 'PVE/DeepPVC', 'noPVE/noPVC (298 pixels detector)']
+    # list_of_labels = ['PVE/noPVC', 'PVE/PVC','noPVE/noPVC', 'PVE/DeepPVC', 'noPVE/noPVC (298 pixels detector)']
 
     fig_mse, ax_mse = plt.subplots()
-    ax_mse.bar([1,2,3,4,5],list_of_mse, tick_label = list_of_labels, color = 'black')
+    ax_mse.bar([k for k in range(len(list_of_all_images))],list_of_mse, tick_label = list_of_labels, color = 'black')
     ax_mse.set_ylabel('MSE', fontsize = 20)
     # plt.xticks(fontsize=20, rotation=0)
 

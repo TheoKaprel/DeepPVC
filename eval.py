@@ -61,14 +61,17 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
         params = pth_file['params']
         helpers_params.check_params(params)
 
+        network_architecture = params['network']
+
         norm = params['norm']
         print(norm)
         normalisation = params['data_normalisation']
-
-        if params['network']=='pix2pix':
+        if network_architecture=='pix2pix':
             model = Models.Pix2PixModel(params=params, is_resume=False)
-        elif params['network']=='unet':
+        elif network_architecture=='unet':
             model = Models.UNetModel(params=params, is_resume=False)
+        elif network_architecture=='denoiser_pvc':
+            model = Models.UNet_Denoiser_PVC(params=params, is_resume=False)
 
         model.load_model(one_pth)
         model.switch_device("cpu")
@@ -79,7 +82,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
             MSE = 0
             with torch.no_grad():
                 for test_data in list_of_all_images:
-                    input_array = helpers_data.load_image(test_data, True, type)
+                    input_array = helpers_data.load_image(test_data, is_ref=True, type=type,  noisy= network_architecture=='denoiser_pvc')
                     normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
                     output_tensor = model.forward(normalized_input_tensor)
 
@@ -115,7 +118,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
             is_ref = ref
             with torch.no_grad():
                 print(input)
-                input_array = helpers_data.load_image(input, is_ref, type)
+                input_array = helpers_data.load_image(input, is_ref, type, noisy= network_architecture=='denoiser_pvc')
                 normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
                 output_tensor = model.forward(normalized_input_tensor)
 
@@ -123,7 +126,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
 
 
             imgs = np.concatenate((input_array[0,:,:,:,:],denormalized_output_array), axis=0)
-            plots.show_images_profiles(imgs, profile=True, save = save, is_tensor=False, title = input)
+            plots.show_images_profiles(imgs, profile=True,noisy=(network_architecture=='denoiser_pvc'), save = save, is_tensor=False, title = input)
 
 
 

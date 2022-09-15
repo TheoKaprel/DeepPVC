@@ -90,6 +90,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
         DeepPVEModel = Models.Pix2PixModel(params=params, is_resume=is_resume)
     elif network_architecture=='unet':
         DeepPVEModel = Models.UNetModel(params=params, is_resume=is_resume)
+    elif network_architecture=='denoiser_pvc':
+        DeepPVEModel = Models.UNet_Denoiser_PVC(params=params, is_resume=is_resume)
 
     DeepPVEModel.show_infos()
 
@@ -107,6 +109,8 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
         show_test_fakePVfree = DeepPVEModel.forward(show_test_data)
         show_test_keep_data = helpers_data.denormalize(show_test_data[0,:,:,:,:], normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (input_channels,128,128)
         show_test_keep_labels = ['PVE', 'PVfree']
+        if network_architecture=='denoiser_pvc':
+            show_test_keep_labels = ['noisyPVE'] + show_test_keep_labels
 
 
         denormalized_output = helpers_data.denormalize(show_test_fakePVfree, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (input_channels,128,128)

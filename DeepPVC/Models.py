@@ -101,6 +101,8 @@ class Models(ABC):
 
 class Pix2PixModel(Models):
     def __init__(self, params, is_resume, pth=None, eval=False):
+        assert (params['network'] == 'pix2pix')
+
         super().__init__(params, is_resume)
         self.hidden_channels_disc = params['hidden_channels_disc']
         self.generator_update = params['generator_update']
@@ -186,7 +188,7 @@ class Pix2PixModel(Models):
             self.truePVE = batch[:, :, :, :].to(self.device).float()
         elif batch.dim()==5 and (batch.shape[1]==1):
             self.truePVE = batch[:, 0, :, :].to(self.device).float()
-        
+
         fakePVfree = self.Generator(self.truePVE)
         return fakePVfree
 
@@ -218,7 +220,7 @@ class Pix2PixModel(Models):
         self.mean_discriminator_loss = 0
 
     def plot_losses(self, save, wait, title):
-        plots.plot_losses_G_D(self.discriminator_losses, self.generator_losses, self.test_mse, save=save, wait = wait, title = title)
+        plots.plot_losses_double_model(self.generator_losses, self.discriminator_losses, self.test_mse,labels=['Generator Loss','Discriminator Loss'], save=save, wait = wait, title = title)
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
@@ -229,8 +231,6 @@ class Pix2PixModel(Models):
                 output_path = os.path.join(self.output_folder, self.output_pth)
             else:
                 raise ValueError("Error: no output_folder specified")
-        else:
-            raise ValueError("Error: no output_path")
 
         torch.save({'saving_date': time.asctime(),
                     'epoch': self.current_epoch,
@@ -306,6 +306,8 @@ class Pix2PixModel(Models):
 
 class UNetModel(Models):
     def __init__(self, params, is_resume, pth=None, eval=False):
+        assert (params['network'] == 'unet')
+
         super().__init__(params, is_resume)
         if self.is_resume:
             if pth is None:
@@ -457,5 +459,209 @@ class UNetModel(Models):
         print('*' * 80)
         print(self.UNet)
         print('*' * 80)
+
+        # helpers_params.make_and_print_params_info_table([self.params])
+
+
+
+
+
+
+class UNet_Denoiser_PVC(Models):
+    def __init__(self, params, is_resume, pth=None, eval=False):
+        assert(params['network']=='denoiser_pvc')
+
+        super().__init__(params, is_resume)
+        if self.is_resume:
+            if pth is None:
+                pth = self.params['start_pth'][-1]
+            self.load_model(pth)
+        else:
+            self.init_model()
+            self.init_optimization()
+            self.init_losses()
+
+            self.unet_denoiser_list_losses = []
+            self.unet_pvc_list_losses = []
+            self.test_mse = []
+
+            self.current_epoch = 1
+            self.start_epoch=1
+
+        self.current_iteration = 0
+        self.mean_unet_denoiser_losses = 0
+        self.mean_unet_pvc_losses = 0
+
+
+        if eval:
+            self.switch_eval()
+        else:
+            self.switch_train()
+
+
+    def init_model(self):
+        self.UNet_denoiser = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
+                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+
+        self.UNet_pvc = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
+                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+
+    def init_optimization(self):
+        if self.optimizer == 'Adam':
+            self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
+            self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
+        else:
+            raise ValueError("Unknown optimizer. Choose between : Adam")
+
+    def init_losses(self):
+        self.losses_params = {'recon_loss': self.params['recon_loss']}
+
+        self.unet_denoiser_losses = losses.UNetLosses(self.losses_params)
+        self.unet_pvc_losses = losses.UNetLosses(self.losses_params)
+
+    def input_data(self, batch):
+        self.noisyPVE = batch[:, 0,:, :, :].to(self.device).float()
+        self.truePVE = batch[:, 1,:, :, :].to(self.device).float()
+        self.truePVfree = batch[:, 2,:, :, :].to(self.device).float()
+
+
+    def forward_denoiser(self):
+        self.fakePVE = self.UNet_denoiser(self.noisyPVE)
+
+    def forward_pvc(self):
+        self.fakePVfree = self.UNet_pvc(self.truePVE)
+
+    def backward_denoiser(self):
+        self.denoiser_loss = self.unet_denoiser_losses.get_unet_loss(self.truePVE, self.fakePVE)
+        self.denoiser_loss.backward()
+        self.unet_denoiser_optimizer.step()
+
+    def backward_pvc(self):
+        self.pvc_loss = self.unet_pvc_losses.get_unet_loss(self.truePVfree, self.fakePVfree)
+        self.pvc_loss.backward()
+        self.unet_pvc_optimizer.step()
+
+
+    def forward(self, batch):
+        if (batch.dim()==5) and (batch.shape[1]==3):
+            self.input_data(batch=batch)
+        elif batch.dim()==4:
+            self.noisyPVE = batch[:, :, :, :].to(self.device).float()
+        elif batch.dim()==5 and (batch.shape[1]==1):
+            self.noisyPVE = batch[:, 0, :, :].to(self.device).float()
+
+        denoisedPVE = self.UNet_denoiser(self.noisyPVE)
+        fakePVfree = self.UNet_pvc(denoisedPVE)
+        return fakePVfree
+
+    def optimize_parameters(self):
+        # denoiser update
+        self.unet_denoiser_optimizer.zero_grad()
+        self.forward_denoiser()
+        self.backward_denoiser()
+        self.mean_unet_denoiser_losses+=self.denoiser_loss.item()
+
+        # pvc update
+        self.unet_pvc_optimizer.zero_grad()
+        self.forward_pvc()
+        self.backward_pvc()
+        self.mean_unet_pvc_losses+=self.pvc_loss.item()
+
+        self.current_iteration+=1
+
+    def update_epoch(self):
+        self.unet_denoiser_list_losses.append(self.mean_unet_denoiser_losses / self.current_iteration)
+        self.unet_pvc_list_losses.append(self.mean_unet_pvc_losses / self.current_iteration)
+
+        self.current_epoch+=1
+        self.current_iteration=0
+        self.mean_unet_denoiser_losses = 0
+        self.mean_unet_pvc_losses = 0
+
+    def plot_losses(self, save, wait, title):
+        plots.plot_losses_double_model(self.unet_denoiser_list_losses, self.unet_pvc_list_losses, self.test_mse,labels=['Denoiser Loss','DeepPVC Loss'], save=save, wait = wait, title = title)
+
+    def save_model(self, output_path=None, save_json=False):
+        self.params['start_epoch'] = self.start_epoch
+        self.params['current_epoch'] = self.current_epoch
+
+        if not output_path:
+            if self.output_folder:
+                output_path = os.path.join(self.output_folder, self.output_pth)
+            else:
+                raise ValueError("Error: no output_folder specified")
+
+        torch.save({'saving_date': time.asctime(),
+                    'epoch': self.current_epoch,
+                    'unet_denoiser': self.UNet_denoiser.state_dict(),
+                    'unet_pvc': self.UNet_pvc.state_dict(),
+                    'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
+                    'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
+                    'unet_denoiser_losses': self.unet_denoiser_list_losses,
+                    'unet_pvc_losses': self.unet_pvc_list_losses,
+                    'test_mse': self.test_mse,
+                    'params': self.params
+                    }, output_path )
+        print(f'Model saved at : {output_path}')
+
+        if save_json:
+            output_json = output_path[:-4]+'.json'
+            formatted_params = self.format_params()
+            jsonFile = open(output_json, "w")
+            jsonFile.write(formatted_params)
+            jsonFile.close()
+
+    def load_model(self,pth_path):
+
+        print(f'Loading Model from {pth_path}... ')
+        checkpoint = torch.load(pth_path, map_location=self.device)
+
+        self.init_model()
+        self.init_optimization()
+        self.init_losses()
+
+        self.UNet_denoiser.load_state_dict(checkpoint['unet_denoiser'])
+        self.UNet_pvc.load_state_dict(checkpoint['unet_pvc'])
+
+        self.unet_denoiser_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
+        self.unet_pvc_optimizer.load_state_dict(checkpoint['unet_pvc_opt'])
+
+        self.unet_denoiser_list_losses = checkpoint['unet_denoiser_losses']
+        self.unet_pvc_list_losses = checkpoint['unet_pvc_losses']
+        self.test_mse = checkpoint['test_mse']
+        self.current_epoch = checkpoint['epoch']
+        self.start_epoch=self.current_epoch
+
+    def switch_eval(self):
+        self.UNet_denoiser.eval()
+        self.UNet_pvc.eval()
+
+    def switch_train(self):
+        self.UNet_denoiser.train()
+        self.UNet_pvc.train()
+
+    def switch_device(self, device):
+        self.device = device
+        self.UNet_denoiser.to(device=device)
+        self.UNet_pvc.to(device=device)
+
+    def show_infos(self, mse = False):
+        formatted_params = self.format_params()
+        print('*'*80)
+        print('PARAMETRES (json param file) : \n')
+        print(formatted_params)
+        print('*' * 80)
+
+        print('MEAN SQUARE ERROR on TEST DATA')
+        print(f'list of MSE on test data :{self.test_mse} ')
+        print('*' * 80)
+        print('DENOISER : ')
+        print(self.UNet_denoiser)
+        print('*' * 80)
+        print('DEEPPVC : ')
+        print(self.UNet_pvc)
+        print('*'*80)
 
         # helpers_params.make_and_print_params_info_table([self.params])

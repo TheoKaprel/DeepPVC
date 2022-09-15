@@ -59,9 +59,9 @@ def denormalize(dataset_or_img,normtype,norm, to_numpy):
 
 
 
-def load_image(filename, is_ref, type):
+def load_image(filename, is_ref, type, noisy=False):
     if is_ref:
-        return load_PVE_PVfree(ref = filename, type=type)
+        return load_PVE_PVfree(ref = filename, type=type, noisy=noisy)
     else:
         return load_from_filename(filename)
 
@@ -72,7 +72,7 @@ def load_from_filename(filename):
     return img
 
 
-def load_PVE_PVfree(ref, type):
+def load_PVE_PVfree(ref, type, noisy):
 
     proj_PVE_filename = f'{ref}_PVE.{type}'
     proj_PVfree_filename = f'{ref}_PVfree.{type}'
@@ -80,6 +80,12 @@ def load_PVE_PVfree(ref, type):
     imgPVE = load_from_filename(proj_PVE_filename)
 
     imgPVfree = load_from_filename(proj_PVfree_filename)
-    array = np.concatenate((imgPVE, imgPVfree), axis=1) # (1,2,nb_channels,128,128)
+
+    if noisy:
+        proj_PVE_noisy_filename = f'{ref}_PVE_noisy.{type}'
+        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename)
+        array = np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (1,3,nb_channels,128,128)
+    else:
+        array = np.concatenate((imgPVE, imgPVfree), axis=1) # (1,2,nb_channels,128,128)
 
     return array
