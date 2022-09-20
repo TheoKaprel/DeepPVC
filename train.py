@@ -37,18 +37,26 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
 
-    if json and resume:
-        print('WARNING : the json file will be ignored. The parameter file used will be the one contained in the pth file')
 
     if resume:
         is_resume = True
         device = helpers.get_auto_device("auto")
         checkpoint = torch.load(resume, map_location=device)
-        params = checkpoint['params']
-        params['start_pth'].append(resume)
+        if json:
+            params_file = open(json).read()
+            params = js.loads(params_file)
+            params['start_pth'] = [resume]
+            if output:
+                ref = output
+            else:
+                ref = checkpoint['params']['ref']
+        else:
+            params = checkpoint['params']
+            params['start_pth'].append(resume)
+            ref = params['ref']
         start_epoch = checkpoint['epoch']
-        ref = params['ref']
-    elif json:
+
+    elif json and not(resume):
         is_resume = False
         params_file = open(json).read()
         params = js.loads(params_file)

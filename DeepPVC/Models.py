@@ -509,6 +509,11 @@ class UNet_Denoiser_PVC(Models):
                                                 sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
 
     def init_optimization(self):
+        self.denoiser_update = self.params['denoiser_update']
+        self.pvc_update = self.params['pvc_update']
+        self.denoiser_loss = torch.Tensor([0])
+        self.pvc_loss = torch.Tensor([0])
+
         if self.optimizer == 'Adam':
             self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
             self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
@@ -558,15 +563,17 @@ class UNet_Denoiser_PVC(Models):
 
     def optimize_parameters(self):
         # denoiser update
-        self.unet_denoiser_optimizer.zero_grad()
-        self.forward_denoiser()
-        self.backward_denoiser()
+        for _ in range(self.denoiser_update):
+            self.unet_denoiser_optimizer.zero_grad()
+            self.forward_denoiser()
+            self.backward_denoiser()
         self.mean_unet_denoiser_losses+=self.denoiser_loss.item()
 
         # pvc update
-        self.unet_pvc_optimizer.zero_grad()
-        self.forward_pvc()
-        self.backward_pvc()
+        for _ in range(self.pvc_update):
+            self.unet_pvc_optimizer.zero_grad()
+            self.forward_pvc()
+            self.backward_pvc()
         self.mean_unet_pvc_losses+=self.pvc_loss.item()
 
         self.current_iteration+=1
@@ -630,6 +637,9 @@ class UNet_Denoiser_PVC(Models):
 
         self.unet_denoiser_list_losses = checkpoint['unet_denoiser_losses']
         self.unet_pvc_list_losses = checkpoint['unet_pvc_losses']
+        self.denoiser_loss = torch.Tensor([self.unet_denoiser_list_losses[-1]])
+        self.pvc_loss = torch.Tensor([self.unet_pvc_list_losses])
+
         self.test_mse = checkpoint['test_mse']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch

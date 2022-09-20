@@ -180,6 +180,8 @@ def show_images_profiles(images,profile = None,noisy=False, save=False,folder = 
         elif nb_image>3:
             if noisy and (nb_image==4):
                 labels = ['noisyPVE', 'PVE', 'PVfree', 'DeepPVC']
+            elif noisy and (nb_image==5):
+                labels = ['noisyPVE', 'PVE', 'PVfree', 'Denoised', 'DeepPVC']
             else:
                 labels = ['PVE', 'noPVE']
 
@@ -190,6 +192,8 @@ def show_images_profiles(images,profile = None,noisy=False, save=False,folder = 
         colors = ['red', 'green', 'blue']
     elif (nb_image==4 and noisy==True):
         colors = ['grey','red', 'green', 'blue']
+    elif (nb_image==5 and noisy==True):
+        colors = ['grey','red', 'green','tab:cyan', 'blue']
     elif nb_image>=4:
         colors = ['red', 'green']
         for k in range(nb_image - 2):
@@ -210,7 +214,7 @@ def show_images_profiles(images,profile = None,noisy=False, save=False,folder = 
     _vmin = -_vmax/8
 
     channel = 0
-    ref_img = array_image[0, channel, :, :]
+    ref_img = array_image[-1, channel, :, :]
     center_indexes = np.where(ref_img == np.amax(ref_img))
     center_i = (np.mean(center_indexes[0])).astype(int)
     center_j = (np.mean(center_indexes[1])).astype(int)

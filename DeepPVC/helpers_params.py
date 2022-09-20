@@ -26,6 +26,9 @@ required_pix2pix = ['hidden_channels_disc', 'generator_update', 'discriminator_u
 default_params_values_pix2pix = [['adv_loss', 'BCE']]
 default_params_pix2pix = [param_ for param_, value_ in default_params_values_pix2pix]
 
+default_params_values_denoiser_pvc =   [["denoiser_update", 1],["pvc_update", 1]]
+defautl_params_denoiser_pvc = [param__ for param__, value__ in default_params_values_denoiser_pvc]
+
 def update_params_user_option(params, user_params, is_resume):
     """
     Update the dict 'params' with the options set by the user on the command line
@@ -69,10 +72,6 @@ def check_params(params, fatal_on_unknown=False):
     assert(params['optimizer'] in ["Adam"])
 
 
-
-
-
-
     for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'n_epochs', 'save_every_n_epoch']:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
@@ -88,9 +87,11 @@ def check_params(params, fatal_on_unknown=False):
 
     if params['network']=='pix2pix':
         check_params_pix2pix(params=params)
+    elif params['network']=='denoiser_pvc':
+        check_params_denoiser_pvc(params=params)
 
     for p in params:
-        if p not in (required+required_pix2pix+automated+default_params+default_params_pix2pix+ballek):
+        if p not in (required+required_pix2pix+automated+default_params+default_params_pix2pix+defautl_params_denoiser_pvc+ballek):
             if fatal_on_unknown:
                 print(f'ERROR Unknown key named "{p}" in the params')
                 exit(0)
@@ -119,6 +120,8 @@ def check_params_pix2pix(params):
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
+def check_params_denoiser_pvc(params):
+    1
 
 
 def make_and_print_params_info_table(lparams):

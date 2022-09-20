@@ -120,8 +120,18 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
                 print(input)
                 input_array = helpers_data.load_image(input, is_ref, type, noisy= network_architecture=='denoiser_pvc')
                 normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
-                output_tensor = model.forward(normalized_input_tensor)
+                # output_tensor = model.forward(normalized_input_tensor)
 
+                # if (batch.dim() == 5) and (batch.shape[1] == 3):
+                #     self.input_data(batch=batch)
+                # elif batch.dim() == 4:
+                #     self.noisyPVE = batch[:, :, :, :].to(self.device).float()
+                # elif batch.dim() == 5 and (batch.shape[1] == 1):
+                #     self.noisyPVE = batch[:, 0, :, :].to(self.device).float()
+                noisyPVE = normalized_input_tensor[:, 0, :, :, :].to(device).float()
+                denoisedPVE = model.UNet_denoiser(noisyPVE)
+                fakePVfree = model.UNet_pvc(denoisedPVE)
+                output_tensor = torch.cat((denoisedPVE, fakePVfree),0)
                 denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
 
 
