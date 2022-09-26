@@ -33,7 +33,8 @@ def apply(pth, input, output_filename):
         model = Models.Pix2PixModel(params=params, is_resume=False)
     elif params['network'] == 'unet':
         model = Models.UNetModel(params=params, is_resume=False)
-
+    elif params['network']=='denoiser_pvc':
+        model = Models.UNet_Denoiser_PVC(params=params, is_resume=False)
 
     model.load_model(pth)
     model.switch_device("cpu")
@@ -53,8 +54,11 @@ def apply(pth, input, output_filename):
 
         normalized_output_tensor = model.forward(normalized_input_tensor)
 
-        output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True).squeeze()
+        # output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True).squeeze()
+        output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True)[0,:,:,:]
         output_image = itk.image_from_array(output_array)
+        print(output_array.shape)
+        print(vSpacing)
         output_image.SetSpacing(vSpacing)
         output_image.SetOrigin(vOffset)
 
