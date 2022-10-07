@@ -360,12 +360,14 @@ class UNetModel(Models):
         self.unet_optimizer.step()
 
     def forward(self, batch):
-        if (batch.dim()==5) and (batch.shape[1]==2):
-            self.input_data(batch=batch)
-        elif batch.dim()==4:
-            self.truePVE = batch[:, :, :, :].to(self.device).float()
-        elif batch.dim()==5 and (batch.shape[1]==1):
-            self.truePVE = batch[:, 0, :, :].to(self.device).float()
+        if batch.dim()==4:
+            self.truePVE = batch.to(self.device).float()
+        elif batch.dim()==5:
+            if (batch.shape[1] == 1 or batch.shape[1] == 2):
+                self.truePVE = batch[:,0,:,:].to(self.device).float()
+            elif batch.shape[1] == 3:
+                self.truePVE = batch[:,1,:,:].to(self.device).float() # batch[:,0,:,:] is the noisyPVE
+
 
         fakePVfree = self.UNet(self.truePVE)
         return fakePVfree
@@ -536,7 +538,9 @@ class UNet_Denoiser_PVC(Models):
         self.fakePVE = self.UNet_denoiser(self.noisyPVE)
 
     def forward_pvc(self):
-        self.fakePVfree = self.UNet_pvc(self.truePVE)
+        # self.fakePVfree = self.UNet_pvc(self.truePVE)
+        self.fakePVE = self.UNet_denoiser(self.noisyPVE)
+        self.fakePVfree = self.UNet_pvc(self.fakePVE)
 
     def backward_denoiser(self):
         self.denoiser_loss = self.unet_denoiser_losses.get_unet_loss(self.truePVE, self.fakePVE)
@@ -550,12 +554,10 @@ class UNet_Denoiser_PVC(Models):
 
 
     def forward(self, batch):
-        if (batch.dim()==5) and (batch.shape[1]==3):
-            self.input_data(batch=batch)
-        elif batch.dim()==4:
-            self.noisyPVE = batch[:, :, :, :].to(self.device).float()
-        elif batch.dim()==5 and (batch.shape[1]==1):
-            self.noisyPVE = batch[:, 0, :, :].to(self.device).float()
+        if batch.dim()==4:
+            self.noisyPVE = batch.to(self.device).float()
+        elif batch.dim()==5:
+            self.noisyPVE = batch[:,0,:,:].to(self.device).float()
 
         denoisedPVE = self.UNet_denoiser(self.noisyPVE)
         fakePVfree = self.UNet_pvc(denoisedPVE)
