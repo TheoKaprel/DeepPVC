@@ -557,7 +557,7 @@ class UNet_Denoiser_PVC(Models):
         if batch.dim()==4:
             self.noisyPVE = batch.to(self.device).float()
         elif batch.dim()==5:
-            self.noisyPVE = batch[:,0,:,:].to(self.device).float()
+            self.noisyPVE = batch[:,0,:,:,:].to(self.device).float()
 
         denoisedPVE = self.UNet_denoiser(self.noisyPVE)
         fakePVfree = self.UNet_pvc(denoisedPVE)
