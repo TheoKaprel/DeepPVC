@@ -39,6 +39,7 @@ def apply(pth, input, output_filename):
         input_image = itk.imread(input)
         input_array = itk.array_from_image(input_image)
         input_array = np.expand_dims(input_array,axis=1)
+        print(input_array.shape)
 
         vSpacing = np.array(input_image.GetSpacing())
         vOffset = np.array(input_image.GetOrigin())
@@ -48,11 +49,8 @@ def apply(pth, input, output_filename):
 
         normalized_output_tensor = model.forward(normalized_input_tensor)
 
-        # output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True).squeeze()
-        output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True)[0,:,:,:]
+        output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True)[:,0,:,:]
         output_image = itk.image_from_array(output_array)
-        print(output_array.shape)
-        print(vSpacing)
         output_image.SetSpacing(vSpacing)
         output_image.SetOrigin(vOffset)
 
