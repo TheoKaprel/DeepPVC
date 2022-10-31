@@ -29,12 +29,7 @@ def apply(pth, input, output_filename):
     norm = params['norm']
     normalisation = params['data_normalisation']
 
-    if params['network'] == 'pix2pix':
-        model = Models.Pix2PixModel(params=params,  from_pth=pth)
-    elif params['network'] == 'unet':
-        model = Models.UNetModel(params=params, from_pth=pth)
-    elif params['network']=='denoiser_pvc':
-        model = Models.UNet_Denoiser_PVC(params=params, from_pth=pth)
+    model = Models.ModelInstance(params=params, from_pth=pth)
 
     model.switch_device("cpu")
     model.switch_eval()

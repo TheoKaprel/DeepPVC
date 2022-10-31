@@ -43,10 +43,8 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
         params = pth_file['params']
         list_params.append(params)
         list_refs.append(params['ref'])
-        if params['network']=='pix2pix':
-            model = Models.Pix2PixModel(params=params, from_pth=one_pth)
-        elif params['network']=='unet':
-            model = Models.UNetModel(params=params, from_pth=one_pth)
+
+        model = Models.ModelInstance(params=params, from_pth=pth_file)
         model.switch_device("cpu")
         model.switch_eval()
         list_models.append(model)

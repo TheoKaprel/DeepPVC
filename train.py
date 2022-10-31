@@ -89,13 +89,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
-    if network_architecture=='pix2pix':
-        DeepPVEModel = Models.Pix2PixModel(params=params, from_pth=resume_pth)
-    elif network_architecture=='unet':
-        DeepPVEModel = Models.UNetModel(params=params, from_pth=resume_pth)
-    elif network_architecture=='denoiser_pvc':
-        DeepPVEModel = Models.UNet_Denoiser_PVC(params=params, from_pth=resume_pth)
 
+    DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth)
     DeepPVEModel.show_infos()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()

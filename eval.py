@@ -64,13 +64,8 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
         norm = params['norm']
         print(norm)
         normalisation = params['data_normalisation']
-        if network_architecture=='pix2pix':
-            model = Models.Pix2PixModel(params=params,  from_pth=one_pth)
-        elif network_architecture=='unet':
-            model = Models.UNetModel(params=params,  from_pth=one_pth)
-        elif network_architecture=='denoiser_pvc':
-            model = Models.UNet_Denoiser_PVC(params=params, from_pth=one_pth)
 
+        model = Models.ModelInstance(params=params, from_pth=one_pth)
         model.switch_device("cpu")
         model.switch_eval()
 

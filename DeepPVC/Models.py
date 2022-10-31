@@ -8,9 +8,21 @@ from abc import ABC, abstractmethod
 
 from . import networks, losses,plots, helpers, helpers_params
 
+class ModelInstance():
+    def __new__(cls, params, from_pth = None):
+        network_architecture = params['network']
+        if network_architecture == 'pix2pix':
+            return Pix2PixModel(params=params, from_pth=from_pth)
+        elif network_architecture == 'unet':
+            return UNetModel(params=params, from_pth=from_pth)
+        elif network_architecture == 'denoiser_pvc':
+            return UNet_Denoiser_PVC(params=params, from_pth=from_pth)
+        else:
+            print(f"ERROR : unknown network architecture ({network_architecture})")
+            exit(0)
 
 
-class Models(ABC):
+class ModelBase():
     def __init__(self,  params):
         self.params = params
         self.device = helpers.get_auto_device(self.params['device'])
@@ -37,6 +49,7 @@ class Models(ABC):
 
         self.output_folder = self.params['output_folder']
         self.output_pth = self.params['output_pth']
+
 
     def input_data(self, batch):
         self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
@@ -98,7 +111,7 @@ class Models(ABC):
 
 
 
-class Pix2PixModel(Models):
+class Pix2PixModel(ModelBase):
     def __init__(self, params, from_pth = None):
         assert (params['network'] == 'pix2pix')
         super().__init__(params)
@@ -300,7 +313,7 @@ class Pix2PixModel(Models):
         helpers_params.make_and_print_params_info_table([self.params])
 
 
-class UNetModel(Models):
+class UNetModel(ModelBase):
     def __init__(self, params, from_pth = None):
         assert (params['network'] == 'unet')
 
@@ -461,9 +474,7 @@ class UNetModel(Models):
 
 
 
-
-
-class UNet_Denoiser_PVC(Models):
+class UNet_Denoiser_PVC(ModelBase):
     def __init__(self, params, from_pth = None):
         assert(params['network']=='denoiser_pvc')
         super().__init__(params)
