@@ -12,7 +12,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 
 @click.option('--json', help = 'JSON parameter file to start training FROM SCRATCH')
-@click.option('--resume', help = 'PTH file from which to RESUME training')
+@click.option('--resume', 'resume_pth', help = 'PTH file from which to RESUME training')
 @click.option('--user_param_str', '-ps',
               help='overwrite str parameter of the json file',
               multiple=True, type=(str, str))
@@ -28,42 +28,38 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
-    train(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder)
+def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
+    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder)
 
 
-def train(json, resume, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
-    if (json==None) and (resume ==None):
+def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
+    if (json==None) and (resume_pth ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
 
 
-    if resume:
-        is_resume = True
+    if resume_pth:
         device = helpers.get_auto_device("auto")
-        checkpoint = torch.load(resume, map_location=device)
+        checkpoint = torch.load(resume_pth, map_location=device)
         if json:
             params_file = open(json).read()
             params = js.loads(params_file)
-            params['start_pth'] = [resume]
+            params['start_pth'] = [resume_pth]
             if output:
                 ref = output
             else:
                 ref = checkpoint['params']['ref']
         else:
             params = checkpoint['params']
-            params['start_pth'].append(resume)
+            params['start_pth'].append(resume_pth)
             ref = params['ref']
         start_epoch = checkpoint['epoch']
 
-    elif json and not(resume):
-        is_resume = False
+    elif json and not(resume_pth):
         params_file = open(json).read()
         params = js.loads(params_file)
-
         params['start_pth'] = []
         start_epoch = 0
-
         if output:
             ref = output
         else:
@@ -71,22 +67,21 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
     else:
         print('ERROR : Absence of params not detected earlier my bad ...')
         params = None
-        is_resume=None
         start_epoch = 0
         exit(0)
 
 
     # Update parameters specified in command line
-    helpers_params.update_params_user_option(params, user_params=user_param_str, is_resume=is_resume)
-    helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=is_resume)
-    helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=is_resume)
-    helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=user_param_str, is_resume=resume_pth)
+    helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=resume_pth)
+    helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=resume_pth)
+    helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=resume_pth)
 
 
     network_architecture = params['network']
 
     output_filename = f"{network_architecture}_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
-    helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=is_resume)
+    helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=resume_pth)
 
     helpers_params.check_params(params)
 
@@ -95,11 +90,11 @@ def train(json, resume, user_param_str,user_param_float,user_param_int,user_para
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
     if network_architecture=='pix2pix':
-        DeepPVEModel = Models.Pix2PixModel(params=params, is_resume=is_resume)
+        DeepPVEModel = Models.Pix2PixModel(params=params, from_pth=resume_pth)
     elif network_architecture=='unet':
-        DeepPVEModel = Models.UNetModel(params=params, is_resume=is_resume)
+        DeepPVEModel = Models.UNetModel(params=params, from_pth=resume_pth)
     elif network_architecture=='denoiser_pvc':
-        DeepPVEModel = Models.UNet_Denoiser_PVC(params=params, is_resume=is_resume)
+        DeepPVEModel = Models.UNet_Denoiser_PVC(params=params, from_pth=resume_pth)
 
     DeepPVEModel.show_infos()
 

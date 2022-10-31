@@ -21,8 +21,6 @@ def eval_click(pth, input, n, dataset,type, ref, save, mse):
 
 
 
-
-
 def eval(pth, input,n,dataset,type,ref, save, mse):
     """ Evaluate visually a trained Pix2Pix (pth) on a given projection \n
         Output is the corrected projection
@@ -67,13 +65,12 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
         print(norm)
         normalisation = params['data_normalisation']
         if network_architecture=='pix2pix':
-            model = Models.Pix2PixModel(params=params, is_resume=False)
+            model = Models.Pix2PixModel(params=params,  from_pth=one_pth)
         elif network_architecture=='unet':
-            model = Models.UNetModel(params=params, is_resume=False)
+            model = Models.UNetModel(params=params,  from_pth=one_pth)
         elif network_architecture=='denoiser_pvc':
-            model = Models.UNet_Denoiser_PVC(params=params, is_resume=False)
+            model = Models.UNet_Denoiser_PVC(params=params, from_pth=one_pth)
 
-        model.load_model(one_pth)
         model.switch_device("cpu")
         model.switch_eval()
 
@@ -134,7 +131,7 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
 
             imgs = np.concatenate((input_array[0,:,:,:,:],denormalized_output_array), axis=0)
             # plots.show_images_profiles_denoiser_pvc(imgs, title = input)
-            plots.show_images_profiles(imgs, profile=True, noisy=False, save=False,is_tensor=False,title=input)
+            plots.show_images_profiles(imgs, profile=True, noisy=network_architecture=='denoiser_pvc', save=False,is_tensor=False,title=input)
 
 
 

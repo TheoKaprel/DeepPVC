@@ -11,8 +11,7 @@ from . import networks, losses,plots, helpers, helpers_params
 
 
 class Models(ABC):
-    def __init__(self,  params,is_resume):
-        self.is_resume = is_resume
+    def __init__(self,  params):
         self.params = params
         self.device = helpers.get_auto_device(self.params['device'])
 
@@ -100,18 +99,15 @@ class Models(ABC):
 
 
 class Pix2PixModel(Models):
-    def __init__(self, params, is_resume, pth=None, eval=False):
+    def __init__(self, params, from_pth = None):
         assert (params['network'] == 'pix2pix')
-
-        super().__init__(params, is_resume)
+        super().__init__(params)
         self.hidden_channels_disc = params['hidden_channels_disc']
         self.generator_update = params['generator_update']
         self.discriminator_update = params['discriminator_update']
 
-        if self.is_resume:
-            if pth is None:
-                pth = self.params['start_pth'][-1]
-            self.load_model(pth)
+        if from_pth:
+            self.load_model(from_pth)
         else:
             self.init_model()
             self.init_optimization()
@@ -305,14 +301,12 @@ class Pix2PixModel(Models):
 
 
 class UNetModel(Models):
-    def __init__(self, params, is_resume, pth=None, eval=False):
+    def __init__(self, params, from_pth = None):
         assert (params['network'] == 'unet')
 
-        super().__init__(params, is_resume)
-        if self.is_resume:
-            if pth is None:
-                pth = self.params['start_pth'][-1]
-            self.load_model(pth)
+        super().__init__(params)
+        if from_pth:
+            self.load_model(from_pth)
         else:
             self.init_model()
             self.init_optimization()
@@ -470,14 +464,11 @@ class UNetModel(Models):
 
 
 class UNet_Denoiser_PVC(Models):
-    def __init__(self, params, is_resume, pth=None, eval=False):
+    def __init__(self, params, from_pth = None):
         assert(params['network']=='denoiser_pvc')
-
-        super().__init__(params, is_resume)
-        if self.is_resume:
-            if pth is None:
-                pth = self.params['start_pth'][-1]
-            self.load_model(pth)
+        super().__init__(params)
+        if from_pth:
+            self.load_model(from_pth)
         else:
             self.init_model()
             self.init_optimization()

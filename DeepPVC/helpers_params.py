@@ -2,7 +2,7 @@ from prettytable import PrettyTable
 from textwrap import fill
 
 
-not_updatable_paramter_list_when_resume_training = ['dataset_path', 'training_batchsize', 'test_batchsize', 'training_prct',
+not_updatable_paramter_list_when_resume_training = ['training_batchsize', 'test_batchsize', 'training_prct',
                                                     'learning_rate','input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
@@ -78,6 +78,12 @@ def check_params(params, fatal_on_unknown=False):
 
     assert(params["datatype"] in ["mhd", "mha"])
     assert (params['device'] in ["cpu", "cuda", "auto"])
+
+    if isinstance(params['dataset_path'], list)==False:
+        params['dataset_path'] = [params['dataset_path']]
+    if isinstance(params['test_dataset_path'], list)==False:
+        params['test_dataset_path'] = [params['test_dataset_path']]
+
     assert(params['generator_activation'] in ["sigmoid", "tanh","relu", "linear", "none", "relu_min"])
 
     assert (params['recon_loss'] in ["L1", "L2"])
