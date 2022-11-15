@@ -1,5 +1,3 @@
-test new url
-
 # Architecture
 
 ### Generator
