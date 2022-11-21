@@ -2,7 +2,7 @@ import torch
 import click
 
 
-from DeepPVC import helpers,helpers_params
+from DeepPVC import helpers,helpers_params, Models
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -21,6 +21,14 @@ def show_pth(lpth):
         params = nn['params']
         helpers_params.check_params(params)
         lparams.append(params)
+
+        print(params)
+
+        model = Models.ModelInstance(params=params, from_pth=pth)
+
+        model.switch_device("cpu")
+        model.switch_eval()
+        model.show_infos()
 
 
     helpers_params.make_and_print_params_info_table(lparams)

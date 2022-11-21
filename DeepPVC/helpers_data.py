@@ -68,7 +68,7 @@ def load_image(filename, is_ref, type, noisy=False):
 
 def load_from_filename(filename):
     img = itk.array_from_image(itk.imread(filename))
-    img = np.expand_dims(img, axis=(0,1)) # (1,1,nb_channels,128,128)
+    img = np.expand_dims(img, axis=(1,2)) # (nb_proj,1,1,128,128)
     return img
 
 

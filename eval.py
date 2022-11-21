@@ -4,90 +4,66 @@ import click
 import glob
 import random
 
-from DeepPVC import plots, helpers_data,helpers_params, helpers, Models
+from DeepPVC import plots, helpers_data,helpers_params, helpers, Models,dataset
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--pth', multiple = True) # 'path/to/saved/model.pth'
-@click.option('--input', '-i', multiple = True)
+@click.option('--pth')
+@click.option('--input', '-i')
 @click.option('-n', help = 'If no input is specified, choose the number of random images on which you want to test')
-@click.option('--dataset', help = 'path to the dataset folder in which to randomly select n images')
+@click.option('--dataset','dataset_path', help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--type', default = 'mhd', help = "mhd or mha", show_default = True)
-@click.option('--ref/--no-ref', default = True)
+@click.option('--ref/--no-ref')
 @click.option('--save', is_flag=True, help = "Wheter or not to save the corrected image")
 @click.option('--mse', is_flag=True, help="Compute the MSE on the provided dataset")
-def eval_click(pth, input, n, dataset,type, ref, save, mse):
-    eval(pth, input, n, dataset,type, ref, save, mse)
+def eval_click(pth, input, n, dataset_path,type, ref, save, mse):
+    eval(pth, input, n, dataset_path,type, ref, save, mse)
 
 
 
-def eval(pth, input,n,dataset,type,ref, save, mse):
-    """ Evaluate visually a trained Pix2Pix (pth) on a given projection \n
-        Output is the corrected projection
-
-        Warning : the image will be normalized before PVC
-
-    """
-    print('Evaluation of the model on an image')
-
-    if input:
-        list_of_images = list(input)
-        do_mse = False
-    elif n:
-        n = int(n)
-        list_of_all_images = glob.glob(f'{dataset}/?????_PVE.{type}')
-        Nimages = len(list_of_all_images)
-        list_of_all_images = [list_of_all_images[i][:-8] for i in range(Nimages)]
-        list_of_images = random.sample(list_of_all_images, n)
-        if mse:
-            do_mse = True
-        else:
-            do_mse = False
-
-    else:
-        do_mse = None
-        print('ERROR : no input nor n specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
-        exit(0)
+def eval(pth, input,n,dataset_path,type,ref, save, mse):
 
     device = helpers.get_auto_device("cpu")
+    pth_file = torch.load(pth, map_location=device)
+    params = pth_file['params']
+    helpers_params.check_params(params)
+    network_architecture = params['network']
+    norm = params['norm']
+    print(norm)
+    normalisation = params['data_normalisation']
+    model = Models.ModelInstance(params=params, from_pth=pth)
+    model.switch_device(device)
+    model.switch_eval()
+
+    print(input)
+    if input:
+        test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
+    elif dataset_path:
+        n = int(n)
+        test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path)
+    else:
+        print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
+        exit(0)
+
+    print(test_dataset.shape)
+
+    normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset,normtype=normalisation, norm = norm, to_torch=True, device=device)
+
+
+    model.plot_losses(save, wait=False, title=pth)
 
 
 
-    for one_pth in pth:
-
-        pth_file = torch.load(one_pth, map_location=device)
-        params = pth_file['params']
-        helpers_params.check_params(params)
-
-        network_architecture = params['network']
-
-        norm = params['norm']
-        print(norm)
-        normalisation = params['data_normalisation']
-
-        model = Models.ModelInstance(params=params, from_pth=one_pth)
-        model.switch_device("cpu")
-        model.switch_eval()
-
-        model.plot_losses(save, wait = False, title = one_pth)
-        if do_mse:
-            MSE = 0
-            with torch.no_grad():
-                for test_data in list_of_all_images:
-                    input_array = helpers_data.load_image(test_data, is_ref=True, type=type,  noisy= network_architecture=='denoiser_pvc')
-                    normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation,norm=norm, to_torch=True, device='cpu')
-                    output_tensor = model.forward(normalized_input_tensor)
-
-                    denormalized_output_array = helpers_data.denormalize(dataset_or_img=output_tensor, normtype=normalisation,norm=norm, to_numpy=True)
-
-                    projPVfree = input_array[:,1,:,:,:]
-                    projDeepPVC = denormalized_output_array
-                    MSE += np.sum(np.sum((projDeepPVC - projPVfree) ** 2, axis=(1,2,3)) / np.sum(projPVfree**2, axis = (1,2,3))) / Nimages
-
-            print(f'MSE on the test dataset {dataset}:'+ "{:.3e}".format(MSE))
+    if mse:
+        normalized_dataset_input = normalized_test_dataset[:,0,:,:,:]
+        with torch.no_grad():
+            normalized_dataset_output = model.forward(normalized_dataset_input)
+            denormalized_dataset_output = helpers_data.denormalize(dataset_or_img=normalized_dataset_output,normtype=normalisation,norm=norm,to_numpy=True)
+            print(denormalized_dataset_output.shape)
+            MSE = np.mean((test_dataset[:,2,0,:,:] - denormalized_dataset_output[:,0,:,:])**2)
+            print(f'MSE : '+ "{:.3e}".format(MSE))
 
             if 'MSE' in model.params:
-                # model.params['MSE'].append([dataset, MSE])
                 done = False
                 for n,ds_mse in enumerate(model.params['MSE']):
                     if ds_mse[0]==dataset:
@@ -98,37 +74,29 @@ def eval(pth, input,n,dataset,type,ref, save, mse):
             else:
                 model.params['MSE'] = [[dataset,MSE]]
 
-            model.save_model(output_path=one_pth, save_json=True)
+            model.save_model(output_path=pth, save_json=True)
             print('*' * 80)
 
-        else:
-            print(f'No calculation of MSE as no dataset is provided')
 
         model.show_infos()
 
-        for input in list_of_images:
-            is_ref = ref
-            with torch.no_grad():
-                print(input)
-                input_array = helpers_data.load_image(input, is_ref, type, noisy= network_architecture=='denoiser_pvc')
-                normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
-
-                if network_architecture=='denoiser_pvc':
-                    noisyPVE = normalized_input_tensor[:, 0, :, :, :].to(device).float()
-                    denoisedPVE = model.UNet_denoiser(noisyPVE)
-                    fakePVfree = model.UNet_pvc(denoisedPVE)
-                    output_tensor = torch.cat((denoisedPVE, fakePVfree),0)
-                else:
-                    output_tensor = model.forward(normalized_input_tensor)
-
-                denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
-
-
-            imgs = np.concatenate((input_array[0,:,:,:,:],denormalized_output_array), axis=0)
-            # plots.show_images_profiles_denoiser_pvc(imgs, title = input)
-            plots.show_images_profiles(imgs, profile=True, noisy=network_architecture=='denoiser_pvc', save=False,is_tensor=False,title=input)
-
-
+    #     for input in list_of_images:
+    #         is_ref = ref
+    #         with torch.no_grad():
+    #             print(input)
+    #             input_array = helpers_data.load_image(input, is_ref, type, noisy= network_architecture=='denoiser_pvc')
+    #             normalized_input_tensor = helpers_data.normalize(dataset_or_img = input_array,normtype=normalisation,norm = norm, to_torch=True, device='cpu')
+    #
+    #             output_tensor = model.forward(normalized_input_tensor)
+    #
+    #             denormalized_output_array = helpers_data.denormalize(dataset_or_img = output_tensor,normtype=normalisation,norm=norm, to_numpy=True)
+    #
+    #
+    #         # imgs = np.concatenate((input_array[0,:,:,:,:],denormalized_output_array), axis=0)
+    #         # # plots.show_images_profiles_denoiser_pvc(imgs, title = input)
+    #         # plots.show_images_profiles(imgs, profile=True, noisy=network_architecture=='denoiser_pvc', save=False,is_tensor=False,title=input)
+    #
+    #
 
 
 

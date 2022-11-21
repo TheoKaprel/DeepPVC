@@ -191,12 +191,12 @@ class Pix2PixModel(ModelBase):
         self.generator_optimizer.step()
 
     def forward(self, batch):
-        if (batch.dim()==5) and (batch.shape[1]==2):
+        if  batch.dim()==4:
+            self.truePVE = batch.to(self.device).float()
+        elif (batch.dim()==5) and (batch.shape[1]==2):
             self.input_data(batch=batch)
-        elif batch.dim()==4:
-            self.truePVE = batch[:, :, :, :].to(self.device).float()
         elif batch.dim()==5 and (batch.shape[1]==1):
-            self.truePVE = batch[:, 0, :, :].to(self.device).float()
+            self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
 
         fakePVfree = self.Generator(self.truePVE)
         return fakePVfree
@@ -371,9 +371,9 @@ class UNetModel(ModelBase):
             self.truePVE = batch.to(self.device).float()
         elif batch.dim()==5:
             if (batch.shape[1] == 1 or batch.shape[1] == 2):
-                self.truePVE = batch[:,0,:,:].to(self.device).float()
+                self.truePVE = batch[:,0,:,:,:].to(self.device).float()
             elif batch.shape[1] == 3:
-                self.truePVE = batch[:,1,:,:].to(self.device).float() # batch[:,0,:,:] is the noisyPVE
+                self.truePVE = batch[:,0,:,:,:].to(self.device).float()
 
 
         fakePVfree = self.UNet(self.truePVE)

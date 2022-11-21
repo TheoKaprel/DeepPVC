@@ -110,3 +110,20 @@ def load_data(params):
     test_dataloader = torch.utils.data.DataLoader(normalized_test_dataset, batch_size=testing_batchsize, shuffle=True)
 
     return train_dataloader,test_dataloader,params
+
+
+
+
+def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False):
+    noisy = (params['network']=='denoiser_pvc')
+
+    input_channels = params['input_channels']
+
+    if from_folder!=False:
+        test_dataset = construct_dataset_from_path(dataset_path=from_folder,datatype=datatype, nb_channels=input_channels, noisy=noisy)
+    if from_file!=False:
+        test_dataset = helpers_data.load_image(filename=from_file,is_ref=is_ref, type=datatype,noisy=noisy)
+
+    return test_dataset
+
+
