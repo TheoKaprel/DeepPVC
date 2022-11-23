@@ -25,19 +25,17 @@ def eval_click(pth, input, n, dataset_path,type, ref, save, mse, plot):
 def eval(pth, input,n,dataset_path,type,ref, save, mse, plot):
     device = helpers.get_auto_device("cpu")
     pth_file = torch.load(pth, map_location=device)
-    print(pth_file['saving_date'])
 
     params = pth_file['params']
     helpers_params.check_params(params)
-    network_architecture = params['network']
+    pth_ref = params['ref']
     norm = params['norm']
-    print(norm)
+
     normalisation = params['data_normalisation']
     model = Models.ModelInstance(params=params, from_pth=pth)
     model.switch_device(device)
     model.switch_eval()
 
-    print(input)
     if input:
         test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
     elif dataset_path:
@@ -47,7 +45,6 @@ def eval(pth, input,n,dataset_path,type,ref, save, mse, plot):
         print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
         exit(0)
 
-    print(test_dataset.shape)
 
     normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset,normtype=normalisation, norm = norm, to_torch=True, device=device)
 
@@ -95,12 +92,19 @@ def eval(pth, input,n,dataset_path,type,ref, save, mse, plot):
                 denormalized_output_i = helpers_data.denormalize(dataset_or_img=output_i,normtype=normalisation, norm=norm,to_numpy=True)
 
 
-            fig,ax = plt.subplots(1,4)
+            fig,ax = plt.subplots(2,3)
 
-            ax[0].imshow(test_dataset[index,0,0,:,:])
-            ax[1].imshow(test_dataset[index,1,0,:,:])
-            ax[2].imshow(test_dataset[index,2,0,:,:])
-            ax[3].imshow(denormalized_output_i[0,0,:,:])
+            vmin = 0
+            vmax = max(np.max(denormalized_output_i), np.max(test_dataset[index,:,:,:,:]))
+
+            ax[0,0].imshow(test_dataset[index,0,0,:,:], vmin=vmin,vmax=vmax)
+            ax[0,0].set_title('PVE noisy')
+            ax[0,1].imshow(test_dataset[index,1,0,:,:], vmin=vmin,vmax=vmax)
+            ax[0,1].set_title('PVE')
+            ax[0,2].imshow(test_dataset[index,2,0,:,:], vmin=vmin,vmax=vmax)
+            ax[0,2].set_title('noPVE')
+            ax[1,2].imshow(denormalized_output_i[0,0,:,:], vmin=vmin,vmax=vmax)
+            ax[1,2].set_title(f'DeepPVC({pth_ref})')
             plt.show()
 
 
