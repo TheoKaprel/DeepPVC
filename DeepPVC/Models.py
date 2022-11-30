@@ -4,7 +4,7 @@ import torch
 from torch import optim
 import json
 import copy
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from . import networks, losses,plots, helpers, helpers_params
 

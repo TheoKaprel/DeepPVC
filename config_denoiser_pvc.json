@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/new_new_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/new_new_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/the_best_dataset"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/the_best_dataset"],
   "datatype": "mha",
   "training_batchsize":5,
   "test_batchsize":5,
@@ -8,7 +8,7 @@
 
   "network": "denoiser_pvc",
 
-  "n_epochs":30,
+  "n_epochs":50,
   "learning_rate":0.0002,
   "input_channels":1,
   "nb_ed_layers": 4,
@@ -24,7 +24,7 @@
   "pvc_update": 1,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,
-  "test_every_n_epoch": 2,
+  "test_every_n_epoch": 9999,
   "optimizer":"Adam",
   "device":"cuda",
   "recon_loss":"L1",

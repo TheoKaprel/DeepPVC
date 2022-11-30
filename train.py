@@ -66,8 +66,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             ref = 'NOREF'
     else:
         print('ERROR : Absence of params not detected earlier my bad ...')
-        params = None
-        start_epoch = 0
+        params,start_epoch,ref = None,0,None
         exit(0)
 
 
@@ -109,7 +108,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         show_test_keep_labels = ['PVE', 'PVfree']
         if network_architecture=='denoiser_pvc':
             show_test_keep_labels = ['noisyPVE'] + show_test_keep_labels
-
 
         denormalized_output = helpers_data.denormalize(show_test_fakePVfree, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (input_channels,128,128)
         show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=0)
