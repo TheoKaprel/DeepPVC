@@ -7,7 +7,7 @@ not_updatable_paramter_list_when_resume_training = ['training_batchsize', 'test_
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
 required = ['dataset_path', 'test_dataset_path', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
-            'input_channels','use_dropout','sum_norm','optimizer', 'device']
+            'input_channels','use_dropout','sum_norm','optimizer', 'device', 'lr_policy']
 
 automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
              'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
@@ -34,6 +34,7 @@ required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_deno
 activation_functions = ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"]
 pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
 losses = ["L1", "L2", "BCE"]
+lr_policies = ["multiplicative"]
 
 
 
@@ -87,6 +88,10 @@ def check_params(params, fatal_on_unknown=False):
 
     assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
+
+    assert(isinstance(params['lr_policy'], list))
+    assert(params['lr_policy'][0] in lr_policies)
+    assert(type(params['lr_policy'][1]) in [int, float])
 
     assert (params['optimizer'] in ["Adam"])
     assert (params['device'] in ["cpu", "cuda", "auto"])

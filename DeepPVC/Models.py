@@ -159,6 +159,15 @@ class Pix2PixModel(ModelBase):
         else:
             raise ValueError("Unknown optimizer. Choose between : Adam")
 
+        self.learning_rate_policy_infos = self.params['lr_policy']
+        if self.learning_rate_policy_infos[0]=='multiplicative':
+            mult_rate = self.learning_rate_policy_infos[1]
+            lbda = lambda epoch: mult_rate
+
+            self.scheduler_generator = optim.lr_scheduler.MultiplicativeLR(self.generator_optimizer, lbda)
+            self.scheduler_discriminator = optim.lr_scheduler.MultiplicativeLR(self.discriminator_optimizer, lbda)
+
+
     def init_losses(self):
         self.losses_params = {'adv_loss': self.params['adv_loss'], 'recon_loss': self.params['recon_loss'], 'lambda_recon': self.params['lambda_recon']}
 
@@ -226,6 +235,9 @@ class Pix2PixModel(ModelBase):
         self.current_iteration=0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
+
+        self.scheduler_generator.step()
+        self.scheduler_discriminator.step()
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_double_model(self.generator_losses, self.discriminator_losses, self.test_mse,labels=['Generator Loss','Discriminator Loss'], save=save, wait = wait, title = title)
@@ -361,6 +373,15 @@ class UNetModel(ModelBase):
         else:
             raise ValueError("Unknown optimizer. Choose between : Adam")
 
+        self.learning_rate_policy_infos = self.params['lr_policy']
+        if self.learning_rate_policy_infos[0]=='multiplicative':
+            mult_rate = self.learning_rate_policy_infos[1]
+            lbda = lambda epoch: mult_rate
+
+            self.scheduler_unet = optim.lr_scheduler.MultiplicativeLR(self.unet_optimizer, lbda)
+
+
+
     def init_losses(self):
         self.losses_params = {'recon_loss': self.params['recon_loss']}
 
@@ -405,6 +426,8 @@ class UNetModel(ModelBase):
         self.current_epoch+=1
         self.current_iteration=0
         self.mean_unetlosses = 0
+
+        self.scheduler_unet.step()
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_UNet(self.unet_losses, self.test_mse, save=save, wait = wait, title = title)
@@ -551,6 +574,16 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             raise ValueError("Unknown optimizer. Choose between : Adam")
 
+        self.learning_rate_policy_infos = self.params['lr_policy']
+        if self.learning_rate_policy_infos[0]=='multiplicative':
+            mult_rate = self.learning_rate_policy_infos[1]
+            lbda = lambda epoch: mult_rate
+
+            self.scheduler_pvc = optim.lr_scheduler.MultiplicativeLR(self.unet_pvc_optimizer, lbda)
+            self.scheduler_denoiser = optim.lr_scheduler.MultiplicativeLR(self.unet_denoiser_optimizer, lbda)
+
+
+
     def init_losses(self):
         self.denoiser_losses_params = {'recon_loss': self.params['recon_loss_denoiser']}
         self.pvc_losses_params = {'recon_loss': self.params['recon_loss_pvc']}
@@ -617,6 +650,9 @@ class UNet_Denoiser_PVC(ModelBase):
         self.current_iteration=0
         self.mean_unet_denoiser_losses = 0
         self.mean_unet_pvc_losses = 0
+
+        self.scheduler_pvc.step()
+        self.scheduler_denoiser.step()
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_double_model(self.unet_denoiser_list_losses, self.unet_pvc_list_losses, self.test_mse,labels=['Denoiser Loss','DeepPVC Loss'], save=save, wait = wait, title = title)

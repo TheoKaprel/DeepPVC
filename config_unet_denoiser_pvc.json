@@ -9,7 +9,8 @@
   "network": "denoiser_pvc",
 
   "n_epochs":10,
-  "learning_rate":0.0002,
+  "learning_rate":0.001,
+  "lr_policy": ["multiplicative",0.1],
   "input_channels":1,
   "use_dropout": false,
   "sum_norm": false,
@@ -18,7 +19,7 @@
   "test_every_n_epoch": 9999,
   "optimizer":"Adam",
   "device":"cuda",
-  "comment": "",
+  "comment": "test lr policy",
 
   "nb_ed_layers_denoiser": 4,
   "hidden_channels_unet_denoiser":64,
