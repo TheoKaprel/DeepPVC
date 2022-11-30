@@ -7,27 +7,35 @@ not_updatable_paramter_list_when_resume_training = ['training_batchsize', 'test_
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
 required = ['dataset_path', 'test_dataset_path', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
-            'hidden_channels_gen', 'optimizer', 'device', 'save_every_n_epoch']
-
-ballek = ['comment']
+            'input_channels','use_dropout','sum_norm','optimizer', 'device']
 
 automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
              'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
 
+ballek = ["comment"]
+
 default_params_values = [["datatype", "mhd"], ['training_batchsize', 5],
-                         ['test_batchsize', 5], ['input_channels', 1], ['nb_ed_layers', 4],
-                         ["generator_activation", "sigmoid"], ["generator_norm", "batch_norm"], ["use_dropout", False],
-                         ["sum_norm", False], ['recon_loss', 'L1'],
-                         ['show_every_n_epoch', 10], ["test_every_n_epoch", 10], ['training_duration', 0]]
+                         ['test_batchsize', 5], ['save_every_n_epoch', 9999], ['show_every_n_epoch', 9999],
+                         ["test_every_n_epoch", 9999], ['training_duration', 0]]
 default_params = [param for param, value in default_params_values]
 
-required_pix2pix = ['hidden_channels_disc', 'generator_update', 'discriminator_update', 'lambda_recon']
+required_pix2pix = ["nb_ed_layers", "hidden_channels_gen", "hidden_channels_disc",
+                    "generator_activation", "generator_norm",
+                    "adv_loss", "recon_loss", "lambda_recon", "generator_update", "discriminator_update"]
 
-default_params_values_pix2pix = [['adv_loss', 'BCE']]
-default_params_pix2pix = [param_ for param_, value_ in default_params_values_pix2pix]
+required_unet = ["nb_ed_layers", "hidden_channels_unet", "unet_activation", "unet_norm", "recon_loss"]
 
-default_params_values_denoiser_pvc =   [["denoiser_update", 1],["pvc_update", 1]]
-defautl_params_denoiser_pvc = [param__ for param__, value__ in default_params_values_denoiser_pvc]
+required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_denoiser","unet_denoiser_activation","recon_loss_denoiser","unet_denoiser_norm",
+                              "nb_ed_layers_pvc","hidden_channels_unet_pvc","unet_pvc_activation","recon_loss_pvc","unet_pvc_norm",
+                              "denoiser_update","pvc_update"]
+
+
+
+activation_functions = ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"]
+pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
+losses = ["L1", "L2", "BCE"]
+
+
 
 def update_params_user_option(params, user_params, is_resume):
     """
@@ -42,17 +50,10 @@ def update_params_user_option(params, user_params, is_resume):
 
 
 def check_params(params, fatal_on_unknown=False):
-    """
-    checks if
-    - required params are in the 'params' dictionnary
-    - types, min/max, closed option values
-    - sets unspecified values to default (for unrequired parameters)
-    - warning if unknown parameter
-    """
 
     for req in required:
         if (req not in params or req in [[], ""]):
-            print(f'Error, the parameters "{req}" is required in {params}')
+            print(f'ERROR: the parameters "{req}" is required in json param file')
             exit(0)
 
     for defparam, defvalue in default_params_values:
@@ -60,7 +61,26 @@ def check_params(params, fatal_on_unknown=False):
             params[defparam] = defvalue
             print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
 
+
+    if isinstance(params['dataset_path'], list)==False:
+        params['dataset_path'] = [params['dataset_path']]
+    for path in params['dataset_path']:
+        assert(type(path)==str)
+    if isinstance(params['test_dataset_path'], list)==False:
+        params['test_dataset_path'] = [params['test_dataset_path']]
+    for path in params['test_dataset_path']:
+        assert(type(path)==str)
+
+    assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
+    assert (params["datatype"] in ["mhd", "mha"])
+
     assert (params['network'] in ['pix2pix', 'unet', 'denoiser_pvc'])
+
+
+    int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_channels','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']
+    for int_param in int_param_list:
+        assert(type(params[int_param])==int)
+        assert(params[int_param]>0)
 
     assert(type(params['use_dropout'])==bool)
     assert(type(params['sum_norm'])==bool)
@@ -68,36 +88,40 @@ def check_params(params, fatal_on_unknown=False):
     assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
 
+    assert (params['optimizer'] in ["Adam"])
+    assert (params['device'] in ["cpu", "cuda", "auto"])
 
-    assert(params['optimizer'] in ["Adam"])
+    if params['network']=='pix2pix':
+        check_params_pix2pix(params=params, fatal_on_unknown=fatal_on_unknown)
+    elif params['network']=='unet':
+        check_params_unet(params=params, fatal_on_unknown=fatal_on_unknown)
+    elif params['network']=='denoiser_pvc':
+        check_params_denoiser_pvc(params=params,fatal_on_unknown=fatal_on_unknown)
 
 
-    for int_param in ['training_batchsize', 'test_batchsize', 'input_channels','nb_ed_layers','hidden_channels_gen', 'n_epochs', 'save_every_n_epoch']:
+
+def check_params_pix2pix(params, fatal_on_unknown):
+
+    for req in required_pix2pix:
+        if (req not in params or req in [[], ""]):
+            print(f'ERROR: the parameters "{req}" is required in json param file for Pix2Pix')
+            exit(0)
+
+    int_param_list = ["nb_ed_layers","hidden_channels_gen","hidden_channels_disc","generator_update","discriminator_update"]
+    for int_param in int_param_list:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
-    assert(params["datatype"] in ["mhd", "mha"])
-    assert (params['device'] in ["cpu", "cuda", "auto"])
+    assert(params['generator_activation'] in activation_functions)
+    assert(params['generator_norm'] in pre_layer_normalisations)
+    assert(params['adv_loss'] in losses)
+    assert(params['recon_loss'] in losses)
+    assert((type(params['lambda_recon']) in [int, float]))
+    assert(params['lambda_recon'] >= 0)
 
-    if isinstance(params['dataset_path'], list)==False:
-        params['dataset_path'] = [params['dataset_path']]
-    if isinstance(params['test_dataset_path'], list)==False:
-        params['test_dataset_path'] = [params['test_dataset_path']]
-
-    assert(params['generator_activation'] in ["sigmoid", "tanh","relu", "linear", "none", "relu_min"])
-
-    assert (params['recon_loss'] in ["L1", "L2"])
-    assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
-    assert (params['generator_norm'] in ["none", "batch_norm", "inst_norm"])
-
-
-    if params['network']=='pix2pix':
-        check_params_pix2pix(params=params)
-    elif params['network']=='denoiser_pvc':
-        check_params_denoiser_pvc(params=params)
 
     for p in params:
-        if p not in (required+required_pix2pix+automated+default_params+default_params_pix2pix+defautl_params_denoiser_pvc+ballek):
+        if p not in (required+required_pix2pix+automated+default_params+ballek):
             if fatal_on_unknown:
                 print(f'ERROR Unknown key named "{p}" in the params')
                 exit(0)
@@ -105,29 +129,58 @@ def check_params(params, fatal_on_unknown=False):
                 print(f'WARNING Unknown key named "{p}" in the params')
 
 
-
-def check_params_pix2pix(params):
-
-    for req in required_pix2pix:
+def check_params_unet(params, fatal_on_unknown):
+    for req in required_unet:
         if (req not in params or req in [[], ""]):
-            print(f'Error, the parameters "{req}" is required in {params} for Pix2Pix')
+            print(f'ERROR: the parameters "{req}" is required in json param file for UNet')
             exit(0)
-    for defparam, defvalue in default_params_values_pix2pix:
-        if (defparam not in params) or (params[defparam] in [""]):
-            params[defparam] = defvalue
-            print(f'WARNING The {defparam} parameter has been automatically set to {defvalue}')
 
-    assert ((type(params['lambda_recon']) in [int, float]))
-    assert (params['lambda_recon'] >= 0)
-
-    assert (params['adv_loss'] in ["BCE"])
-
-    for int_param in ['generator_update', 'discriminator_update']:
+    int_param_list = ["nb_ed_layers","hidden_channels_unet"]
+    for int_param in int_param_list:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
-def check_params_denoiser_pvc(params):
-    1
+    assert(params['unet_activation'] in activation_functions)
+    assert(params['unet_norm'] in pre_layer_normalisations)
+    assert(params['recon_loss'] in losses)
+
+    for p in params:
+        if p not in (required+required_unet+automated+default_params+ballek):
+            if fatal_on_unknown:
+                print(f'ERROR Unknown key named "{p}" in the params')
+                exit(0)
+            else:
+                print(f'WARNING Unknown key named "{p}" in the params')
+
+
+def check_params_denoiser_pvc(params, fatal_on_unknown):
+    for req in required_unet_denoiser_pvc:
+        if (req not in params or req in [[], ""]):
+            print(f'ERROR: the parameters "{req}" is required in json param file for Unet Denoiser/PVC')
+            exit(0)
+
+    int_param_list = ["nb_ed_layers_denoiser", "hidden_channels_unet_denoiser", "nb_ed_layers_pvc", "hidden_channels_unet_pvc", "denoiser_update", "pvc_update"]
+    for int_param in int_param_list:
+        assert(type(params[int_param])==int)
+        assert(params[int_param]>0)
+
+    assert(params["unet_denoiser_activation"] in activation_functions)
+    assert(params["unet_pvc_activation"] in activation_functions)
+
+    assert(params['recon_loss_denoiser'] in losses)
+    assert(params['recon_loss_pvc'] in losses)
+
+    assert(params['unet_denoiser_norm'] in pre_layer_normalisations)
+    assert(params['unet_pvc_norm'] in pre_layer_normalisations)
+
+    for p in params:
+        if p not in (required+required_unet_denoiser_pvc+automated+default_params+ballek):
+            if fatal_on_unknown:
+                print(f'ERROR Unknown key named "{p}" in the params')
+                exit(0)
+            else:
+                print(f'WARNING Unknown key named "{p}" in the params')
+
 
 
 def make_and_print_params_info_table(lparams):

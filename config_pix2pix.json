@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/noisy_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/Analytical_data/datasets/noisy_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "datatype": "mha",
   "training_batchsize":5,
   "test_batchsize":5,
@@ -11,8 +11,17 @@
   "n_epochs":20,
   "learning_rate":0.0002,
   "input_channels":1,
-  "nb_ed_layers": 4,
+  "use_dropout": false,
+  "sum_norm": false,
+  "save_every_n_epoch": 9999,
+  "show_every_n_epoch": 999,
+  "test_every_n_epoch": 99,
+  "optimizer":"Adam",
+  "device":"cuda",
+  "comment": "",
 
+
+  "nb_ed_layers": 4,
   "hidden_channels_gen":64,
   "hidden_channels_disc":9,
   "generator_activation": "relu",
@@ -21,14 +30,5 @@
   "recon_loss":"L2",
   "lambda_recon":100,
   "generator_update": 1,
-  "discriminator_update": 1,
-
-  "use_dropout": false,
-  "sum_norm": false,
-  "save_every_n_epoch": 9999,
-  "show_every_n_epoch": 999,
-  "test_every_n_epoch": 3,
-  "optimizer":"Adam",
-  "device":"cuda",
-  "comment": ""
+  "discriminator_update": 1
 }

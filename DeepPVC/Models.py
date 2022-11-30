@@ -28,24 +28,12 @@ class ModelBase():
         self.device = helpers.get_auto_device(self.params['device'])
 
         self.n_epochs = params['n_epochs']
+        self.learning_rate = params['learning_rate']
         self.input_channels = params['input_channels']
-        self.nb_ed_layers = params['nb_ed_layers']
-        self.hidden_channels_gen = params['hidden_channels_gen']
 
-        self.generator_activation = params['generator_activation']
-        self.generator_norm = params['generator_norm']
         self.use_dropout = params['use_dropout']
         self.sum_norm = params['sum_norm']
-
-        if self.generator_activation=='relu_min':
-            norm = self.params['norm']
-            self.vmin = -norm[0]/norm[1]
-        else:
-            self.vmin = None
-
-        self.learning_rate = params['learning_rate']
         self.optimizer = params['optimizer']
-
 
         self.output_folder = self.params['output_folder']
         self.output_pth = self.params['output_pth']
@@ -115,7 +103,18 @@ class Pix2PixModel(ModelBase):
     def __init__(self, params, from_pth = None):
         assert (params['network'] == 'pix2pix')
         super().__init__(params)
+
+        self.nb_ed_layers = params['nb_ed_layers']
+        self.hidden_channels_gen = params['hidden_channels_gen']
         self.hidden_channels_disc = params['hidden_channels_disc']
+        self.generator_activation = params['generator_activation']
+        self.generator_norm = params['generator_norm']
+        if self.generator_activation=='relu_min':
+            norm = self.params['norm']
+            self.vmin = -norm[0]/norm[1]
+        else:
+            self.vmin = None
+
         self.generator_update = params['generator_update']
         self.discriminator_update = params['discriminator_update']
 
@@ -316,8 +315,18 @@ class Pix2PixModel(ModelBase):
 class UNetModel(ModelBase):
     def __init__(self, params, from_pth = None):
         assert (params['network'] == 'unet')
-
         super().__init__(params)
+
+        self.nb_ed_layers = params['nb_ed_layers']
+        self.hidden_channels_unet = params['hidden_channels_unet']
+        self.unet_activation = params['unet_activation']
+        self.unet_norm = params['unet_norm']
+        if self.unet_activation=='relu_min':
+            norm = self.params['norm']
+            self.vmin = -norm[0]/norm[1]
+        else:
+            self.vmin = None
+
         if from_pth:
             self.load_model(from_pth)
         else:
@@ -342,9 +351,9 @@ class UNetModel(ModelBase):
 
 
     def init_model(self):
-        self.UNet = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
-                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+        self.UNet = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet, nb_ed_layers=self.nb_ed_layers,
+                                                output_channel=self.input_channels,generator_activation = self.unet_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.unet_norm, vmin=self.vmin).to(device=self.device)
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
@@ -362,8 +371,8 @@ class UNetModel(ModelBase):
         self.fakePVfree = self.UNet(self.truePVE)
 
     def backward_UNet(self):
-        self.gen_loss = self.losses.get_unet_loss(self.truePVfree, self.fakePVfree)
-        self.gen_loss.backward()
+        self.unet_loss = self.losses.get_unet_loss(self.truePVfree, self.fakePVfree)
+        self.unet_loss.backward()
         self.unet_optimizer.step()
 
     def forward(self, batch):
@@ -386,7 +395,7 @@ class UNetModel(ModelBase):
         self.forward_UNet()
         self.backward_UNet()
 
-        self.mean_unetlosses+=self.gen_loss.item()
+        self.mean_unetlosses+=self.unet_loss.item()
 
         self.current_iteration+=1
 
@@ -478,6 +487,24 @@ class UNet_Denoiser_PVC(ModelBase):
     def __init__(self, params, from_pth = None):
         assert(params['network']=='denoiser_pvc')
         super().__init__(params)
+
+        self.nb_ed_layers_denoiser = params['nb_ed_layers_denoiser']
+        self.hidden_channels_unet_denoiser = params['hidden_channels_unet_denoiser']
+        self.unet_denoiser_activation = params['unet_denoiser_activation']
+        self.unet_denoiser_norm = params['unet_denoiser_norm']
+
+        self.nb_ed_layers_pvc = params['nb_ed_layers_pvc']
+        self.hidden_channels_unet_pvc = params['hidden_channels_unet_pvc']
+        self.unet_pvc_activation = params['unet_pvc_activation']
+        self.unet_pvc_norm = params['unet_pvc_norm']
+
+        if (self.unet_denoiser_activation=='relu_min' or self.unet_pvc_activation=='relu_min'):
+            norm = self.params['norm']
+            self.vmin = -norm[0]/norm[1]
+        else:
+            self.vmin = None
+
+
         if from_pth:
             self.load_model(from_pth)
         else:
@@ -504,13 +531,13 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
     def init_model(self):
-        self.UNet_denoiser = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
-                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+        self.UNet_denoiser = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet_denoiser, nb_ed_layers=self.nb_ed_layers_denoiser,
+                                                output_channel=self.input_channels,generator_activation = self.unet_denoiser_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.unet_denoiser_norm, vmin=self.vmin).to(device=self.device)
 
-        self.UNet_pvc = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
-                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+        self.UNet_pvc = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet_pvc, nb_ed_layers=self.nb_ed_layers_pvc,
+                                                output_channel=self.input_channels,generator_activation = self.unet_pvc_activation,use_dropout=self.use_dropout,
+                                                sum_norm = self.sum_norm,norm = self.unet_pvc_norm, vmin=self.vmin).to(device=self.device)
 
     def init_optimization(self):
         self.denoiser_update = self.params['denoiser_update']
@@ -525,10 +552,11 @@ class UNet_Denoiser_PVC(ModelBase):
             raise ValueError("Unknown optimizer. Choose between : Adam")
 
     def init_losses(self):
-        self.losses_params = {'recon_loss': self.params['recon_loss']}
+        self.denoiser_losses_params = {'recon_loss': self.params['recon_loss_denoiser']}
+        self.pvc_losses_params = {'recon_loss': self.params['recon_loss_pvc']}
 
-        self.unet_denoiser_losses = losses.UNetLosses(self.losses_params)
-        self.unet_pvc_losses = losses.UNetLosses(self.losses_params)
+        self.unet_denoiser_losses = losses.UNetLosses(self.denoiser_losses_params)
+        self.unet_pvc_losses = losses.UNetLosses(self.pvc_losses_params)
 
     def input_data(self, batch):
         self.noisyPVE = batch[:, 0,:, :, :].to(self.device).float()
@@ -540,7 +568,6 @@ class UNet_Denoiser_PVC(ModelBase):
         self.fakePVE = self.UNet_denoiser(self.noisyPVE)
 
     def forward_pvc(self):
-        # self.fakePVfree = self.UNet_pvc(self.truePVE)
         self.fakePVE = self.UNet_denoiser(self.noisyPVE)
         self.fakePVfree = self.UNet_pvc(self.fakePVE)
 
