@@ -6,7 +6,7 @@
   "test_batchsize":5,
   "data_normalisation": "none",
 
-  "network": "unet",
+  "network": "pix2pix",
 
   "n_epochs":20,
   "learning_rate":0.0002,
@@ -17,18 +17,18 @@
   "hidden_channels_disc":9,
   "generator_activation": "relu",
   "generator_norm": "batch_norm",
-  "use_dropout": false,
-  "sum_norm": false,
-
+  "adv_loss":"BCE",
+  "recon_loss":"L2",
+  "lambda_recon":100,
   "generator_update": 1,
   "discriminator_update": 1,
+
+  "use_dropout": false,
+  "sum_norm": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
   "test_every_n_epoch": 3,
   "optimizer":"Adam",
   "device":"cuda",
-  "adv_loss":"BCE",
-  "recon_loss":"L2",
-  "lambda_recon":100,
   "comment": ""
 }
