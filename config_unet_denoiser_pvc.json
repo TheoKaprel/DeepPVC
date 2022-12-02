@@ -19,6 +19,7 @@
   "test_every_n_epoch": 9999,
   "optimizer":"Adam",
   "device":"cuda",
+  "validation_norm": "L1",
   "comment": "test lr policy",
 
   "nb_ed_layers_denoiser": 4,

@@ -114,7 +114,7 @@ def load_data(params):
 
 
 
-def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False):
+def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False, device = None, loader = True):
     noisy = (params['network']=='denoiser_pvc')
 
     input_channels = params['input_channels']
@@ -124,6 +124,12 @@ def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=F
     if from_file!=False:
         test_dataset = helpers_data.load_image(filename=from_file,is_ref=is_ref, type=datatype,noisy=noisy)
 
-    return test_dataset
+    normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=params['data_normalisation'], norm = params['norm'], to_torch=True, device=device)
+
+    if loader:
+        test_dataloader = torch.utils.data.DataLoader(normalized_test_dataset, batch_size=5, shuffle=True)
+        return test_dataloader
+    else:
+        return normalized_test_dataset
 
 

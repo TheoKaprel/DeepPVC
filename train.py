@@ -127,10 +127,14 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()
 
-            MSE = helpers_functions.mean_square_error(test_dataloader,DeepPVEModel).cpu().numpy()
+            if params['validation_norm']=="L1":
+                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True).cpu().numpy()
+                DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MNMAE])
+            if params['validation_norm']=="L2":
+                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False).cpu().numpy()
+                DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MNRMSE])
 
-            DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MSE])
-            print(f'Current MSE  =  {MSE}')
+            print(f'Current mean validation error =  {DeepPVEModel.test_mse[-1][1]}')
 
 
         if (DeepPVEModel.current_epoch % show_every_n_epoch==0):

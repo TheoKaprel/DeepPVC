@@ -16,7 +16,7 @@ ballek = ["comment"]
 
 default_params_values = [["datatype", "mhd"], ['training_batchsize', 5],
                          ['test_batchsize', 5], ['save_every_n_epoch', 9999], ['show_every_n_epoch', 9999],
-                         ["test_every_n_epoch", 9999], ['training_duration', 0]]
+                         ["test_every_n_epoch", 9999], ['training_duration', 0], ["validation_norm", "L1"]]
 default_params = [param for param, value in default_params_values]
 
 required_pix2pix = ["nb_ed_layers", "hidden_channels_gen", "hidden_channels_disc",
@@ -95,6 +95,8 @@ def check_params(params, fatal_on_unknown=False):
 
     assert (params['optimizer'] in ["Adam"])
     assert (params['device'] in ["cpu", "cuda", "auto"])
+
+    assert (params['validation_norm'] in losses)
 
     if params['network']=='pix2pix':
         check_params_pix2pix(params=params, fatal_on_unknown=fatal_on_unknown)

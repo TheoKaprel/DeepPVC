@@ -127,7 +127,7 @@ class Pix2PixModel(ModelBase):
 
             self.generator_losses = []
             self.discriminator_losses = []
-            self.test_mse = []
+            self.test_error = []
 
             self.current_epoch = 1
             self.start_epoch=1
@@ -240,7 +240,7 @@ class Pix2PixModel(ModelBase):
         self.scheduler_discriminator.step()
 
     def plot_losses(self, save, wait, title):
-        plots.plot_losses_double_model(self.generator_losses, self.discriminator_losses, self.test_mse,labels=['Generator Loss','Discriminator Loss'], save=save, wait = wait, title = title)
+        plots.plot_losses_double_model(self.generator_losses, self.discriminator_losses, self.test_error,labels=['Generator Loss','Discriminator Loss'], save=save, wait = wait, title = title)
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
@@ -260,7 +260,7 @@ class Pix2PixModel(ModelBase):
                     'disc_opt': self.discriminator_optimizer.state_dict(),
                     'gen_losses': self.generator_losses,
                     'disc_losses': self.discriminator_losses,
-                    'test_mse': self.test_mse,
+                    'test_error': self.test_error,
                     'params': self.params
                     }, output_path )
         print(f'Model saved at : {output_path}')
@@ -290,7 +290,7 @@ class Pix2PixModel(ModelBase):
 
         self.generator_losses = checkpoint['gen_losses']
         self.discriminator_losses = checkpoint['disc_losses']
-        self.test_mse = checkpoint['test_mse']
+        self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch
 
@@ -315,7 +315,7 @@ class Pix2PixModel(ModelBase):
         print('*' * 80)
 
         print('MEAN SQUARE ERROR on TEST DATA')
-        print(f'list of MSE on test data :{self.test_mse} ')
+        print(f'list of errors on test data :{self.test_error} ')
         print('*' * 80)
         print(self.Generator)
         print(self.Discriminator)
@@ -347,7 +347,7 @@ class UNetModel(ModelBase):
             self.init_losses()
 
             self.unet_losses = []
-            self.test_mse = []
+            self.test_error = []
 
             self.current_epoch = 1
             self.start_epoch=1
@@ -430,7 +430,7 @@ class UNetModel(ModelBase):
         self.scheduler_unet.step()
 
     def plot_losses(self, save, wait, title):
-        plots.plot_losses_UNet(self.unet_losses, self.test_mse, save=save, wait = wait, title = title)
+        plots.plot_losses_UNet(self.unet_losses, self.test_error, save=save, wait = wait, title = title)
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
@@ -447,7 +447,7 @@ class UNetModel(ModelBase):
                     'unet': self.UNet.state_dict(),
                     'unet_opt': self.unet_optimizer.state_dict(),
                     'unet_losses': self.unet_losses,
-                    'test_mse': self.test_mse,
+                    'test_error': self.test_error,
                     'params': self.params
                     }, output_path )
         print(f'Model saved at : {output_path}')
@@ -474,7 +474,7 @@ class UNetModel(ModelBase):
         self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])
 
         self.unet_losses = checkpoint['unet_losses']
-        self.test_mse = checkpoint['test_mse']
+        self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch
 
@@ -496,7 +496,7 @@ class UNetModel(ModelBase):
         print('*' * 80)
 
         print('MEAN SQUARE ERROR on TEST DATA')
-        print(f'list of MSE on test data :{self.test_mse} ')
+        print(f'list of MSE on test data :{self.test_error} ')
         print('*' * 80)
         print(self.UNet)
         print('*' * 80)
@@ -537,7 +537,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
             self.unet_denoiser_list_losses = []
             self.unet_pvc_list_losses = []
-            self.test_mse = []
+            self.test_error = []
 
             self.current_epoch = 1
             self.start_epoch=1
@@ -655,7 +655,7 @@ class UNet_Denoiser_PVC(ModelBase):
         self.scheduler_denoiser.step()
 
     def plot_losses(self, save, wait, title):
-        plots.plot_losses_double_model(self.unet_denoiser_list_losses, self.unet_pvc_list_losses, self.test_mse,labels=['Denoiser Loss','DeepPVC Loss'], save=save, wait = wait, title = title)
+        plots.plot_losses_double_model(self.unet_denoiser_list_losses, self.unet_pvc_list_losses, self.test_error,labels=['Denoiser Loss','DeepPVC Loss'], save=save, wait = wait, title = title)
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
@@ -675,7 +675,7 @@ class UNet_Denoiser_PVC(ModelBase):
                     'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
                     'unet_denoiser_losses': self.unet_denoiser_list_losses,
                     'unet_pvc_losses': self.unet_pvc_list_losses,
-                    'test_mse': self.test_mse,
+                    'test_error': self.test_error,
                     'params': self.params
                     }, output_path )
         print(f'Model saved at : {output_path}')
@@ -707,7 +707,7 @@ class UNet_Denoiser_PVC(ModelBase):
         self.denoiser_loss = torch.Tensor([self.unet_denoiser_list_losses[-1]])
         self.pvc_loss = torch.Tensor([self.unet_pvc_list_losses])
 
-        self.test_mse = checkpoint['test_mse']
+        self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
         self.start_epoch=self.current_epoch
 
@@ -732,7 +732,7 @@ class UNet_Denoiser_PVC(ModelBase):
         print('*' * 80)
 
         print('MEAN SQUARE ERROR on TEST DATA')
-        print(f'list of MSE on test data :{self.test_mse} ')
+        print(f'list of MSE on test data :{self.test_error} ')
         print('*' * 80)
         print('DENOISER : ')
         print(self.UNet_denoiser)

@@ -19,6 +19,7 @@
   "test_every_n_epoch": 99,
   "optimizer":"Adam",
   "device":"cuda",
+  "validation_norm": "L1",
   "comment": "",
 
 
