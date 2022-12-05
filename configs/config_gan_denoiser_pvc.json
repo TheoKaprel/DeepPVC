@@ -7,10 +7,10 @@
   "test_batchsize":5,
   "data_normalisation": "none",
 
-  "network": "unet",
+  "network": "gan_denoiser_pvc",
 
-  "n_epochs":20,
-  "learning_rate":0.0002,
+  "n_epochs":10,
+  "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.1],
   "input_channels":1,
   "use_dropout": false,
@@ -21,11 +21,20 @@
   "optimizer":"Adam",
   "device":"cuda",
   "validation_norm": "L1",
-  "comment": "",
+  "comment": "test lr policy",
 
-  "nb_ed_layers": 4,
-  "hidden_channels_unet":64,
-  "unet_activation": "relu",
-  "unet_norm": "batch_norm",
-  "recon_loss":"L2"
+  "nb_ed_layers_denoiser": 4,
+  "hidden_channels_unet_denoiser":64,
+  "unet_denoiser_activation": "relu",
+  "recon_loss_denoiser":"L2",
+  "unet_denoiser_norm": "batch_norm",
+
+  "nb_ed_layers_pvc": 4,
+  "hidden_channels_unet_pvc":64,
+  "unet_pvc_activation": "relu",
+  "recon_loss_pvc":"L1",
+  "unet_pvc_norm": "inst_norm",
+
+  "denoiser_update": 1,
+  "pvc_update": 1
 }

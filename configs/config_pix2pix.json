@@ -2,6 +2,7 @@
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "datatype": "mha",
+  "with_noise": false,
   "training_batchsize":5,
   "test_batchsize":5,
   "data_normalisation": "none",

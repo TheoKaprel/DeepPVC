@@ -62,7 +62,7 @@ def load_data(params):
     training_batchsize = params['training_batchsize']
     testing_batchsize = params['test_batchsize']
 
-    noisy = (params['network']=='denoiser_pvc')
+    noisy = (params['with_noise'])
 
     input_channels = params['input_channels']
 
@@ -115,7 +115,7 @@ def load_data(params):
 
 
 def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False, device = None, loader = True):
-    noisy = (params['network']=='denoiser_pvc')
+    noisy = (params['with_noise'])
 
     input_channels = params['input_channels']
 

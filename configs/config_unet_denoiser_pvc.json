@@ -2,11 +2,12 @@
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "datatype": "mha",
+  "with_noise": true,
   "training_batchsize":5,
   "test_batchsize":5,
   "data_normalisation": "none",
 
-  "network": "denoiser_pvc",
+  "network": "unet_denoiser_pvc",
 
   "n_epochs":10,
   "learning_rate":0.001,

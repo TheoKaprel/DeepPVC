@@ -6,7 +6,7 @@ not_updatable_paramter_list_when_resume_training = ['training_batchsize', 'test_
                                                     'learning_rate','input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
-required = ['dataset_path', 'test_dataset_path', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
+required = ['dataset_path', 'test_dataset_path','with_noise', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
             'input_channels','use_dropout','sum_norm','optimizer', 'device', 'lr_policy']
 
 automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
@@ -74,8 +74,9 @@ def check_params(params, fatal_on_unknown=False):
 
     assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
     assert (params["datatype"] in ["mhd", "mha"])
+    assert (type(params['with_noise'])==bool)
 
-    assert (params['network'] in ['pix2pix', 'unet', 'denoiser_pvc'])
+    assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc'])
 
 
     int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_channels','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']
@@ -102,8 +103,8 @@ def check_params(params, fatal_on_unknown=False):
         check_params_pix2pix(params=params, fatal_on_unknown=fatal_on_unknown)
     elif params['network']=='unet':
         check_params_unet(params=params, fatal_on_unknown=fatal_on_unknown)
-    elif params['network']=='denoiser_pvc':
-        check_params_denoiser_pvc(params=params,fatal_on_unknown=fatal_on_unknown)
+    elif params['network']=='unet_denoiser_pvc':
+        check_params_unet_denoiser_pvc(params=params,fatal_on_unknown=fatal_on_unknown)
 
 
 
@@ -160,7 +161,7 @@ def check_params_unet(params, fatal_on_unknown):
                 print(f'WARNING Unknown key named "{p}" in the params')
 
 
-def check_params_denoiser_pvc(params, fatal_on_unknown):
+def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
     for req in required_unet_denoiser_pvc:
         if (req not in params or req in [[], ""]):
             print(f'ERROR: the parameters "{req}" is required in json param file for Unet Denoiser/PVC')
