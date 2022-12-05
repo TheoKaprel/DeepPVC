@@ -95,7 +95,7 @@ def mySumNormAtivationFct(x0,x):
 
 
 
-class UNetGenerator(nn.Module):
+class UNet(nn.Module):
     """UNet shaped Generator
     Parameters :
     - input_channel : number of channels in input data
@@ -105,10 +105,9 @@ class UNetGenerator(nn.Module):
     - generator_activation
     - norm
     - vmin = None
-    FIXME : ajouter options :  dropout
     """
     def __init__(self,input_channel, ngc, output_channel,nb_ed_layers,generator_activation,use_dropout,sum_norm, norm, vmin = None):
-        super(UNetGenerator, self).__init__()
+        super(UNet, self).__init__()
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
         self.nb_ed_layers = nb_ed_layers
@@ -177,7 +176,7 @@ class UNetGenerator(nn.Module):
         # ----------------------------------------------------------
         return(y)
 
-class NLayerDiscriminator(nn.Module):
+class NEncodingLayers(nn.Module):
     """N convolutionnal layers Discriminator
     Parameters :
     - input_channel : number of channels in input data
@@ -186,7 +185,7 @@ class NLayerDiscriminator(nn.Module):
     FIXME : ajouter options : nb_layers, dropout, normlayer
     """
     def __init__(self, input_channel, ndc, output_channel=1):
-        super(NLayerDiscriminator, self).__init__()
+        super(NEncodingLayers, self).__init__()
 
         # initial layer
         sequence = [nn.Conv2d(input_channel, ndc, kernel_size=(4, 4), stride=(2, 2), padding = 1), nn.LeakyReLU(0.2, True)]

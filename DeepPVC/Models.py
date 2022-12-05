@@ -144,11 +144,11 @@ class Pix2PixModel(ModelBase):
 
 
     def init_model(self):
-        self.Generator = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
+        self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
 
-        self.Discriminator = networks.NLayerDiscriminator(input_channel=2*self.input_channels,
+        self.Discriminator = networks.NEncodingLayers(input_channel=2*self.input_channels,
                                                           ndc = self.hidden_channels_disc,
                                                           output_channel=self.input_channels).to(device=self.device)
 
@@ -363,7 +363,7 @@ class UNetModel(ModelBase):
 
 
     def init_model(self):
-        self.UNet = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet, nb_ed_layers=self.nb_ed_layers,
+        self.UNet = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel=self.input_channels,generator_activation = self.unet_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.unet_norm, vmin=self.vmin).to(device=self.device)
 
@@ -554,11 +554,11 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
     def init_model(self):
-        self.UNet_denoiser = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet_denoiser, nb_ed_layers=self.nb_ed_layers_denoiser,
+        self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet_denoiser, nb_ed_layers=self.nb_ed_layers_denoiser,
                                                 output_channel=self.input_channels,generator_activation = self.unet_denoiser_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.unet_denoiser_norm, vmin=self.vmin).to(device=self.device)
 
-        self.UNet_pvc = networks.UNetGenerator(input_channel=self.input_channels, ngc = self.hidden_channels_unet_pvc, nb_ed_layers=self.nb_ed_layers_pvc,
+        self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet_pvc, nb_ed_layers=self.nb_ed_layers_pvc,
                                                 output_channel=self.input_channels,generator_activation = self.unet_pvc_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.unet_pvc_norm, vmin=self.vmin).to(device=self.device)
 
