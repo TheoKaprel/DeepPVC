@@ -2,10 +2,9 @@ import torch
 import time
 import json as js
 import os
-import numpy as np
 import click
 
-from DeepPVC import dataset, helpers, helpers_data, helpers_params, helpers_functions, plots, Models
+from DeepPVC import dataset, helpers, helpers_params, helpers_functions, Models
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -97,24 +96,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     t0 = time.time()
 
 
-    DeepPVEModel.switch_eval()
-    with torch.no_grad():
-        # the data which will be used for show/test
-        testdataset = test_dataloader.dataset
-        id_test = np.random.randint(0, params['nb_testing_data'])
-        show_test_data = testdataset[id_test][None,:,:,:,:] #(1,2,input_channels,128,128)
-        show_test_fakePVfree = DeepPVEModel.forward(show_test_data)
-        show_test_keep_data = helpers_data.denormalize(show_test_data[0,:,:,:,:], normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True)  # (input_channels,128,128)
-        show_test_keep_labels = ['PVE', 'PVfree']
-        if network_architecture=='denoiser_pvc':
-            show_test_keep_labels = ['noisyPVE'] + show_test_keep_labels
-
-        denormalized_output = helpers_data.denormalize(show_test_fakePVfree, normtype=params['data_normalisation'], norm=params['norm'],to_numpy=True)  # (input_channels,128,128)
-        show_test_keep_data = np.concatenate((show_test_keep_data, denormalized_output), axis=0)
-        show_test_keep_labels.append(f'Pix2Pix:{start_epoch}')
-
-
-    print('Begining of the training .....')
+    print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
 
@@ -137,15 +119,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             print(f'Current mean validation error =  {DeepPVEModel.test_mse[-1][1]}')
 
 
-        if (DeepPVEModel.current_epoch % show_every_n_epoch==0):
-            DeepPVEModel.switch_eval()
-            with torch.no_grad():
-                show_test_output = DeepPVEModel.forward(show_test_data)
-                show_test_denormalized_output = helpers_data.denormalize(show_test_output, normtype=params['data_normalisation'],norm=params['norm'], to_numpy=True) # (input_channels,128,128)
-                show_test_keep_data = np.concatenate((show_test_keep_data,show_test_denormalized_output), axis=0) # (n+1,input_channels,128,128)
-                show_test_keep_labels.append(f'Pix2Pix:{DeepPVEModel.current_epoch}')
-
-
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
             current_time = round(time.time() - t0)
             DeepPVEModel.params['training_duration'] = current_time
@@ -160,9 +133,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     print(f'Total training time : {total_time} s')
     DeepPVEModel.params['training_endtime'] = time.asctime()
     DeepPVEModel.params['training_duration'] = total_time
-
-    if show_every_n_epoch<DeepPVEModel.n_epochs:
-        plots.show_images_profiles(show_test_keep_data,profile = True, save=True,folder = DeepPVEModel.params['output_folder'], is_tensor=False, title = f'Saved Images {ref}', labels=show_test_keep_labels)
 
     DeepPVEModel.save_model(save_json=True)
 
