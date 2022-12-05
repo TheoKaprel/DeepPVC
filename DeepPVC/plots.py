@@ -156,31 +156,7 @@ def plot_losses_UNet(unet_losses, test_mse, save = False, wait = False, title = 
     else:
         plt.show()
 
-def plot_losses_double_double_model(losses1,losses2, losses3, losses4, test_mse,labels, save = False, wait = False, title = None):
-    fontsize = 20
-
-    fig,ax1 = plt.subplots(figsize=(8,6))
-    fig.subplots_adjust(right=0.75)
-
-    p1 = ax1.plot(losses1, color = 'orange',linewidth = 2, label = labels[0])
-    ax1.set_ylabel(labels[0], color = p1[0].get_color(), fontsize = fontsize)
-    ax1.set_xlabel("# of epochs", fontsize=fontsize)
-    ax1.legend(loc=2, fontsize = fontsize) #upper left legend
-
-    ax2 = ax1.twinx()
-    p2 = ax2.plot(losses2,color = 'blue',linewidth = 2, label= labels[1])
-    ax2.set_ylabel(labels[1], color = p2[0].get_color(),fontsize=fontsize)
-    ax2.legend(loc=1, fontsize = fontsize) #upper right legend
-
-    ax3 = ax1.twinx()
-    p3 = ax3.plot(losses3, color='orange', linewidth=2,linestyle='dashed', label=labels[2])
-    ax3.set_ylabel(labels[2], color=p3[0].get_color(), fontsize=fontsize)
-    ax3.legend(loc=2, fontsize=fontsize)  # upper right legend
-
-    ax4 = ax1.twinx()
-    p4 = ax4.plot(losses4, color='blue', linewidth=2,linestyle='dashed', label=labels[3])
-    ax4.set_ylabel(labels[3], color=p4[0].get_color(), fontsize=fontsize)
-    ax4.legend(loc=1, fontsize=fontsize)  # upper right legend
+def plot_losses_double_double_model__(losses1,losses2, losses3, losses4, test_mse,labels, save = False, wait = False, title = None):
 
     if len(test_mse)>0:
         ax_mse = ax1.twinx()
@@ -206,6 +182,82 @@ def plot_losses_double_double_model(losses1,losses2, losses3, losses4, test_mse,
     else:
         plt.show()
 
+def plot_losses_double_double_model(losses1,losses2, losses3, losses4, test_mse,labels, save = False, wait = False, title = None):
+    fontsize = 20
+    fig, ax1 = plt.subplots()
+    fig.subplots_adjust(right=0.75)
+
+    ax2 = ax1.twinx()
+    ax3 = ax1.twinx()
+    ax4 = ax1.twinx()
+
+    # Offset the right spine of twin2.  The ticks and label have already been
+    # placed on the right by twinx above.
+    ax2.spines.right.set_position(("axes", 1.1))
+    ax3.spines.left.set_position(("axes", -0.1))
+
+    p1, = ax1.plot(losses1, color = "orange", label=labels[0])
+    p2, = ax2.plot(losses2,  color = "blue", label=labels[1])
+    p3, = ax3.plot(losses3,  color = "orange",linestyle = 'dashed', label=labels[2])
+    p4, = ax4.plot(losses4,  color = "blue",linestyle = 'dashed', label=labels[3])
+
+    ax1.set_xlabel("# epochs", fontsize=fontsize)
+    ax1.set_ylabel(labels[0], fontsize=fontsize)
+    ax2.set_ylabel(labels[1], fontsize=fontsize)
+    ax3.set_ylabel(labels[2],fontsize=fontsize)
+    ax4.set_ylabel(labels[3], fontsize=fontsize)
+
+    ax1.yaxis.label.set_color(p1.get_color())
+    ax2.yaxis.label.set_color(p2.get_color())
+    ax3.yaxis.label.set_color(p3.get_color())
+    ax4.yaxis.label.set_color(p4.get_color())
+
+    tkw = dict(size=4, width=1.5)
+    ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+    ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
+    ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
+    ax4.tick_params(axis='y', colors=p4.get_color(), **tkw)
+    ax1.tick_params(axis='x', **tkw)
+
+
+    ax1.spines.left.set_color(p1.get_color())
+    ax2.spines.right.set_color(p2.get_color())
+    ax3.yaxis.set_label_position('left')
+    ax3.yaxis.set_ticks_position('left')
+    ax3.spines.left.set_color(p3.get_color())
+    ax4.spines.right.set_color(p4.get_color())
+
+    ax1.spines.left.set_visible(True)
+    ax3.spines.left.set_visible(True)
+    ax2.spines.left.set_visible(False)
+    ax4.spines.left.set_visible(False)
+
+    ax1.spines.right.set_visible(False)
+    ax3.spines.right.set_visible(False)
+    ax2.spines.right.set_visible(True)
+    ax4.spines.right.set_visible(True)
+
+    ax1.legend(handles=[p1, p2, p3, p4], fontsize=fontsize)
+
+
+    if len(test_mse)>0:
+        ax_mse = ax1.twinx()
+        ax_mse.spines.right.set_position(("axes", 1.2))
+
+        test_epochs = [k[0] for k in test_mse]
+        test_mse = [k[1] for k in test_mse]
+        p_mse, = ax_mse.plot(test_epochs, test_mse, color = 'green',linewidth = 2, label = 'TEST ERROR')
+        ax_mse.set_ylabel("TEST ERROR", color = p_mse.get_color(), fontsize = fontsize)
+        ax_mse.yaxis.label.set_color(p_mse.get_color())
+        ax_mse.tick_params(axis='y', colors=p_mse.get_color(), **tkw)
+        ax_mse.spines.left.set_color(p_mse.get_color())
+        ax_mse.spines.left.set_visible(False)
+        ax_mse.spines.right.set_visible(True)
+        ax_mse.legend(loc = 'upper center', fontsize = fontsize)
+
+
+
+    plt.show()
 
 def show_images_profiles(images,profile = None,noisy=False, save=False,folder = None, is_tensor=True, title = None, labels = None):
     if is_tensor:

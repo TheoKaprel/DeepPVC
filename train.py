@@ -110,13 +110,13 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             DeepPVEModel.switch_eval()
 
             if params['validation_norm']=="L1":
-                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True).cpu().numpy()
-                DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MNMAE])
+                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNMAE])
             if params['validation_norm']=="L2":
-                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False).cpu().numpy()
-                DeepPVEModel.test_mse.append([DeepPVEModel.current_epoch, MNRMSE])
+                MNRMSE,MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE])
 
-            print(f'Current mean validation error =  {DeepPVEModel.test_mse[-1][1]}')
+            print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
 
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):

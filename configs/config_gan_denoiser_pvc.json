@@ -11,17 +11,17 @@
 
   "n_epochs":10,
   "learning_rate":0.001,
-  "lr_policy": ["multiplicative",0.1],
+  "lr_policy": ["multiplicative",1],
   "input_channels":1,
   "use_dropout": false,
   "sum_norm": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,
-  "test_every_n_epoch": 9999,
+  "test_every_n_epoch": 1,
   "optimizer":"Adam",
   "device":"cuda",
   "validation_norm": "L1",
-  "comment": "test lr policy",
+  "comment": "test si ca marche ce double gan",
 
   "nb_ed_layers_gen_denoiser": 4,
   "hidden_channels_gen_denoiser":64,
@@ -46,5 +46,5 @@
   "discriminator_update_pvc": 1,
 
   "denoiser_update": 1,
-  "pvc_update": 1
+  "pvc_update": 2
 }

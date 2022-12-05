@@ -960,9 +960,9 @@ class GAN_Denoiser_PVC(ModelBase):
 
             # pvc generator updates
             for _pvc_gen in range(self.generator_update_pvc):
-                self.denoiser_gen_optimizer.zero_grad()
-                self.forward_denoiser_G()
-                self.backward_denoiser_G()
+                self.pvc_gen_optimizer.zero_grad()
+                self.forward_pvc_G()
+                self.backward_pvc_G()
             self.mean_gen_pvc_losses+=self.pvc_gen_loss.item()
 
         self.current_iteration+=1
