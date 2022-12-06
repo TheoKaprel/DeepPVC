@@ -603,8 +603,9 @@ class UNet_Denoiser_PVC(ModelBase):
         self.fakePVE = self.UNet_denoiser(self.noisyPVE)
 
     def forward_pvc(self):
-        self.fakePVE = self.UNet_denoiser(self.noisyPVE)
-        self.fakePVfree = self.UNet_pvc(self.fakePVE)
+        with torch.no_grad():
+            self.fakePVE = self.UNet_denoiser(self.noisyPVE)
+        self.fakePVfree = self.UNet_pvc(self.fakePVE.detach())
 
     def backward_denoiser(self):
         self.denoiser_loss = self.unet_denoiser_losses.get_unet_loss(self.truePVE, self.fakePVE)
@@ -898,7 +899,9 @@ class GAN_Denoiser_PVC(ModelBase):
 
 
     def forward_pvc_G(self):
-        self.fakePVfree = self.PVC_Generator(self.truePVE)
+        with torch.no_grad():
+            self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
+        self.fakePVfree = self.PVC_Generator(self.fakePVE.detach())
         self.disc_fakePVfree_hat = self.PVC_Discriminator(self.fakePVfree, self.truePVE)
 
     def backward_pvc_G(self):
@@ -908,7 +911,8 @@ class GAN_Denoiser_PVC(ModelBase):
 
     def forward_pvc_D(self):
         with torch.no_grad():
-            self.DfakePVfree = self.PVC_Generator(self.truePVE)
+            self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
+            self.DfakePVfree = self.PVC_Generator(self.fakePVE.detach())
 
         self.Ddisc_fakePVfree_hat = self.PVC_Discriminator(self.DfakePVfree.detach(), self.truePVE)
         self.Ddisc_truePVfree_hat = self.PVC_Discriminator(self.truePVfree, self.truePVE)
