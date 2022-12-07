@@ -60,7 +60,6 @@ def load_data(params):
     datatype = params["datatype"]
     test_dataset_path = params['test_dataset_path']
     training_batchsize = params['training_batchsize']
-    testing_batchsize = params['test_batchsize']
 
     noisy = (params['with_noise'])
 
@@ -94,12 +93,11 @@ def load_data(params):
             test_dataset = tmp_dataset
             test_dataset_is_set = True
 
-    normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
-
+    # normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
 
 
     nb_training_data = normalized_train_dataset.shape[0]
-    nb_testing_data = normalized_test_dataset.shape[0]
+    nb_testing_data = test_dataset.shape[0]
     print(f'Number of training data : {nb_training_data}')
     print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
@@ -107,9 +105,9 @@ def load_data(params):
 
 
     train_dataloader = torch.utils.data.DataLoader(normalized_train_dataset, batch_size=training_batchsize, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(normalized_test_dataset, batch_size=testing_batchsize, shuffle=True)
+    # test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=testing_batchsize, shuffle=True)
 
-    return train_dataloader,test_dataloader,params
+    return train_dataloader,test_dataset,params
 
 
 

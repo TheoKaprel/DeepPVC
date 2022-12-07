@@ -72,7 +72,7 @@ def check_params(params, fatal_on_unknown=False):
     for path in params['test_dataset_path']:
         assert(type(path)==str)
 
-    assert (params['data_normalisation'] in ["standard", "min_max", "min_max_1_1", "none"])
+    assert (params['data_normalisation'] in ["global_standard","img_standard","global_0_1","img_0_1","img_mean","none"])
     assert (params["datatype"] in ["mhd", "mha"])
     assert (type(params['with_noise'])==bool)
 
