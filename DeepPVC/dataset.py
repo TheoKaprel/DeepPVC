@@ -93,9 +93,6 @@ def load_data(params):
             test_dataset = tmp_dataset
             test_dataset_is_set = True
 
-    # normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=normalisation, norm = norm, to_torch=True, device=device)
-
-
     nb_training_data = normalized_train_dataset.shape[0]
     nb_testing_data = test_dataset.shape[0]
     print(f'Number of training data : {nb_training_data}')
@@ -103,16 +100,14 @@ def load_data(params):
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
 
-
     train_dataloader = torch.utils.data.DataLoader(normalized_train_dataset, batch_size=training_batchsize, shuffle=True)
-    # test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=testing_batchsize, shuffle=True)
 
     return train_dataloader,test_dataset,params
 
 
 
 
-def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False, device = None, loader = True):
+def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=False):
     noisy = (params['with_noise'])
 
     input_channels = params['input_channels']
@@ -122,12 +117,6 @@ def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=F
     if from_file!=False:
         test_dataset = helpers_data.load_image(filename=from_file,is_ref=is_ref, type=datatype,noisy=noisy)
 
-    normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset, normtype=params['data_normalisation'], norm = params['norm'], to_torch=True, device=device)
-
-    if loader:
-        test_dataloader = torch.utils.data.DataLoader(normalized_test_dataset, batch_size=5, shuffle=True)
-        return test_dataloader
-    else:
-        return normalized_test_dataset
+    return test_dataset
 
 

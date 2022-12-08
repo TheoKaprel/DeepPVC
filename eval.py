@@ -57,19 +57,16 @@ def eval_mse(lpth, input,dataset_path,type,ref, verbose):
         model.switch_eval()
 
         if input:
-            test_dataloader = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref, device = device)
+            test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
         elif dataset_path:
-            test_dataloader = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path, device = device)
+            test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
 
-        if verbose>1:
-            model.plot_losses(save=False, wait=False, title=pth)
-
         with torch.no_grad():
-            MNRMSE, MNMAE = helpers_functions.validation_errors(dataset_loader=test_dataloader, model=model, do_NRMSE=True, do_NMAE=True)
+            MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataset_numpy=test_dataset, model=model, do_NRMSE=True, do_NMAE=True)
             print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE))
             print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE))
 
@@ -108,17 +105,16 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
     device = helpers.get_auto_device("cpu")
 
     random_data_index = []
-    first = True
 
     dict_data = {}
+    lpth_ref = []
 
-    for pth in lpth:
+    for (id,pth) in enumerate(lpth):
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
-        # helpers_params.check_params(params)
         pth_ref = params['ref']
-        norm = params['norm']
+        lpth_ref.append(pth_ref)
 
         normalisation = params['data_normalisation']
         model = Models.ModelInstance(params=params, from_pth=pth)
@@ -127,42 +123,39 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
         if verbose>0:
             model.show_infos()
+            if verbose > 1:
+                model.plot_losses(save=False, wait=True, title=pth)
 
         if input:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref, loader = False)
+            test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
         elif dataset_path:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path, loader = False)
+            test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
-        if first:
-            denormalized_test_dataset = helpers_data.denormalize(dataset_or_img=test_dataset, normtype=normalisation, norm=norm, to_numpy=True)
+        if id==0:
             N_data = test_dataset.shape[0]
             random_data_index = [random.randint(0, N_data - 1) for _ in range(n)]
             for id in random_data_index:
                 dict_data[id] = {}
-                dict_data[id]['PVE_noisy'] = denormalized_test_dataset[id, 0, 0, :, :]
-                dict_data[id]['PVE'] = denormalized_test_dataset[id, 1, 0, :, :]
-                dict_data[id]['noPVE'] = denormalized_test_dataset[id, 2, 0, :, :]
-
-            first=False
-
-        # normalized_test_dataset = helpers_data.normalize(dataset_or_img=test_dataset,normtype=normalisation, norm = norm, to_torch=True, device=device)
-        #
-        # normalized_dataset_input = normalized_test_dataset[:, 0, :, :, :]
+                dict_data[id]['PVE_noisy'] = test_dataset[id, 0, 0, :, :]
+                dict_data[id]['PVE'] = test_dataset[id, 1, 0, :, :]
+                dict_data[id]['noPVE'] = test_dataset[id, 2, 0, :, :]
 
 
         for index in random_data_index:
             input_i = test_dataset[index,0, :, :, :][None,None, :, :, :]
             with torch.no_grad():
-                output_i = model.forward(input_i)
-                denormalized_output_i = helpers_data.denormalize(dataset_or_img=output_i,
-                                                                 normtype=normalisation, norm=norm,
-                                                                 to_numpy=True)
+                norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i,data_normalisation=normalisation)
+                normalized_input_i = helpers_data.normalize_eval(dataset_or_img=input_i,data_normalisation=normalisation,norm=norm_input_i,params=params,to_torch=True)
+
+                output_i = model.forward(normalized_input_i)
+                denormalized_output_i = helpers_data.denormalize_eval(dataset_or_img=output_i,data_normalisation=normalisation,norm=norm_input_i,params=params,to_numpy=True)
                 dict_data[index][pth_ref] = denormalized_output_i[0, 0, :, :]
 
-
+    if verbose>1:
+        plt.show()
 
 
 
@@ -173,9 +166,13 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         vmin = 0
         vmax = max([np.max(img_idk) for img_idk in dict_data_id.values()])
 
-        for key,ax in zip(dict_data_id,axs.ravel()):
-            ax.imshow(dict_data_id[key], vmin = vmin, vmax = vmax)
-            ax.set_title(key)
+        axs[0,0].imshow(dict_data_id['PVE_noisy'], vmin = vmin, vmax = vmax)
+        axs[0,1].imshow(dict_data_id['PVE'], vmin = vmin, vmax = vmax)
+        axs[0,2].imshow(dict_data_id['noPVE'], vmin = vmin, vmax = vmax)
+
+        for pth_ref,ax in zip(lpth_ref,axs[1,:]):
+            ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
+            ax.set_title(pth_ref)
 
         plt.show()
 
