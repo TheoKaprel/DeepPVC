@@ -20,7 +20,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 def eval_click(pth, input, n, dataset_path,type, ref, error, plot, verbose):
 
     if error:
-        eval_mse(pth, input, dataset_path,type, ref, verbose)
+        eval_error(pth, input, dataset_path,type, ref, verbose)
     if plot:
         eval_plot(pth, input, n, dataset_path,type, ref, verbose)
 
@@ -40,11 +40,11 @@ def add_or_modify_error(dataset_path, params, error_ref, error_val):
     return params
 
 
-def eval_mse(lpth, input,dataset_path,type,ref, verbose):
+def eval_error(lpth, input,dataset_path,type,ref, verbose):
     device = helpers.get_auto_device("cpu")
 
-    dict_mse = {}
-    dict_mae = {}
+    dict_mse,dict_std_mse = {},{}
+    dict_mae,dict_std_mae = {},{}
 
     for pth in lpth:
         pth_file = torch.load(pth, map_location=device)
@@ -66,12 +66,14 @@ def eval_mse(lpth, input,dataset_path,type,ref, verbose):
 
 
         with torch.no_grad():
-            MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataset_numpy=test_dataset, model=model, do_NRMSE=True, do_NMAE=True)
-            print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE))
-            print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE))
+            (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataset_numpy=test_dataset, model=model, do_NRMSE=True, do_NMAE=True)
+            print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE) + "  (std={:.3e})".format(std_NRMSE))
+            print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE)  + "  (std={:.3e})".format(std_NMAE))
 
             dict_mse[pth_ref] = MNRMSE
             dict_mae[pth_ref] = MNMAE
+            dict_std_mse[pth_ref] = std_NRMSE
+            dict_std_mae[pth_ref] = std_NMAE
 
             model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNRMSE', error_val=MNRMSE)
             model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNMAE', error_val=MNMAE)
@@ -85,13 +87,13 @@ def eval_mse(lpth, input,dataset_path,type,ref, verbose):
 
 
     fig,ax = plt.subplots(1,2)
-    ax[0].bar(range(len(dict_mse)), list(dict_mse.values()), align='center')
+    ax[0].bar(range(len(dict_mse)), list(dict_mse.values()),yerr=dict_std_mse.values(), align='center', capsize=5)
     ax[0].set_xticks(ticks = range(len(dict_mse)))
     ax[0].set_xticklabels(list(dict_mse.keys()))
     ax[0].set_title('Mean NRMSE')
 
 
-    ax[1].bar(range(len(dict_mae)), list(dict_mae.values()), align='center')
+    ax[1].bar(range(len(dict_mae)), list(dict_mae.values()),yerr=dict_std_mae.values(), align='center', capsize=5)
     ax[1].set_xticks(ticks = range(len(dict_mae)))
     ax[1].set_xticklabels(list(dict_mae.keys()))
     ax[1].set_title('Mean NMAE')

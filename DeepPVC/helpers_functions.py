@@ -9,9 +9,12 @@ from . import helpers
 
 def validation_errors(test_dataset_numpy, model, do_NRMSE=True, do_NMAE=True):
     params = model.params
-    MNRMSE = 0
-    MNMAE = 0
-    N = 0
+    MNRMSE,std_NRMSE = 0,0
+    MNMAE,std_NMAE = 0,0
+
+    list_NRMSE = np.array([])
+    list_NMAE = np.array([])
+
     batch_size = model.params['test_batchsize']
     data_normalisation=params['data_normalisation']
     test_dataset_numpy_batch = np.array_split(ary=test_dataset_numpy,indices_or_sections=(test_dataset_numpy.shape[0]//batch_size + 1), axis=0)
@@ -35,18 +38,19 @@ def validation_errors(test_dataset_numpy, model, do_NRMSE=True, do_NMAE=True):
                 MSE = np.sum((denormalized_output - batch_targets)**2, axis = (1,2,3)) / batch.shape[2] / batch.shape[3]
                 RMSE = np.sqrt(MSE)
                 NRMSE = RMSE / mean_norm
-                MNRMSE += np.sum(NRMSE)
+                list_NRMSE = np.concatenate((list_NRMSE,NRMSE))
 
             if do_NMAE:
                 MAE = np.sum(np.abs(denormalized_output - batch_targets), axis=(1,2,3)) / batch.shape[2] / batch.shape[3]
                 NMAE = MAE / mean_norm
-                MNMAE += np.sum(NMAE)
-
-            N += batch.shape[0]
+                list_NMAE = np.concatenate((list_NMAE, NMAE))
 
     if do_NRMSE:
-        MNRMSE = MNRMSE / N
+        MNRMSE = np.mean(list_NRMSE)
+        std_NRMSE = np.std(list_NRMSE)
     if do_NMAE:
-        MNMAE = MNMAE / N
+        MNMAE = np.mean(list_NMAE)
+        std_NMAE = np.std(list_NMAE)
 
-    return MNRMSE, MNMAE
+
+    return (MNRMSE,std_NRMSE), (MNMAE,std_NMAE)
