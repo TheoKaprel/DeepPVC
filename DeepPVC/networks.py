@@ -61,7 +61,7 @@ class UpSamplingBlock(nn.Module):
             self.upNorm = nn.InstanceNorm2d(output_nc)
 
         if self.use_dropout:
-            self.dropout = nn.Dropout(0.2)
+            self.dropout = nn.Dropout(0.2,inplace=True)
 
     def forward(self, x):
         x = self.upConv(x)
