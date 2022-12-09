@@ -139,10 +139,6 @@ class Pix2PixModel(ModelBase):
         self.mean_discriminator_loss = 0
 
 
-        if eval:
-            self.switch_eval()
-        else:
-            self.switch_train()
 
 
     def init_model(self):
@@ -358,10 +354,6 @@ class UNetModel(ModelBase):
         self.mean_unetlosses = 0
 
 
-        if eval:
-            self.switch_eval()
-        else:
-            self.switch_train()
 
 
     def init_model(self):
@@ -547,12 +539,6 @@ class UNet_Denoiser_PVC(ModelBase):
         self.current_iteration = 0
         self.mean_unet_denoiser_losses = 0
         self.mean_unet_pvc_losses = 0
-
-
-        if eval:
-            self.switch_eval()
-        else:
-            self.switch_train()
 
 
     def init_model(self):
@@ -807,11 +793,6 @@ class GAN_Denoiser_PVC(ModelBase):
         self.mean_disc_denoiser_losses = 0
         self.mean_gen_pvc_losses = 0
         self.mean_disc_pvc_losses = 0
-
-        if eval:
-            self.switch_eval()
-        else:
-            self.switch_train()
 
 
     def init_model(self):

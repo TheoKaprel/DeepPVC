@@ -23,7 +23,7 @@ class DownSamplingBlock(nn.Module):
         self.downRelu = nn.LeakyReLU(0.2, True)
 
         if self.normtype=="batch_norm":
-            self.downNorm = nn.BatchNorm2d(output_nc)
+            self.downNorm = nn.BatchNorm2d(output_nc, track_running_stats=False)
         elif self.normtype=="inst_norm":
             self.downNorm = nn.InstanceNorm2d(output_nc)
 
@@ -56,12 +56,12 @@ class UpSamplingBlock(nn.Module):
         self.upRelu = nn.ReLU(True)
 
         if self.normtype=="batch_norm":
-            self.upNorm = nn.BatchNorm2d(output_nc)
+            self.upNorm = nn.BatchNorm2d(output_nc,track_running_stats=False)
         elif self.normtype=="inst_norm":
             self.upNorm = nn.InstanceNorm2d(output_nc)
 
         if self.use_dropout:
-            self.dropout = nn.Dropout(0.5)
+            self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
         x = self.upConv(x)
