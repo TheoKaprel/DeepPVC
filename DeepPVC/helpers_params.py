@@ -175,7 +175,15 @@ def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
     assert(params["unet_denoiser_activation"] in activation_functions)
     assert(params["unet_pvc_activation"] in activation_functions)
 
-    assert(params['recon_loss_denoiser'] in losses)
+    if type(params['recon_loss_denoiser'])==list:
+        assert("Poisson" in params['recon_loss_denoiser'])
+        for l in params['recon_loss_denoiser']:
+            assert(l in losses or l=='Poisson')
+        assert("lambda_poisson" in params)
+        assert(type(params['lambda_poisson']) in [int,float])
+    else:
+        assert(params['recon_loss_denoiser'] in losses)
+
     assert(params['recon_loss_pvc'] in losses)
 
     assert(params['unet_denoiser_norm'] in pre_layer_normalisations)

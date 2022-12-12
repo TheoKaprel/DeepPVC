@@ -1,6 +1,17 @@
 import torch
 from torch import nn
 
+class PoissonLikelihood_loss(nn.Module):
+    def __init__(self):
+        super(PoissonLikelihood_loss, self).__init__()
+
+    def forward(self, y_true,y_pred):
+        eps = 1e-6
+        y_pred = y_pred.view(y_pred.shape[0], -1)
+        y_true = y_true.view(y_true.shape[0], -1)
+
+        p_l = -y_true+y_pred*torch.log(y_true + eps)-torch.lgamma(y_pred+1)
+        return -torch.mean(p_l)
 
 class Pix2PixLosses:
     def __init__(self, losses_params):
@@ -30,10 +41,19 @@ class Pix2PixLosses:
 class UNetLosses:
     def __init__(self, losses_params):
         if losses_params['recon_loss']=='L1':
-            self.recon_loss = nn.L1Loss()
+            self.recon_loss = [nn.L1Loss()]
         elif losses_params['recon_loss']=='L2':
-            self.recon_loss = nn.MSELoss()
+            self.recon_loss = [nn.MSELoss()]
+        elif type(losses_params['recon_loss'])==list:
+            self.recon_loss = []
+            for loss in losses_params['recon_loss']:
+                if loss == "L1":
+                    self.recon_loss.append(nn.L1Loss())
+                elif loss == "L2":
+                    self.recon_loss.append(nn.MSELoss())
+                elif loss=="Poisson":
+                    self.recon_loss.append(PoissonLikelihood_loss())
 
-    def get_unet_loss(self, truePVfree, fakePVfree):
-        unet_loss = self.recon_loss(truePVfree, fakePVfree)
+    def get_unet_loss(self, target, output):
+        unet_loss = sum([loss(target,output) for loss in self.recon_loss])
         return unet_loss
