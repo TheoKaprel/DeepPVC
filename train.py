@@ -24,14 +24,17 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--user_param_bool', '-pb',
               help='overwrite boolean parameter of the json file',
               multiple=True, type=(str, bool))
+@click.option('--user_param_list', '-pl',
+              help='overwrite list parameter of the json file',
+              multiple=True, type=(str, str))
 @click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
-    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder)
+def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder):
+    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder)
 
 
-def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,plot_at_end, output, output_folder):
+def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder):
     if (json==None) and (resume_pth ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
@@ -74,7 +77,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=resume_pth)
     helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=resume_pth)
     helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=resume_pth)
-
+    user_param_list = helpers_params.format_list_option(user_params=user_param_list)
+    helpers_params.update_params_user_option(params,user_params=user_param_list,is_resume=resume_pth)
 
     network_architecture = params['network']
 

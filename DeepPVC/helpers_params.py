@@ -37,6 +37,15 @@ losses = ["L1", "L2", "BCE"]
 lr_policies = ["multiplicative"]
 
 
+def format_list_option(user_params):
+    reformatted_user_param_list = ()
+    for user_param in user_params:
+        param,values = user_param
+        values = values[1:-1]
+        values = values.split(',')
+        reformatted_user_param_list = ((param,values),) + reformatted_user_param_list
+    return reformatted_user_param_list
+
 
 def update_params_user_option(params, user_params, is_resume):
     """
