@@ -573,8 +573,8 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
     def init_losses(self):
-        self.denoiser_losses_params = {'recon_loss': self.params['recon_loss_denoiser']}
-        self.pvc_losses_params = {'recon_loss': self.params['recon_loss_pvc']}
+        self.denoiser_losses_params = {'recon_loss': self.params['recon_loss_denoiser'], 'lambda_losses': self.params['lambda_losses_denoiser']}
+        self.pvc_losses_params = {'recon_loss': self.params['recon_loss_pvc'],  'lambda_losses': self.params['lambda_losses_pvc']}
 
         self.unet_denoiser_losses = losses.UNetLosses(self.denoiser_losses_params)
         self.unet_pvc_losses = losses.UNetLosses(self.pvc_losses_params)

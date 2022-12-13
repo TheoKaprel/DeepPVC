@@ -27,7 +27,7 @@
   "hidden_channels_unet_denoiser":64,
   "unet_denoiser_activation": "relu",
   "recon_loss_denoiser": ["L1", "Poisson"],
-  "lambda_poisson": 0.01,
+  "lambda_losses_denoiser": [1,2],
   "unet_denoiser_norm": "batch_norm",
 
   "nb_ed_layers_pvc": 4,

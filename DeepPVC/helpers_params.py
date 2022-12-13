@@ -1,3 +1,4 @@
+import ast
 from prettytable import PrettyTable
 from textwrap import fill
 
@@ -29,7 +30,7 @@ required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_deno
                               "nb_ed_layers_pvc","hidden_channels_unet_pvc","unet_pvc_activation","recon_loss_pvc","unet_pvc_norm",
                               "denoiser_update","pvc_update"]
 
-option_unet_denoiser_pvc = ["lambda_poisson"]
+option_unet_denoiser_pvc = ["lambda_losses_denoiser", "lambda_losses_pvc"]
 
 activation_functions = ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"]
 pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
@@ -41,8 +42,7 @@ def format_list_option(user_params):
     reformatted_user_param_list = ()
     for user_param in user_params:
         param,values = user_param
-        values = values[1:-1]
-        values = values.split(',')
+        values = ast.literal_eval(values)
         reformatted_user_param_list = ((param,values),) + reformatted_user_param_list
     return reformatted_user_param_list
 
@@ -187,12 +187,31 @@ def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
     if type(params['recon_loss_denoiser'])==list:
         for l in params['recon_loss_denoiser']:
             assert(l in losses or l=='Poisson')
-        assert("lambda_poisson" in params)
-        assert(type(params['lambda_poisson']) in [int,float])
+        assert("lambda_losses_denoiser" in params)
+        assert(type(params['lambda_losses_denoiser'])==list)
+        assert(len(params['lambda_losses_denoiser'])==len(params['recon_loss_denoiser']))
+        for lbda in params['lambda_losses_denoiser']:
+            assert(type(lbda) in [int,float])
     else:
-        assert(params['recon_loss_denoiser'] in losses)
+        assert (params['recon_loss_denoiser'] in losses)
+        # if the loss is not a list, now it is
+        params['recon_loss_denoiser'] = [params['recon_loss_denoiser']]
+        params['lambda_losses_denoiser'] = [1]
 
-    assert(params['recon_loss_pvc'] in losses)
+    if type(params['recon_loss_pvc'])==list:
+        for l in params['recon_loss_pvc']:
+            assert(l in losses)
+        assert("lambda_losses_pvc" in params)
+        assert(type(params['lambda_losses_pvc'])==list)
+        assert(len(params['lambda_losses_pvc'])==len(params['lambda_losses_pvc']))
+        for lbda in params['lambda_losses_pvc']:
+            assert(type(lbda) in [int,float])
+    else:
+        assert(params['recon_loss_pvc'] in losses)
+        # if the loss is not a list, now it is
+        params['recon_loss_pvc'] = [params['recon_loss_pvc']]
+        params['lambda_losses_pvc'] = [1]
+
 
     assert(params['unet_denoiser_norm'] in pre_layer_normalisations)
     assert(params['unet_pvc_norm'] in pre_layer_normalisations)

@@ -25,7 +25,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='overwrite boolean parameter of the json file',
               multiple=True, type=(str, bool))
 @click.option('--user_param_list', '-pl',
-              help="overwrite list parameter of the json file. Ex : -pl recon_loss_denoiser ['L1','Poisson'] ",
+              help="""overwrite list parameter of the json file. Ex : -pl recon_loss_denoiser "['L1','Poisson']" """,
               multiple=True, type=(str, str))
 @click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)

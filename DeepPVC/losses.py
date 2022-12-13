@@ -49,13 +49,14 @@ class Pix2PixLosses:
 class UNetLosses:
     def __init__(self, losses_params):
         if type(losses_params['recon_loss'])==list:
-            self.recon_loss = []
-            for loss in losses_params['recon_loss']:
+            self.recon_loss, self.lambdas  = [], []
+            for (loss,lbda) in zip(losses_params['recon_loss'], losses_params['lambda_losses']):
                 self.recon_loss.append(get_nn_loss(loss))
+                self.lambdas.append(lbda)
         else:
             self.recon_loss = [get_nn_loss(loss_name=losses_params['recon_loss'])]
-        print(self.recon_loss)
+            self.lambdas = [1]
 
     def get_unet_loss(self, target, output):
-        unet_loss = sum([loss(target,output) for loss in self.recon_loss])
+        unet_loss = sum([lbda * loss(target,output) for (loss,lbda) in zip(self.recon_loss,self.lambdas)])
         return unet_loss
