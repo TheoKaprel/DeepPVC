@@ -29,7 +29,7 @@ required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_deno
                               "nb_ed_layers_pvc","hidden_channels_unet_pvc","unet_pvc_activation","recon_loss_pvc","unet_pvc_norm",
                               "denoiser_update","pvc_update"]
 
-
+option_unet_denoiser_pvc = ["lambda_poisson"]
 
 activation_functions = ["sigmoid", "tanh", "relu", "linear", "none", "relu_min"]
 pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
@@ -176,7 +176,6 @@ def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
     assert(params["unet_pvc_activation"] in activation_functions)
 
     if type(params['recon_loss_denoiser'])==list:
-        assert("Poisson" in params['recon_loss_denoiser'])
         for l in params['recon_loss_denoiser']:
             assert(l in losses or l=='Poisson')
         assert("lambda_poisson" in params)
@@ -190,7 +189,7 @@ def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
     assert(params['unet_pvc_norm'] in pre_layer_normalisations)
 
     for p in params:
-        if p not in (required+required_unet_denoiser_pvc+automated+default_params+ballek):
+        if p not in (required+required_unet_denoiser_pvc+automated+default_params+option_unet_denoiser_pvc+ballek):
             if fatal_on_unknown:
                 print(f'ERROR Unknown key named "{p}" in the params')
                 exit(0)

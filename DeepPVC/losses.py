@@ -1,6 +1,18 @@
 import torch
 from torch import nn
 
+
+def get_nn_loss(loss_name):
+    if loss_name=="L1":
+        return nn.L1Loss()
+    elif loss_name=="L2":
+        return nn.MSELoss()
+    elif loss_name=="Poisson":
+        return PoissonLikelihood_loss()
+    elif loss_name=='BCE':
+        return nn.BCEWithLogitsLoss()
+
+
 class PoissonLikelihood_loss(nn.Module):
     def __init__(self):
         super(PoissonLikelihood_loss, self).__init__()
@@ -15,13 +27,9 @@ class PoissonLikelihood_loss(nn.Module):
 
 class Pix2PixLosses:
     def __init__(self, losses_params):
-        if losses_params['adv_loss']=='BCE':
-            self.adv_loss = nn.BCEWithLogitsLoss()
+        self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
-        if losses_params['recon_loss']=='L1':
-            self.recon_loss = nn.L1Loss()
-        elif losses_params['recon_loss']=='L2':
-            self.recon_loss = nn.MSELoss()
+        self.recon_loss = get_nn_loss(loss_name=losses_params['recon_loss'])
 
         self.lambda_recon = losses_params['lambda_recon']
 
@@ -40,19 +48,13 @@ class Pix2PixLosses:
 
 class UNetLosses:
     def __init__(self, losses_params):
-        if losses_params['recon_loss']=='L1':
-            self.recon_loss = [nn.L1Loss()]
-        elif losses_params['recon_loss']=='L2':
-            self.recon_loss = [nn.MSELoss()]
-        elif type(losses_params['recon_loss'])==list:
+        if type(losses_params['recon_loss'])==list:
             self.recon_loss = []
             for loss in losses_params['recon_loss']:
-                if loss == "L1":
-                    self.recon_loss.append(nn.L1Loss())
-                elif loss == "L2":
-                    self.recon_loss.append(nn.MSELoss())
-                elif loss=="Poisson":
-                    self.recon_loss.append(PoissonLikelihood_loss())
+                self.recon_loss.append(get_nn_loss(loss))
+        else:
+            self.recon_loss = [get_nn_loss(loss_name=losses_params['recon_loss'])]
+        print(self.recon_loss)
 
     def get_unet_loss(self, target, output):
         unet_loss = sum([loss(target,output) for loss in self.recon_loss])
