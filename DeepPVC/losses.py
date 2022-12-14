@@ -11,6 +11,9 @@ def get_nn_loss(loss_name):
         return PoissonLikelihood_loss()
     elif loss_name=='BCE':
         return nn.BCEWithLogitsLoss()
+    else:
+        print(f'ERROR in loss name {loss_name}')
+        exit(0)
 
 
 class PoissonLikelihood_loss(nn.Module):

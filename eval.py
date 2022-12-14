@@ -169,12 +169,26 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         vmax = max([np.max(img_idk) for img_idk in dict_data_id.values()])
 
         axs[0,0].imshow(dict_data_id['PVE_noisy'], vmin = vmin, vmax = vmax)
+        axs[0,0].set_title('PVE_noisy')
         axs[0,1].imshow(dict_data_id['PVE'], vmin = vmin, vmax = vmax)
+        axs[0,1].set_title('PVE')
         axs[0,2].imshow(dict_data_id['noPVE'], vmin = vmin, vmax = vmax)
+        axs[0,2].set_title('noPVE')
 
-        for pth_ref,ax in zip(lpth_ref,axs[1,:]):
-            ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
-            ax.set_title(pth_ref)
+        axs[1,2].imshow(dict_data_id[lpth_ref[0]], vmin=vmin,vmax=vmax)
+        axs[1,2].set_title(lpth_ref[0])
+
+
+
+        for i,(pth_ref,ax) in enumerate(zip(lpth_ref,axs[1,:])):
+            if i<len(lpth_ref):
+                ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
+                ax.set_title(pth_ref)
+            else:
+                ax.axis('off')
+            if i>=3:
+                axs[0,i].axis('off')
+
 
         plt.show()
 

@@ -27,14 +27,14 @@
   "hidden_channels_unet_denoiser":64,
   "unet_denoiser_activation": "relu",
   "recon_loss_denoiser": ["L1", "Poisson"],
-  "lambda_losses_denoiser": [1,2],
-  "unet_denoiser_norm": "batch_norm",
+  "lambda_losses_denoiser": [1,1],
+  "unet_denoiser_norm": "inst_norm",
 
   "nb_ed_layers_pvc": 4,
   "hidden_channels_unet_pvc":64,
   "unet_pvc_activation": "relu",
   "recon_loss_pvc":"L1",
-  "unet_pvc_norm": "batch_norm",
+  "unet_pvc_norm": "inst_norm",
 
   "denoiser_update": 1,
   "pvc_update": 1

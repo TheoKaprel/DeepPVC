@@ -44,12 +44,11 @@ def apply(pth, input, output_filename):
         vSpacing = np.array(input_image.GetSpacing())
         vOffset = np.array(input_image.GetOrigin())
 
-        normalized_input_tensor = helpers_data.normalize(dataset_or_img=input_array, normtype=normalisation, norm=norm,
-                                                     to_torch=True, device='cpu')
+        normalized_input_tensor = helpers_data.normalize_eval(dataset_or_img=input_array,data_normalisation=normalisation,norm=norm,params=params,to_torch=True)
 
         normalized_output_tensor = model.forward(normalized_input_tensor)
 
-        output_array = helpers_data.denormalize(dataset_or_img=normalized_output_tensor, normtype=normalisation, norm=norm, to_numpy=True)[:,0,:,:]
+        output_array = helpers_data.denormalize_eval(dataset_or_img=normalized_output_tensor,data_normalisation=normalisation,norm=norm,params=params,to_numpy=True)[:,0,:,:]
         output_image = itk.image_from_array(output_array)
         output_image.SetSpacing(vSpacing)
         output_image.SetOrigin(vOffset)
