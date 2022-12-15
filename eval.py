@@ -161,7 +161,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
 
     for id in random_data_index:
-        fig, axs = plt.subplots(2, max(3, len(lpth)))
+        fig, axs = plt.subplots(2, max(3, len(lpth)),figsize=(20, 12))
 
         dict_data_id = dict_data[id]
         vmin = 0
@@ -174,20 +174,18 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         axs[0,2].imshow(dict_data_id['noPVE'], vmin = vmin, vmax = vmax)
         axs[0,2].set_title('noPVE')
 
-        axs[1,2].imshow(dict_data_id[lpth_ref[0]], vmin=vmin,vmax=vmax)
-        axs[1,2].set_title(lpth_ref[0])
-
-
 
         for i,(pth_ref,ax) in enumerate(zip(lpth_ref,axs[1,:])):
-            if i<len(lpth_ref):
-                ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
-                ax.set_title(pth_ref)
-            else:
-                ax.axis('off')
+
+            ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
+            ax.set_title(pth_ref)
+
             if i>=3:
                 axs[0,i].axis('off')
 
+        if len(lpth_ref)<3:
+            for j in range(len(lpth_ref),3):
+                axs[1,j].axis('off')
 
         plt.show()
 

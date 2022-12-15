@@ -896,7 +896,7 @@ class GAN_Denoiser_PVC(ModelBase):
         with torch.no_grad():
             self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
         self.fakePVfree = self.PVC_Generator(self.fakePVE.detach())
-        self.disc_fakePVfree_hat = self.PVC_Discriminator(self.fakePVfree, self.truePVE)
+        self.disc_fakePVfree_hat = self.PVC_Discriminator(self.fakePVfree, self.fakePVE.detach())
 
     def backward_pvc_G(self):
         self.pvc_gen_loss = self.pvc_losses.get_gen_loss(self.disc_fakePVfree_hat, self.truePVfree, self.fakePVfree)
@@ -908,13 +908,16 @@ class GAN_Denoiser_PVC(ModelBase):
             self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
             self.DfakePVfree = self.PVC_Generator(self.fakePVE.detach())
 
-        self.Ddisc_fakePVfree_hat = self.PVC_Discriminator(self.DfakePVfree.detach(), self.truePVE)
-        self.Ddisc_truePVfree_hat = self.PVC_Discriminator(self.truePVfree, self.truePVE)
+        self.Ddisc_fakePVfree_hat = self.PVC_Discriminator(self.DfakePVfree.detach(), self.fakePVE.detach())
+        self.Ddisc_truePVfree_hat = self.PVC_Discriminator(self.truePVfree,self.fakePVE.detach())
 
     def backward_pvc_D(self):
-        disc_fakePVfree_loss = self.denoiser_losses.adv_loss(self.Ddisc_fakePVfree_hat, torch.zeros_like(self.Ddisc_fakePVfree_hat))
-        disc_truePVfree_loss = self.denoiser_losses.adv_loss(self.Ddisc_truePVfree_hat, torch.ones_like(self.Ddisc_truePVfree_hat))
+        disc_fakePVfree_loss = self.pvc_losses.adv_loss(self.Ddisc_fakePVfree_hat, torch.zeros_like(self.Ddisc_fakePVfree_hat))
+        disc_truePVfree_loss = self.pvc_losses.adv_loss(self.Ddisc_truePVfree_hat, torch.ones_like(self.Ddisc_truePVfree_hat))
         self.pvc_disc_loss = disc_fakePVfree_loss+disc_truePVfree_loss
+
+        if self.gp_pvc:
+            self.pvc_disc_loss += 10 * self.pvc_losses.get_gradient_penalty(Discriminator=self.PVC_Discriminator, real = self.truePVfree, fake = self.DfakePVfree, condition=self.fakePVE.detach())
 
 
         self.pvc_disc_loss.backward(retain_graph=True)
