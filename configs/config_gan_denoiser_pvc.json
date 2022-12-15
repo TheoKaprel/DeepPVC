@@ -3,7 +3,7 @@
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
   "datatype": "mha",
   "with_noise": true,
-  "training_batchsize":20,
+  "training_batchsize":10,
   "test_batchsize":5,
   "data_normalisation": "none",
 
@@ -30,7 +30,7 @@
   "hidden_channels_disc_denoiser":9,
   "recon_loss_denoiser":"L1",
   "adv_loss_denoiser":"Wasserstein",
-  "with_gradient_penalty_denoiser": false,
+  "with_gradient_penalty_denoiser": true,
   "lambda_recon_denoiser": 0,
   "generator_update_denoiser": 1,
   "discriminator_update_denoiser": 1,

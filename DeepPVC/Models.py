@@ -851,8 +851,8 @@ class GAN_Denoiser_PVC(ModelBase):
         self.gp_denoiser = self.params['with_gradient_penalty_denoiser']
         self.gp_pvc = self.params['with_gradient_penalty_pvc']
 
-        self.denoiser_losses_params = {'adv_loss': self.adv_loss_denoiser, 'recon_loss': self.recon_loss_denoiser, 'lambda_recon': self.lambda_recon_denoiser, 'device':self.device}
-        self.pvc_losses_params = {'adv_loss': self.adv_loss_pvc, 'recon_loss': self.recon_loss_pvc, 'lambda_recon': self.lambda_recon_pvc, 'device':self.device}
+        self.denoiser_losses_params = {'adv_loss': self.adv_loss_denoiser, 'recon_loss': self.recon_loss_denoiser, 'lambda_recon': self.lambda_recon_denoiser,'gradient_penalty': self.gp_denoiser, 'device':self.device}
+        self.pvc_losses_params = {'adv_loss': self.adv_loss_pvc, 'recon_loss': self.recon_loss_pvc, 'lambda_recon': self.lambda_recon_pvc, 'gradient_penalty': self.gp_pvc,'device':self.device}
 
         self.denoiser_losses = losses.Pix2PixLosses(self.denoiser_losses_params)
         self.pvc_losses = losses.Pix2PixLosses(self.pvc_losses_params)
@@ -885,12 +885,8 @@ class GAN_Denoiser_PVC(ModelBase):
         disc_truePVE_loss = self.denoiser_losses.adv_loss(self.Ddisc_truePVE_hat, torch.ones_like(self.Ddisc_fakePVE_hat))
         self.denoiser_disc_loss = disc_fakePVE_loss+disc_truePVE_loss
 
-        # if self.wassertstein_denoiser:
-        #     self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
-        #     alpha = torch.randn((self.truePVE.size(0), 1, 1, 1), device=self.device)
-        #     interpolates = (alpha * self.truePVE + ((1 - alpha) * self.fakePVE)).requires_grad_(True)
-        #     model_interpolates = self.Denoiser_Discriminator(interpolates,self.noisyPVE)
-        #     self.denoiser_disc_loss += 10*self.denoiser_losses.wassertstein_gp(interpolates,model_interpolates)/2
+        if self.gp_denoiser:
+            self.denoiser_disc_loss += 10 * self.denoiser_losses.get_gradient_penalty(Discriminator=self.Denoiser_Discriminator, real = self.truePVE, fake = self.DfakePVE, condition=self.noisyPVE)
 
         self.denoiser_disc_loss.backward(retain_graph=True)
         self.denoiser_disc_optimizer.step()

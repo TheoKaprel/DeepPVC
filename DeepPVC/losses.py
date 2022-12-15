@@ -70,6 +70,8 @@ class Pix2PixLosses:
         self.lambda_recon = losses_params['lambda_recon']
         self.device = losses_params['device']
 
+        self.gradient_penalty = gradient_penalty(device=self.device)
+
     def get_adv_loss(self):
         return self.adv_loss
     def get_recon_loss(self):
@@ -80,6 +82,12 @@ class Pix2PixLosses:
         gen_rec_loss = self.recon_loss(truePVfree, fakePVfree)
         gen_loss = gen_adv_loss + self.lambda_recon * gen_rec_loss
         return gen_loss
+
+    def get_gradient_penalty(self,Discriminator,real,fake,condition):
+        alpha = torch.randn((real.size(0), 1, 1, 1), device=self.device)
+        interpolates = (alpha * real + ((1 - alpha) * fake)).requires_grad_(True)
+        model_interpolates = Discriminator(interpolates,condition)
+        return self.gradient_penalty(interpolates, model_interpolates)
 
 
 
