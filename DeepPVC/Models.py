@@ -9,23 +9,24 @@ from abc import abstractmethod
 from . import networks, losses,plots, helpers, helpers_params
 
 class ModelInstance():
-    def __new__(cls, params, from_pth = None):
+    def __new__(cls, params, from_pth = None, resume_training=False):
         network_architecture = params['network']
+
         if network_architecture == 'pix2pix':
-            return Pix2PixModel(params=params, from_pth=from_pth)
+            return Pix2PixModel(params=params, from_pth=from_pth,resume_training=resume_training)
         elif network_architecture == 'unet':
-            return UNetModel(params=params, from_pth=from_pth)
+            return UNetModel(params=params, from_pth=from_pth,resume_training=resume_training)
         elif network_architecture == 'unet_denoiser_pvc':
-            return UNet_Denoiser_PVC(params=params, from_pth=from_pth)
+            return UNet_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training)
         elif network_architecture == 'gan_denoiser_pvc':
-            return GAN_Denoiser_PVC(params=params, from_pth=from_pth)
+            return GAN_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training)
         else:
             print(f"ERROR : unknown network architecture ({network_architecture})")
             exit(0)
 
 
 class ModelBase():
-    def __init__(self,  params):
+    def __init__(self,  params, resume_training):
         self.params = params
         self.device = helpers.get_auto_device(self.params['device'])
 
@@ -40,6 +41,7 @@ class ModelBase():
         self.output_folder = self.params['output_folder']
         self.output_pth = self.params['output_pth']
 
+        self.resume_training = resume_training
 
     def input_data(self, batch):
         self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
@@ -102,9 +104,9 @@ class ModelBase():
 
 
 class Pix2PixModel(ModelBase):
-    def __init__(self, params, from_pth = None):
+    def __init__(self, params, from_pth = None,resume_training=False):
         assert (params['network'] == 'pix2pix')
-        super().__init__(params)
+        super().__init__(params,resume_training)
 
         self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_gen = params['hidden_channels_gen']
@@ -276,21 +278,22 @@ class Pix2PixModel(ModelBase):
         checkpoint = torch.load(pth_path, map_location=self.device)
 
         self.init_model()
-        self.init_optimization()
-        self.init_losses()
+
 
         self.Generator.load_state_dict(checkpoint['gen'])
         self.Discriminator.load_state_dict(checkpoint['disc'])
-
-
-        self.generator_optimizer.load_state_dict(checkpoint['gen_opt'])
-        self.discriminator_optimizer.load_state_dict(checkpoint['disc_opt'])
-
         self.generator_losses = checkpoint['gen_losses']
         self.discriminator_losses = checkpoint['disc_losses']
         self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
-        self.start_epoch=self.current_epoch
+
+        if self.resume_training:
+            self.init_optimization()
+            self.init_losses()
+            self.generator_optimizer.load_state_dict(checkpoint['gen_opt'])
+            self.discriminator_optimizer.load_state_dict(checkpoint['disc_opt'])
+
+            self.start_epoch=self.current_epoch
 
     def switch_eval(self):
         self.Generator.eval()
@@ -323,9 +326,9 @@ class Pix2PixModel(ModelBase):
 
 
 class UNetModel(ModelBase):
-    def __init__(self, params, from_pth = None):
+    def __init__(self, params, from_pth = None,resume_training=False):
         assert (params['network'] == 'unet')
-        super().__init__(params)
+        super().__init__(params,resume_training)
 
         self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_unet = params['hidden_channels_unet']
@@ -459,18 +462,18 @@ class UNetModel(ModelBase):
         checkpoint = torch.load(pth_path, map_location=self.device)
 
         self.init_model()
-        self.init_optimization()
-        self.init_losses()
-
-        self.UNet.load_state_dict(checkpoint['unet'])
-
-
-        self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])
-
         self.unet_losses = checkpoint['unet_losses']
         self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
-        self.start_epoch=self.current_epoch
+
+        self.UNet.load_state_dict(checkpoint['unet'])
+
+        if self.resume_training:
+            self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])
+            self.init_optimization()
+            self.init_losses()
+
+            self.start_epoch=self.current_epoch
 
     def switch_eval(self):
         self.UNet.eval()
@@ -501,9 +504,9 @@ class UNetModel(ModelBase):
 
 
 class UNet_Denoiser_PVC(ModelBase):
-    def __init__(self, params, from_pth = None):
+    def __init__(self, params, from_pth = None,resume_training=False):
         assert(params['network']=='unet_denoiser_pvc')
-        super().__init__(params)
+        super().__init__(params,resume_training)
 
         self.nb_ed_layers_denoiser = params['nb_ed_layers_denoiser']
         self.hidden_channels_unet_denoiser = params['hidden_channels_unet_denoiser']
@@ -682,23 +685,27 @@ class UNet_Denoiser_PVC(ModelBase):
         checkpoint = torch.load(pth_path, map_location=self.device)
 
         self.init_model()
-        self.init_optimization()
-        self.init_losses()
-
         self.UNet_denoiser.load_state_dict(checkpoint['unet_denoiser'])
         self.UNet_pvc.load_state_dict(checkpoint['unet_pvc'])
 
-        self.unet_denoiser_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
-        self.unet_pvc_optimizer.load_state_dict(checkpoint['unet_pvc_opt'])
+        self.test_error = checkpoint['test_error']
+        self.current_epoch = checkpoint['epoch']
 
         self.unet_denoiser_list_losses = checkpoint['unet_denoiser_losses']
         self.unet_pvc_list_losses = checkpoint['unet_pvc_losses']
-        self.denoiser_loss = torch.Tensor([self.unet_denoiser_list_losses[-1]])
-        self.pvc_loss = torch.Tensor([self.unet_pvc_list_losses])
 
-        self.test_error = checkpoint['test_error']
-        self.current_epoch = checkpoint['epoch']
-        self.start_epoch=self.current_epoch
+        if self.resume_training:
+            self.init_optimization()
+            self.init_losses()
+            self.unet_denoiser_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
+            self.unet_pvc_optimizer.load_state_dict(checkpoint['unet_pvc_opt'])
+
+
+            self.denoiser_loss = torch.Tensor([self.unet_denoiser_list_losses[-1]])
+            self.pvc_loss = torch.Tensor([self.unet_pvc_list_losses])
+
+
+            self.start_epoch=self.current_epoch
 
     def switch_eval(self):
         self.UNet_denoiser.eval()
@@ -735,9 +742,9 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
 class GAN_Denoiser_PVC(ModelBase):
-    def __init__(self, params, from_pth = None):
+    def __init__(self, params, from_pth = None,resume_training=False):
         assert(params['network']=='gan_denoiser_pvc')
-        super().__init__(params)
+        super().__init__(params,resume_training)
 
         self.nb_ed_layers_gen_denoiser = params['nb_ed_layers_gen_denoiser']
         self.hidden_channels_gen_denoiser = params['hidden_channels_gen_denoiser']
@@ -835,15 +842,17 @@ class GAN_Denoiser_PVC(ModelBase):
 
 
 
-
     def init_losses(self):
         self.denoiser_gen_loss = torch.Tensor([0])
         self.denoiser_disc_loss = torch.Tensor([0])
         self.pvc_gen_loss = torch.Tensor([0])
         self.pvc_disc_loss = torch.Tensor([0])
 
-        self.denoiser_losses_params = {'adv_loss': self.adv_loss_denoiser, 'recon_loss': self.recon_loss_denoiser, 'lambda_recon': self.lambda_recon_denoiser}
-        self.pvc_losses_params = {'adv_loss': self.adv_loss_pvc, 'recon_loss': self.recon_loss_pvc, 'lambda_recon': self.lambda_recon_pvc}
+        self.gp_denoiser = self.params['with_gradient_penalty_denoiser']
+        self.gp_pvc = self.params['with_gradient_penalty_pvc']
+
+        self.denoiser_losses_params = {'adv_loss': self.adv_loss_denoiser, 'recon_loss': self.recon_loss_denoiser, 'lambda_recon': self.lambda_recon_denoiser, 'device':self.device}
+        self.pvc_losses_params = {'adv_loss': self.adv_loss_pvc, 'recon_loss': self.recon_loss_pvc, 'lambda_recon': self.lambda_recon_pvc, 'device':self.device}
 
         self.denoiser_losses = losses.Pix2PixLosses(self.denoiser_losses_params)
         self.pvc_losses = losses.Pix2PixLosses(self.pvc_losses_params)
@@ -874,7 +883,15 @@ class GAN_Denoiser_PVC(ModelBase):
     def backward_denoiser_D(self):
         disc_fakePVE_loss = self.denoiser_losses.adv_loss(self.Ddisc_fakePVE_hat, torch.zeros_like(self.Ddisc_fakePVE_hat))
         disc_truePVE_loss = self.denoiser_losses.adv_loss(self.Ddisc_truePVE_hat, torch.ones_like(self.Ddisc_fakePVE_hat))
-        self.denoiser_disc_loss = ((disc_fakePVE_loss+disc_truePVE_loss)/2)
+        self.denoiser_disc_loss = disc_fakePVE_loss+disc_truePVE_loss
+
+        # if self.wassertstein_denoiser:
+        #     self.fakePVE = self.Denoiser_Generator(self.noisyPVE)
+        #     alpha = torch.randn((self.truePVE.size(0), 1, 1, 1), device=self.device)
+        #     interpolates = (alpha * self.truePVE + ((1 - alpha) * self.fakePVE)).requires_grad_(True)
+        #     model_interpolates = self.Denoiser_Discriminator(interpolates,self.noisyPVE)
+        #     self.denoiser_disc_loss += 10*self.denoiser_losses.wassertstein_gp(interpolates,model_interpolates)/2
+
         self.denoiser_disc_loss.backward(retain_graph=True)
         self.denoiser_disc_optimizer.step()
 
@@ -901,7 +918,9 @@ class GAN_Denoiser_PVC(ModelBase):
     def backward_pvc_D(self):
         disc_fakePVfree_loss = self.denoiser_losses.adv_loss(self.Ddisc_fakePVfree_hat, torch.zeros_like(self.Ddisc_fakePVfree_hat))
         disc_truePVfree_loss = self.denoiser_losses.adv_loss(self.Ddisc_truePVfree_hat, torch.ones_like(self.Ddisc_truePVfree_hat))
-        self.pvc_disc_loss = ((disc_fakePVfree_loss+disc_truePVfree_loss)/2)
+        self.pvc_disc_loss = disc_fakePVfree_loss+disc_truePVfree_loss
+
+
         self.pvc_disc_loss.backward(retain_graph=True)
         self.pvc_disc_optimizer.step()
 
@@ -1028,25 +1047,27 @@ class GAN_Denoiser_PVC(ModelBase):
         self.PVC_Generator.load_state_dict(checkpoint['pvc_gen'])
         self.PVC_Discriminator.load_state_dict(checkpoint['pvc_disc'])
 
-        self.denoiser_gen_optimizer.load_state_dict(checkpoint['denoiser_gen_opt'])
-        self.denoiser_disc_optimizer.load_state_dict(checkpoint['denoiser_disc_opt'])
-        self.pvc_gen_optimizer.load_state_dict(checkpoint['pvc_gen_opt'])
-        self.pvc_disc_optimizer.load_state_dict(checkpoint['pvc_disc_opt'])
-
         self.gen_denoiser_list_losses = checkpoint['denoiser_gen_losses']
         self.disc_denoiser_list_losses = checkpoint['denoiser_disc_losses']
         self.gen_pvc_list_losses = checkpoint['pvc_gen_losses']
         self.disc_pvc_list_losses = checkpoint['pvc_disc_losses']
 
-        self.denoiser_gen_loss = torch.Tensor([self.gen_denoiser_list_losses[-1]])
-        self.denoiser_disc_loss = torch.Tensor([self.disc_denoiser_list_losses[-1]])
-        self.pvc_gen_loss = torch.Tensor([self.gen_pvc_list_losses[-1]])
-        self.pvc_disc_loss = torch.Tensor([self.disc_pvc_list_losses[-1]])
-
-
         self.test_error = checkpoint['test_error']
         self.current_epoch = checkpoint['epoch']
-        self.start_epoch=self.current_epoch
+
+
+        if self.resume_training:
+            self.denoiser_gen_optimizer.load_state_dict(checkpoint['denoiser_gen_opt'])
+            self.denoiser_disc_optimizer.load_state_dict(checkpoint['denoiser_disc_opt'])
+            self.pvc_gen_optimizer.load_state_dict(checkpoint['pvc_gen_opt'])
+            self.pvc_disc_optimizer.load_state_dict(checkpoint['pvc_disc_opt'])
+
+            self.denoiser_gen_loss = torch.Tensor([self.gen_denoiser_list_losses[-1]])
+            self.denoiser_disc_loss = torch.Tensor([self.disc_denoiser_list_losses[-1]])
+            self.pvc_gen_loss = torch.Tensor([self.gen_pvc_list_losses[-1]])
+            self.pvc_disc_loss = torch.Tensor([self.disc_pvc_list_losses[-1]])
+
+            self.start_epoch=self.current_epoch
 
     def switch_eval(self):
         self.Denoiser_Generator.eval()

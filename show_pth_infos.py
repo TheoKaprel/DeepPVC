@@ -25,7 +25,7 @@ def show_pth(lpth, losses):
 
         print(params)
 
-        model = Models.ModelInstance(params=params, from_pth=pth)
+        model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
 
         model.switch_device("cpu")
         model.switch_eval()

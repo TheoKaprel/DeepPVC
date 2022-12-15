@@ -52,7 +52,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
         params = pth_file['params']
         pth_ref = params['ref']
 
-        model = Models.ModelInstance(params=params, from_pth=pth)
+        model = Models.ModelInstance(params=params, from_pth=pth, resume_training=False)
         model.switch_device(device)
         model.switch_eval()
 
@@ -78,7 +78,6 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
             model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNRMSE', error_val=MNRMSE)
             model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNMAE', error_val=MNMAE)
 
-            model.save_model(output_path=pth, save_json=True)
             if verbose > 0:
                 model.show_infos()
 
@@ -119,7 +118,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         lpth_ref.append(pth_ref)
 
         normalisation = params['data_normalisation']
-        model = Models.ModelInstance(params=params, from_pth=pth)
+        model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
         model.switch_device(device)
         model.switch_eval()
 

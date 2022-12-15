@@ -44,7 +44,7 @@ def compare_proj_pth(pth,proj, input, n, dataset, ref,type, losses, calc_mse):
         list_params.append(params)
         list_refs.append(params['ref'])
 
-        model = Models.ModelInstance(params=params, from_pth=pth_file)
+        model = Models.ModelInstance(params=params, from_pth=pth_file,resume_training=False)
         model.switch_device("cpu")
         model.switch_eval()
         list_models.append(model)

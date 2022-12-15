@@ -40,7 +40,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         exit(0)
 
 
-    if resume_pth:
+    if resume_pth is not None:
         device = helpers.get_auto_device("auto")
         checkpoint = torch.load(resume_pth, map_location=device)
         if json:
@@ -94,7 +94,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     train_normalized_dataloader, test_dataset_numpy, params = dataset.load_data(params)
 
 
-    DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth)
+    DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
     DeepPVEModel.show_infos()
 
     DeepPVEModel.params['training_start_time'] = time.asctime()

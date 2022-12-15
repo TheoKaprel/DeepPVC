@@ -11,6 +11,8 @@ def get_nn_loss(loss_name):
         return PoissonLikelihood_loss()
     elif loss_name=='BCE':
         return nn.BCEWithLogitsLoss()
+    elif loss_name=="Wasserstein":
+        return Wasserstein_loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -28,6 +30,37 @@ class PoissonLikelihood_loss(nn.Module):
         p_l = -y_true+y_pred*torch.log(y_true + eps)-torch.lgamma(y_pred+1)
         return -torch.mean(p_l)
 
+
+class gradient_penalty(nn.Module):
+    # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
+    def __init__(self,device):
+        super(gradient_penalty, self).__init__()
+        self.device = device
+
+    def forward(self,interpolates, model_interpolates):
+        grad_outputs = torch.ones(model_interpolates.size(),device=self.device, requires_grad=False)
+
+        gradients = torch.autograd.grad(
+            outputs=model_interpolates,
+            inputs=interpolates,
+            grad_outputs=grad_outputs,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+        gradients = gradients.view(gradients.size(0), -1)
+        gradient_penalty = torch.mean((gradients.norm(2, dim=1) - 1) ** 2)
+        return gradient_penalty
+
+class Wasserstein_loss(nn.Module):
+    def __init__(self):
+        super(Wasserstein_loss, self).__init__()
+
+    def forward(self, D_disc,target):
+        return (torch.mean( (-2*target+1) * D_disc))
+
+
+
 class Pix2PixLosses:
     def __init__(self, losses_params):
         self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
@@ -35,6 +68,7 @@ class Pix2PixLosses:
         self.recon_loss = get_nn_loss(loss_name=losses_params['recon_loss'])
 
         self.lambda_recon = losses_params['lambda_recon']
+        self.device = losses_params['device']
 
     def get_adv_loss(self):
         return self.adv_loss
