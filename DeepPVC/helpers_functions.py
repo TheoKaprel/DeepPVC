@@ -30,7 +30,7 @@ def validation_errors(test_dataset_numpy, model, do_NRMSE=True, do_NMAE=True):
 
             denormalized_output = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,norm=norm,params=model.params,to_numpy=True)
 
-            batch_targets = batch[:,2,:,:,:]
+            batch_targets = batch[:,2,0:1,:,:]
 
             mean_norm = (np.sum(np.abs(batch_targets), axis=(1,2,3)) / batch.shape[2] / batch.shape[3])
 

@@ -20,22 +20,19 @@ def construct_dataset_from_path(dataset_path,datatype, nb_channels=1, noisy = Fa
     for i in range(N): # selects files having exactly 5 characters before the .mhd
         filename_PVE = list_files[i]
         img_PVE = itk.array_from_image(itk.imread(filename_PVE))
-        assert(img_PVE.shape==(nb_channels,128,128))
-        assert(np.max(img_PVE)>0)
+        assert(nb_channels<= img_PVE.shape[0])
 
-        dataset[i,0,:,:,:] = img_PVE
+        dataset[i,0,:,:,:] = img_PVE[0:nb_channels,:,:]
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.{datatype}'
         img_PVf = itk.array_from_image(itk.imread(filename_PVf))
-        assert (img_PVf.shape == (nb_channels, 128, 128))
-        dataset[i,1,:,:,:] = img_PVf
+        dataset[i,1,:,:,:] = img_PVf[0:nb_channels,:,:]
 
         if noisy:
             filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{datatype}'
             img_noisy = itk.array_from_image(itk.imread(filename_noisy))
-            assert (img_noisy.shape == (nb_channels, 128, 128))
             img_noisy = np.expand_dims(img_noisy, axis=0)
-            dataset[i, :, :, :, :] = np.concatenate((img_noisy,dataset[i,0:2,:,:,:]), axis = 0)
+            dataset[i, :, :, :, :] = np.concatenate((img_noisy[:,0:nb_channels,:,:],dataset[i,0:2,:,:,:]), axis = 0)
 
     t1 = time.time()
     elapsed_time1 = t1-t0

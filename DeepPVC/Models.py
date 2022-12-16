@@ -45,7 +45,7 @@ class ModelBase():
 
     def input_data(self, batch):
         self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
-        self.truePVfree = batch[:, 1,:, :, :].to(self.device).float()
+        self.truePVfree = batch[:, 1,0:1, :, :].to(self.device).float()
 
     def format_params(self):
         formatted_params = copy.deepcopy(self.params)
@@ -550,7 +550,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                                 sum_norm = self.sum_norm,norm = self.unet_denoiser_norm, vmin=self.vmin).to(device=self.device)
 
         self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet_pvc, nb_ed_layers=self.nb_ed_layers_pvc,
-                                                output_channel=self.input_channels,generator_activation = self.unet_pvc_activation,use_dropout=self.use_dropout,
+                                                output_channel=1,generator_activation = self.unet_pvc_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.unet_pvc_norm, vmin=self.vmin).to(device=self.device)
 
     def init_optimization(self):
@@ -585,7 +585,7 @@ class UNet_Denoiser_PVC(ModelBase):
     def input_data(self, batch):
         self.noisyPVE = batch[:, 0,:, :, :].to(self.device).float()
         self.truePVE = batch[:, 1,:, :, :].to(self.device).float()
-        self.truePVfree = batch[:, 2,:, :, :].to(self.device).float()
+        self.truePVfree = batch[:, 2,0:1, :, :].to(self.device).float()
 
 
     def forward_denoiser(self):
@@ -860,7 +860,7 @@ class GAN_Denoiser_PVC(ModelBase):
     def input_data(self, batch):
         self.noisyPVE = batch[:, 0,:, :, :].to(self.device).float()
         self.truePVE = batch[:, 1,:, :, :].to(self.device).float()
-        self.truePVfree = batch[:, 2,:, :, :].to(self.device).float()
+        self.truePVfree = batch[:, 2,0:1, :, :].to(self.device).float()
 
 
 
