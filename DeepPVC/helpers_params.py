@@ -4,7 +4,7 @@ from textwrap import fill
 
 
 not_updatable_paramter_list_when_resume_training = ['training_batchsize', 'test_batchsize', 'training_prct',
-                                                    'learning_rate','input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
+                                                    'input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
 required = ['dataset_path', 'test_dataset_path','with_noise', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',

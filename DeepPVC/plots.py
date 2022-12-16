@@ -256,8 +256,8 @@ def plot_losses_double_double_model(losses1,losses2, losses3, losses4, test_mse,
         ax_mse.legend(loc = 'upper center', fontsize = fontsize)
 
 
-
-    plt.show()
+    if not wait:
+        plt.show()
 
 def show_images_profiles(images,profile = None,noisy=False, save=False,folder = None, is_tensor=True, title = None, labels = None):
     if is_tensor:
