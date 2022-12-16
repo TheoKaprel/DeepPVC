@@ -613,9 +613,9 @@ class UNet_Denoiser_PVC(ModelBase):
         elif batch.dim()==5:
             self.noisyPVE = batch[:,0,:,:,:].to(self.device).float()
 
-        denoisedPVE = self.UNet_denoiser(self.noisyPVE)
-        fakePVfree = self.UNet_pvc(denoisedPVE)
-        return fakePVfree
+        self.denoisedPVE = self.UNet_denoiser(self.noisyPVE)
+        return self.UNet_pvc(self.denoisedPVE)
+
 
     def optimize_parameters(self):
         # denoiser update
@@ -929,9 +929,9 @@ class GAN_Denoiser_PVC(ModelBase):
         elif batch.dim()==5:
             self.noisyPVE = batch[:,0,:,:,:].to(self.device).float()
 
-        denoisedPVE = self.Denoiser_Generator(self.noisyPVE)
-        fakePVfree = self.PVC_Generator(denoisedPVE)
-        return fakePVfree
+        self.denoisedPVE = self.Denoiser_Generator(self.noisyPVE)
+        self.fakePVfree = self.PVC_Generator(self.denoisedPVE)
+        return self.fakePVfree
 
     def optimize_parameters(self):
         # denoiser updates

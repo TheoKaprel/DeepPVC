@@ -153,7 +153,13 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
                 output_i = model.forward(normalized_input_i)
                 denormalized_output_i = helpers_data.denormalize_eval(dataset_or_img=output_i,data_normalisation=normalisation,norm=norm_input_i,params=params,to_numpy=True)
-                dict_data[index][pth_ref] = denormalized_output_i[0, 0, :, :]
+                dict_data[index][pth_ref] = [denormalized_output_i[0, 0, :, :]]
+
+                if verbose>2:
+                    denoisedPVE = model.denoisedPVE
+                    denormalized_denoisedPVE = helpers_data.denormalize_eval(dataset_or_img=denoisedPVE,data_normalisation=normalisation,norm=norm_input_i,params=params,to_numpy=True)
+                    dict_data[index][pth_ref].append(denormalized_denoisedPVE[0,0,:,:])
+
 
     if verbose>1:
         plt.show()
@@ -161,11 +167,16 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
 
     for id in random_data_index:
-        fig, axs = plt.subplots(2, max(3, len(lpth)),figsize=(20, 12))
+        if verbose>2:
+            n_rows = 3
+        else:
+            n_rows = 2
+
+        fig, axs = plt.subplots(n_rows, max(3, len(lpth)),figsize=(20, 12))
 
         dict_data_id = dict_data[id]
         vmin = 0
-        vmax = max([np.max(img_idk) for img_idk in dict_data_id.values()])
+        vmax = max([np.max(img_idk[0]) for img_idk in dict_data_id.values()])
 
         axs[0,0].imshow(dict_data_id['PVE_noisy'], vmin = vmin, vmax = vmax)
         axs[0,0].set_title('PVE_noisy')
@@ -177,11 +188,16 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
         for i,(pth_ref,ax) in enumerate(zip(lpth_ref,axs[1,:])):
 
-            ax.imshow(dict_data_id[pth_ref], vmin = vmin, vmax = vmax)
+            ax.imshow(dict_data_id[pth_ref][0], vmin = vmin, vmax = vmax)
             ax.set_title(pth_ref)
 
             if i>=3:
                 axs[0,i].axis('off')
+
+        if verbose>2:
+            for i, (pth_ref, ax) in enumerate(zip(lpth_ref, axs[2, :])):
+                ax.imshow(dict_data_id[pth_ref][1], vmin=vmin, vmax=vmax)
+                ax.set_title(pth_ref)
 
         if len(lpth_ref)<3:
             for j in range(len(lpth_ref),3):
