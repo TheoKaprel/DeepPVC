@@ -813,12 +813,12 @@ class GAN_Denoiser_PVC(ModelBase):
                                                                output_channel=self.input_channels).to(device=self.device)
         #---------PVC----------
         self.PVC_Generator = networks.UNet(input_channel=self.input_channels,ngc=self.hidden_channels_gen_pvc,nb_ed_layers=self.nb_ed_layers_gen_pvc,
-                                            output_channel=self.input_channels,generator_activation=self.gen_pvc_activation,use_dropout=self.use_dropout,
+                                            output_channel=1,generator_activation=self.gen_pvc_activation,use_dropout=self.use_dropout,
                                             sum_norm=self.sum_norm, norm=self.gen_pvc_norm, vmin=self.vmin).to(device=self.device)
 
-        self.PVC_Discriminator = networks.NEncodingLayers(input_channel=2 * self.input_channels,
+        self.PVC_Discriminator = networks.NEncodingLayers(input_channel= self.input_channels + 1,
                                                             ndc=self.hidden_channels_disc_pvc,
-                                                            output_channel=self.input_channels).to(device=self.device)
+                                                            output_channel=1).to(device=self.device)
 
 
     def init_optimization(self):
