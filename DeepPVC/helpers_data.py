@@ -32,20 +32,20 @@ def normalize(dataset_or_img,normtype,norm, to_torch, device):
         max = norm[1]
         out =  (dataset_or_img - min)/(max - min)
     elif normtype=="img_standard":
-        out = dataset_or_img - np.mean(dataset_or_img[:,0,:,:,:][:,None,:,:,:], axis = (1,2,3), keepdims=True)
-        out = out / np.std(dataset_or_img[:,0,:,:,:][:,None,:,:,:], keepdims=True)
+        out = dataset_or_img - np.mean(dataset_or_img[:,0:1,:,:,:], axis = (1,2,3), keepdims=True)
+        out = out / np.std(dataset_or_img[:,0:1,:,:,:], keepdims=True)
     elif normtype=="img_0_1":
-        min_per_img = np.min(dataset_or_img[:,0,:,:,:][:,None,:,:,:], axis=(2,3,4), keepdims=True)
-        max_per_img = np.max(dataset_or_img[:,0,:,:,:][:,None,:,:,:], axis=(2,3,4), keepdims=True)
+        min_per_img = np.min(dataset_or_img[:,0:1,:,:,:], axis=(2,3,4), keepdims=True)
+        max_per_img = np.max(dataset_or_img[:,0:1,:,:,:], axis=(2,3,4), keepdims=True)
         out = (dataset_or_img - min_per_img) / (max_per_img - min_per_img)
     elif normtype=="img_mean":
-        mean_per_img = np.mean(dataset_or_img[:,0,:,:,:][:,None,:,:,:], axis = (2,3,4), keepdims=True)
+        mean_per_img = np.mean(dataset_or_img[:,0:1,:,:,:], axis = (2,3,4), keepdims=True)
         out = dataset_or_img / mean_per_img
     else:
         out = dataset_or_img
 
     if to_torch:
-        out = torch.from_numpy(out).to(device)
+        out = torch.tensor(out, device=device)
     return out
 
 
@@ -53,15 +53,15 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
     if ('global' in data_normalisation or data_normalisation=='none'):
         norm = None
     elif data_normalisation == 'img_standard':
-        mean = np.mean(dataset_or_img[:, 0, :, :, :][:,None,:,:,:], axis=(1, 2, 3,4), keepdims=True)
-        std = np.std(dataset_or_img[:, 0, :, :, :][:,None,:,:,:], axis=(1, 2, 3,4), keepdims=True)
+        mean = np.mean(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
+        std = np.std(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
         norm = [mean, std]
     elif data_normalisation == 'img_0_1':
-        min = np.min(dataset_or_img[:, 0, :, :, :][:,None,:,:,:], axis=(1, 2, 3,4), keepdims=True)
-        max = np.max(dataset_or_img[:, 0, :, :, :][:,None,:,:,:], axis=(1, 2, 3,4), keepdims=True)
+        min = np.min(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
+        max = np.max(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
         norm = [min, max]
     elif data_normalisation == 'img_mean':
-        mean = np.mean(dataset_or_img[:, 0, :, :, :][:,None,:,:,:], axis=(1, 2, 3,4), keepdims=True)
+        mean = np.mean(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
         norm = [mean]
     else:
         print(f"ERROR in data_normalisation : {data_normalisation}")
@@ -97,7 +97,7 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
 
     if to_torch:
         device = torch.device(params['device'])
-        out = torch.from_numpy(out).to(device)
+        out = torch.tensor(out, device=device)
     return out
 
 def denormalize_eval(dataset_or_img, data_normalisation, norm, params, to_numpy):
@@ -131,34 +131,47 @@ def denormalize_eval(dataset_or_img, data_normalisation, norm, params, to_numpy)
     return output
 
 
+def load_img_channels(img_array,nb_channels):
+    nb_projs=img_array.shape[0]
+    step = int(nb_projs/nb_channels)
 
-def load_image(filename, is_ref, type, noisy=False):
+    img_with_channels = np.zeros((nb_projs,1,nb_channels,img_array.shape[1], img_array.shape[2]))
+
+    for proj_i in range(nb_projs):
+        channels_id = np.array([(proj_i + k*step) % nb_projs for k in range(nb_channels)])
+        img_with_channels[proj_i,0,:,:,:] = img_array[channels_id]
+
+    return img_with_channels # (nb_projs,1,nb_channels,Npix,Npix)
+
+
+
+
+def load_image(filename, is_ref, type,nb_channels, noisy=False):
     if is_ref:
-        return load_PVE_PVfree(ref = filename, type=type, noisy=noisy)
+        return load_PVE_PVfree(ref = filename, type=type,nb_channels=nb_channels, noisy=noisy)
     else:
-        return load_from_filename(filename)
+        return load_from_filename(filename, nb_channels)
 
 
-def load_from_filename(filename):
+def load_from_filename(filename, nb_channels):
     img = itk.array_from_image(itk.imread(filename))
-    img = np.expand_dims(img, axis=(1,2)) # (nb_proj,1,1,128,128)
-    return img
+    return load_img_channels(img_array=img, nb_channels=nb_channels)
 
 
-def load_PVE_PVfree(ref, type, noisy):
+def load_PVE_PVfree(ref, type,nb_channels, noisy):
 
     proj_PVE_filename = f'{ref}_PVE.{type}'
     proj_PVfree_filename = f'{ref}_PVfree.{type}'
 
-    imgPVE = load_from_filename(proj_PVE_filename)
+    imgPVE = load_from_filename(proj_PVE_filename,nb_channels)
 
-    imgPVfree = load_from_filename(proj_PVfree_filename)
+    imgPVfree = load_from_filename(proj_PVfree_filename,nb_channels)
 
     if noisy:
         proj_PVE_noisy_filename = f'{ref}_PVE_noisy.{type}'
-        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename)
-        array = np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (1,3,nb_channels,128,128)
+        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,nb_channels)
+        array = np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (nb_projs,3,nb_channels,Npix,Npix)
     else:
-        array = np.concatenate((imgPVE, imgPVfree), axis=1) # (1,2,nb_channels,128,128)
+        array = np.concatenate((imgPVE, imgPVfree), axis=1) # (nb_projs,2,nb_channels,Npix,Npix)
 
     return array

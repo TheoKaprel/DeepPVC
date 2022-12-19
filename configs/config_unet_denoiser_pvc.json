@@ -1,18 +1,18 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
   "datatype": "mhd",
   "with_noise": true,
-  "training_batchsize":5,
-  "test_batchsize":5,
+  "training_batchsize":32,
+  "test_batchsize":8,
   "data_normalisation": "none",
 
   "network": "unet_denoiser_pvc",
 
-  "n_epochs":10,
+  "n_epochs":1,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.97],
-  "input_channels":1,
+  "input_channels":4,
   "use_dropout": true,
   "sum_norm": false,
   "save_every_n_epoch": 9999,
@@ -21,7 +21,7 @@
   "optimizer":"Adam",
   "device":"cuda",
   "validation_norm": "L1",
-  "comment": "test",
+  "comment": "test load data",
 
   "nb_ed_layers_denoiser": 4,
   "hidden_channels_unet_denoiser":64,

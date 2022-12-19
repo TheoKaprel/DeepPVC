@@ -62,6 +62,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         params = js.loads(params_file)
         params['start_pth'] = []
         start_epoch = 0
+        device = torch.device(params['device'])
         if output:
             ref = output
         else:
@@ -90,8 +91,13 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
 
+
+    print(f'MEMORY : {torch.cuda.mem_get_info()}')
+
     # train in normalized and tensor but test_dataset is NOT and numpy
     train_normalized_dataloader, test_dataset_numpy, params = dataset.load_data(params)
+
+    print(f'MEMORY : {torch.cuda.mem_get_info()}')
 
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
@@ -102,10 +108,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     t0 = time.time()
 
 
+
+
     print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
+        print(f'MEMORY : {torch.cuda.mem_get_info()}')
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
-
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
@@ -145,6 +153,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
 
+    print(f'MEMORY : {torch.cuda.mem_get_info()}')
 
 if __name__ == '__main__':
     train_onclick()
