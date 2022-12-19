@@ -38,17 +38,17 @@ def apply(pth, input, output_filename):
     with torch.no_grad():
         input_image = itk.imread(input)
         input_array = itk.array_from_image(input_image)
-        input_array = np.expand_dims(input_array,axis=1)
-        print(input_array.shape)
+        input_with_channels = helpers_data.load_img_channels(img_array=input_array, nb_channels=params['input_channels'])
+        tensor_input_with_channels = torch.tensor(input_with_channels,device=device)
 
         vSpacing = np.array(input_image.GetSpacing())
         vOffset = np.array(input_image.GetOrigin())
 
-        normalized_input_tensor = helpers_data.normalize_eval(dataset_or_img=input_array,data_normalisation=normalisation,norm=norm,params=params,to_torch=True)
 
-        normalized_output_tensor = model.forward(normalized_input_tensor)
+        output_tensor = model.forward(tensor_input_with_channels)
+        output_array = output_tensor.cpu().numpy()[:,0,:,:]
 
-        output_array = helpers_data.denormalize_eval(dataset_or_img=normalized_output_tensor,data_normalisation=normalisation,norm=norm,params=params,to_numpy=True)[:,0,:,:]
+
         output_image = itk.image_from_array(output_array)
         output_image.SetSpacing(vSpacing)
         output_image.SetOrigin(vOffset)
