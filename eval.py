@@ -67,7 +67,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
 
         test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
         with torch.no_grad():
-            (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
+            (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
             print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE) + "  (std={:.3e})".format(std_NRMSE))
             print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE)  + "  (std={:.3e})".format(std_NMAE))
 

@@ -90,7 +90,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
 
-    train_normalized_dataloader, test_dataloader, params = dataset.load_data_v2(params)
+    train_normalized_dataloader, test_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
     DeepPVEModel.show_infos()
@@ -112,10 +112,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             DeepPVEModel.switch_eval()
 
             if params['validation_norm']=="L1":
-                (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
+                (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNMAE])
             if params['validation_norm']=="L2":
-                (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
+                (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE])
 
             print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
