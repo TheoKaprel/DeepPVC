@@ -133,31 +133,45 @@ class CustomPVEProjectionsDataset(Dataset):
         for path in self.dataset_path:
             self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.datatype}'))
 
+        self.build_numpy_dataset()
+
+    def build_numpy_dataset(self):
+        print(f'Loading data ...')
+        t0 = time.time()
+        if self.noisy:
+            projs_per_item = 3
+        else:
+            projs_per_item = 2
+
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files), projs_per_item,self.input_channels,128,128))
+
+        for item_id,filename_PVE in enumerate(self.list_files):
+            if self.noisy:
+                filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.datatype}'
+                img_noisy = itk.array_from_image(itk.imread(filename_noisy))
+                self.numpy_cpu_dataset[item_id,0,:,:,:] = img_noisy[0:self.input_channels,:,:]
+                next_input = 1
+            else:
+                next_input = 0
+
+            img_PVE = itk.array_from_image(itk.imread(filename_PVE))
+
+            self.numpy_cpu_dataset[item_id,next_input,:,:,:] = img_PVE[0:self.input_channels,:,:]
+
+            filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.datatype}'
+            img_PVf = itk.array_from_image(itk.imread(filename_PVf))
+            self.numpy_cpu_dataset[item_id,next_input+1,:,:,:] = img_PVf[0:self.input_channels,:,:]
+
+        t1 = time.time()
+        elapsed_time1 = t1 - t0
+        print(f'Done! in {elapsed_time1} s')
+
     def __len__(self):
         return len(self.list_files)
 
     def __getitem__(self, item_id):
-        filename_PVE = self.list_files[item_id]
-
-        if self.noisy:
-            projections = torch.zeros((3, self.input_channels, 128, 128), device = self.device  )
-            filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.datatype}'
-            img_noisy = torch.tensor(itk.array_from_image(itk.imread(filename_noisy)),device = self.device)
-            projections[0,:,:,:] = img_noisy[0:self.input_channels,:,:]
-            next_input = 1
-        else:
-            projections = torch.zeros((2, self.input_channels, 128, 128))
-            next_input = 0
-
-        img_PVE = torch.tensor(itk.array_from_image(itk.imread(filename_PVE)), device = self.device)
-
-        projections[next_input,:,:,:] = img_PVE[0:self.input_channels,:,:]
-
-        filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.datatype}'
-        img_PVf = torch.tensor(itk.array_from_image(itk.imread(filename_PVf)), device = self.device)
-        projections[next_input+1,:,:,:] = img_PVf[0:self.input_channels,:,:]
-
-        return projections
+        one_item = torch.tensor(self.numpy_cpu_dataset[item_id,:,:,:,:],device=self.device)
+        return one_item
 
 def load_data_v2(params):
     train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])

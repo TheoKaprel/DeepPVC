@@ -65,7 +65,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
-        test_dataloader =DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
+        test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
         with torch.no_grad():
             (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
             print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE) + "  (std={:.3e})".format(std_NRMSE))
