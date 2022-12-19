@@ -116,17 +116,14 @@ def load_test_data(datatype, params, from_folder=False,from_file=False, is_ref=F
     if from_folder!=False:
         test_dataset = construct_dataset_from_path(dataset_path=from_folder,datatype=datatype, nb_channels=input_channels, noisy=noisy)
     if from_file!=False:
-        test_dataset = helpers_data.load_image(filename=from_file,is_ref=is_ref, type=datatype,noisy=noisy)
+        test_dataset = helpers_data.load_image(filename=from_file,is_ref=is_ref, type=datatype,noisy=noisy,nb_channels=input_channels)
 
     return test_dataset
 
 
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, training=True):
-        if training:
-            self.dataset_path = params['dataset_path']
-        else:
-            self.dataset_path = params['test_dataset_path']
+    def __init__(self, params, paths):
+        self.dataset_path = paths
         self.datatype = params["datatype"]
         self.noisy = (params['with_noise'])
         self.input_channels = params['input_channels']
@@ -163,11 +160,11 @@ class CustomPVEProjectionsDataset(Dataset):
         return projections
 
 def load_data_v2(params):
-    train_dataset = CustomPVEProjectionsDataset(params=params, training=True)
+    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])
     training_batchsize = params['training_batchsize']
     train_dataloader = DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
 
-    test_dataset = CustomPVEProjectionsDataset(params=params, training=False)
+    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'])
     test_batchsize = params['test_batchsize']
     test_dataloader = DataLoader(test_dataset,batch_size=test_batchsize,shuffle=False)
 

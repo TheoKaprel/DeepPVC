@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
 import torch
+from torch.utils.data import DataLoader
 import numpy as np
 import click
 import random
 
-from DeepPVC import plots, helpers_data,helpers_params, helpers, Models,dataset, helpers_functions
+from DeepPVC import helpers_data, helpers, Models,dataset, helpers_functions
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -41,7 +42,7 @@ def add_or_modify_error(dataset_path, params, error_ref, error_val):
 
 
 def eval_error(lpth, input,dataset_path,type,ref, verbose):
-    device = helpers.get_auto_device("cpu")
+    device = helpers.get_auto_device("cuda")
 
     dict_mse,dict_std_mse = {},{}
     dict_mae,dict_std_mae = {},{}
@@ -57,16 +58,16 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
         model.switch_eval()
 
         if input:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
+            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type, nb_channels=params['input_channels'],noisy=params['with_noise']),device=device)
         elif dataset_path:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path)
+            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path])
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
-
+        test_dataloader =DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
         with torch.no_grad():
-            (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataset_numpy=test_dataset, model=model, do_NRMSE=True, do_NMAE=True)
+            (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
             print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE) + "  (std={:.3e})".format(std_NRMSE))
             print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE)  + "  (std={:.3e})".format(std_NMAE))
 
@@ -82,7 +83,6 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
                 model.show_infos()
 
             print('*' * 80)
-
 
 
     fig,ax = plt.subplots(1,2)
@@ -103,7 +103,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
 
 
 def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
-    device = helpers.get_auto_device("cpu")
+    device = helpers.get_auto_device("cuda")
 
     random_data_index = []
 
@@ -117,7 +117,6 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         pth_ref = params['ref']
         lpth_ref.append(pth_ref)
 
-        normalisation = params['data_normalisation']
         model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
         model.switch_device(device)
         model.switch_eval()
@@ -128,37 +127,35 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
                 model.plot_losses(save=False, wait=True, title=pth)
 
         if input:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_file=input,is_ref=ref)
+            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type, nb_channels=params['input_channels'],noisy=params['with_noise']),device=device)
         elif dataset_path:
-            test_dataset = dataset.load_test_data(datatype=type,params=params,from_folder=dataset_path)
+            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path])
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
+        test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
+
+
         if id==0:
-            N_data = test_dataset.shape[0]
+            N_data = len(test_dataloader.dataset)
             random_data_index = [random.randint(0, N_data - 1) for _ in range(n)]
             for id in random_data_index:
                 dict_data[id] = {}
-                dict_data[id]['PVE_noisy'] = test_dataset[id, 0, 0, :, :]
-                dict_data[id]['PVE'] = test_dataset[id, 1, 0, :, :]
-                dict_data[id]['noPVE'] = test_dataset[id, 2, 0, :, :]
+                dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,0,:,:].cpu().numpy()
+                dict_data[id]['PVE'] = test_dataloader.dataset[id][1, 0, :, :].cpu().numpy()
+                dict_data[id]['noPVE'] = test_dataloader.dataset[id][2, 0, :, :].cpu().numpy()
 
 
         for index in random_data_index:
-            input_i = test_dataset[index,0, :, :, :][None,None, :, :, :]
+            input_i = test_dataloader.dataset[index][0, :, :, :][None,None, :, :, :]
             with torch.no_grad():
-                norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i,data_normalisation=normalisation)
-                normalized_input_i = helpers_data.normalize_eval(dataset_or_img=input_i,data_normalisation=normalisation,norm=norm_input_i,params=params,to_torch=True)
-
-                output_i = model.forward(normalized_input_i)
-                denormalized_output_i = helpers_data.denormalize_eval(dataset_or_img=output_i,data_normalisation=normalisation,norm=norm_input_i,params=params,to_numpy=True)
-                dict_data[index][pth_ref] = [denormalized_output_i[0, 0, :, :]]
+                output_i = model.forward(input_i)
+                dict_data[index][pth_ref] = [output_i[0, 0, :, :].cpu().numpy()]
 
                 if verbose>2:
                     denoisedPVE = model.denoisedPVE
-                    denormalized_denoisedPVE = helpers_data.denormalize_eval(dataset_or_img=denoisedPVE,data_normalisation=normalisation,norm=norm_input_i,params=params,to_numpy=True)
-                    dict_data[index][pth_ref].append(denormalized_denoisedPVE[0,0,:,:])
+                    dict_data[index][pth_ref].append(denoisedPVE[0,0,:,:].cpu().numpy())
 
 
     if verbose>1:

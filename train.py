@@ -62,7 +62,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         params = js.loads(params_file)
         params['start_pth'] = []
         start_epoch = 0
-        device = torch.device(params['device'])
         if output:
             ref = output
         else:
@@ -91,15 +90,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
 
-
-    print(f'MEMORY : {torch.cuda.mem_get_info()}')
-
-    # train in normalized and tensor but test_dataset is NOT and numpy
-    # train_normalized_dataloader, test_dataset_numpy, params = dataset.load_data(params)
     train_normalized_dataloader, test_dataloader, params = dataset.load_data_v2(params)
-
-    print(f'MEMORY : {torch.cuda.mem_get_info()}')
-
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
     DeepPVEModel.show_infos()
@@ -108,12 +99,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     t0 = time.time()
 
-
-
-
     print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
-        print(f'MEMORY : {torch.cuda.mem_get_info()}')
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
         # Optimisation loop
         DeepPVEModel.switch_train()
@@ -125,11 +112,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             DeepPVEModel.switch_eval()
 
             if params['validation_norm']=="L1":
-                # (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataset_numpy,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
                 (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNMAE])
             if params['validation_norm']=="L2":
-                # (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataset_numpy,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
                 (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors_loader(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE])
 
@@ -155,8 +140,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
-
-    print(f'MEMORY : {torch.cuda.mem_get_info()}')
 
 if __name__ == '__main__':
     train_onclick()
