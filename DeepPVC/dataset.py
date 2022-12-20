@@ -30,31 +30,31 @@ class CustomPVEProjectionsDataset(Dataset):
         else:
             projs_per_item = 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files), projs_per_item,self.input_channels,128,128))
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files)*self.input_channels, projs_per_item,self.input_channels,128,128))
 
         for item_id,filename_PVE in enumerate(self.list_files):
             if self.noisy:
                 filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.datatype}'
                 img_noisy = itk.array_from_image(itk.imread(filename_noisy))
-                self.numpy_cpu_dataset[item_id,0,:,:,:] = img_noisy[0:self.input_channels,:,:]
+                self.numpy_cpu_dataset[item_id*self.input_channels:(item_id+1)*self.input_channels,0:1,:,:,:] = helpers_data.load_img_channels(img_array=img_noisy,nb_channels=self.input_channels)
                 next_input = 1
             else:
                 next_input = 0
 
             img_PVE = itk.array_from_image(itk.imread(filename_PVE))
 
-            self.numpy_cpu_dataset[item_id,next_input,:,:,:] = img_PVE[0:self.input_channels,:,:]
+            self.numpy_cpu_dataset[item_id*self.input_channels:(item_id+1)*self.input_channels,next_input:next_input+1,:,:,:] = helpers_data.load_img_channels(img_array=img_PVE,nb_channels=self.input_channels)
 
             filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.datatype}'
             img_PVf = itk.array_from_image(itk.imread(filename_PVf))
-            self.numpy_cpu_dataset[item_id,next_input+1,:,:,:] = img_PVf[0:self.input_channels,:,:]
+            self.numpy_cpu_dataset[item_id*self.input_channels:(item_id+1)*self.input_channels,next_input+1:next_input+2,:,:,:] = helpers_data.load_img_channels(img_array=img_PVf,nb_channels=self.input_channels)
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
         print(f'Done! in {elapsed_time1} s')
 
     def __len__(self):
-        return len(self.list_files)
+        return len(self.list_files)*self.input_channels
 
     def __getitem__(self, item_id):
         one_item = torch.tensor(self.numpy_cpu_dataset[item_id,:,:,:,:],device=self.device)

@@ -9,26 +9,29 @@ from abc import abstractmethod
 from . import networks, losses,plots, helpers, helpers_params
 
 class ModelInstance():
-    def __new__(cls, params, from_pth = None, resume_training=False):
+    def __new__(cls, params, from_pth = None, resume_training=False, device = None):
         network_architecture = params['network']
 
         if network_architecture == 'pix2pix':
-            return Pix2PixModel(params=params, from_pth=from_pth,resume_training=resume_training)
+            return Pix2PixModel(params=params, from_pth=from_pth,resume_training=resume_training, device=device)
         elif network_architecture == 'unet':
-            return UNetModel(params=params, from_pth=from_pth,resume_training=resume_training)
+            return UNetModel(params=params, from_pth=from_pth,resume_training=resume_training, device=device)
         elif network_architecture == 'unet_denoiser_pvc':
-            return UNet_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training)
+            return UNet_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training, device=device)
         elif network_architecture == 'gan_denoiser_pvc':
-            return GAN_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training)
+            return GAN_Denoiser_PVC(params=params, from_pth=from_pth,resume_training=resume_training, device=device)
         else:
             print(f"ERROR : unknown network architecture ({network_architecture})")
             exit(0)
 
 
 class ModelBase():
-    def __init__(self,  params, resume_training):
+    def __init__(self,  params, resume_training, device = None):
         self.params = params
-        self.device = helpers.get_auto_device(self.params['device'])
+        if device==None:
+            self.device = helpers.get_auto_device(self.params['device'])
+        else:
+            self.device = device
 
         self.n_epochs = params['n_epochs']
         self.learning_rate = params['learning_rate']
@@ -104,9 +107,9 @@ class ModelBase():
 
 
 class Pix2PixModel(ModelBase):
-    def __init__(self, params, from_pth = None,resume_training=False):
+    def __init__(self, params, from_pth = None,resume_training=False, device=None):
         assert (params['network'] == 'pix2pix')
-        super().__init__(params,resume_training)
+        super().__init__(params,resume_training,device=device)
 
         self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_gen = params['hidden_channels_gen']
@@ -326,9 +329,9 @@ class Pix2PixModel(ModelBase):
 
 
 class UNetModel(ModelBase):
-    def __init__(self, params, from_pth = None,resume_training=False):
+    def __init__(self, params, from_pth = None,resume_training=False,device=None):
         assert (params['network'] == 'unet')
-        super().__init__(params,resume_training)
+        super().__init__(params,resume_training,device=device)
 
         self.nb_ed_layers = params['nb_ed_layers']
         self.hidden_channels_unet = params['hidden_channels_unet']
@@ -504,9 +507,9 @@ class UNetModel(ModelBase):
 
 
 class UNet_Denoiser_PVC(ModelBase):
-    def __init__(self, params, from_pth = None,resume_training=False):
+    def __init__(self, params, from_pth = None,resume_training=False,device=None):
         assert(params['network']=='unet_denoiser_pvc')
-        super().__init__(params,resume_training)
+        super().__init__(params,resume_training,device=device)
 
         self.nb_ed_layers_denoiser = params['nb_ed_layers_denoiser']
         self.hidden_channels_unet_denoiser = params['hidden_channels_unet_denoiser']
@@ -742,9 +745,9 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
 class GAN_Denoiser_PVC(ModelBase):
-    def __init__(self, params, from_pth = None,resume_training=False):
+    def __init__(self, params, from_pth = None,resume_training=False,device=None):
         assert(params['network']=='gan_denoiser_pvc')
-        super().__init__(params,resume_training)
+        super().__init__(params,resume_training,device=device)
 
         self.nb_ed_layers_gen_denoiser = params['nb_ed_layers_gen_denoiser']
         self.hidden_channels_gen_denoiser = params['hidden_channels_gen_denoiser']
