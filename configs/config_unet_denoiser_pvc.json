@@ -1,15 +1,15 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/IEC_ds"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/IEC_ds"],
   "datatype": "mhd",
   "with_noise": true,
-  "training_batchsize":32,
-  "test_batchsize":32,
+  "training_batchsize":30,
+  "test_batchsize":30,
   "data_normalisation": "none",
 
   "network": "unet_denoiser_pvc",
 
-  "n_epochs":10,
+  "n_epochs":20,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.97],
   "input_channels":4,
