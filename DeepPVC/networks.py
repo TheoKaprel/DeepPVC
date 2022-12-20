@@ -53,7 +53,7 @@ class UpSamplingBlock(nn.Module):
         self.use_dropout = use_dropout
 
         self.upConv = nn.ConvTranspose2d(input_nc, output_nc, kernel_size=(4,4), stride=(2,2), padding = (1,1))
-        self.upRelu = nn.ReLU(True)
+        self.upRelu = nn.LeakyReLU(0.2,True)
 
         if self.normtype=="batch_norm":
             self.upNorm = nn.BatchNorm2d(output_nc,track_running_stats=False)
@@ -140,6 +140,8 @@ class UNet(nn.Module):
             self.activation = nn.Tanh()
         elif generator_activation=="relu":
             self.activation = nn.ReLU()
+        elif generator_activation=="softplus":
+            self.activation = nn.Softplus()
         elif generator_activation=="none":
             self.activation = nn.Identity()
         elif generator_activation=='relu_min':
