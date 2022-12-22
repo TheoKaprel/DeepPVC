@@ -48,7 +48,7 @@ class ModelBase():
 
     def input_data(self, batch):
         self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
-        self.truePVfree = batch[:, 1,0:1, :, :].to(self.device).float()
+        self.truePVfree = batch[:, -1,0:1, :, :].to(self.device).float()
 
     def format_params(self):
         formatted_params = copy.deepcopy(self.params)
@@ -364,7 +364,7 @@ class UNetModel(ModelBase):
 
     def init_model(self):
         self.UNet = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel=self.input_channels,generator_activation = self.unet_activation,use_dropout=self.use_dropout,
+                                                output_channel=1,generator_activation = self.unet_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.unet_norm, vmin=self.vmin).to(device=self.device)
 
     def init_optimization(self):
@@ -385,7 +385,6 @@ class UNetModel(ModelBase):
     def init_losses(self):
         self.losses_params = {'recon_loss': self.params['recon_loss']}
 
-        # self.losses = losses.Pix2PixLosses(self.losses_params)
         self.losses = losses.UNetLosses(self.losses_params)
 
     def forward_UNet(self):

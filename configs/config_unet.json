@@ -1,23 +1,23 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_v2"],
-  "datatype": "mha",
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
+  "datatype": "mhd",
   "with_noise": true,
-  "training_batchsize":5,
-  "test_batchsize":5,
+  "training_batchsize":16,
+  "test_batchsize":16,
   "data_normalisation": "none",
 
   "network": "unet",
 
   "n_epochs":20,
-  "learning_rate":0.0002,
-  "lr_policy": ["multiplicative",0.1],
-  "input_channels":1,
+  "learning_rate":0.0001,
+  "lr_policy": ["multiplicative",1],
+  "input_channels":4,
   "use_dropout": false,
   "sum_norm": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,
-  "test_every_n_epoch": 9999,
+  "test_every_n_epoch": 1,
   "optimizer":"Adam",
   "device":"cuda",
   "validation_norm": "L1",
@@ -26,6 +26,6 @@
   "nb_ed_layers": 4,
   "hidden_channels_unet":64,
   "unet_activation": "relu",
-  "unet_norm": "batch_norm",
-  "recon_loss":"L2"
+  "unet_norm": "inst_norm",
+  "recon_loss":"L1"
 }

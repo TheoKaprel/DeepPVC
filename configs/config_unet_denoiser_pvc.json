@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/IEC_ds"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/IEC_ds"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
   "datatype": "mhd",
   "with_noise": true,
   "training_batchsize":30,

@@ -12,10 +12,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--pth') # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
-@click.option('--output_filename', '-o', help = 'Output filename (mhd)')
-
-def apply_click(pth,input, output_filename):
-    apply(pth, input, output_filename)
+@click.option('--output', '-o', help = 'Output filename (mhd)')
+def apply_click(pth,input, output):
+    apply(pth, input, output_filename=output)
 
 
 def apply(pth, input, output_filename):
