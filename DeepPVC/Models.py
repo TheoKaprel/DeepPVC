@@ -215,13 +215,11 @@ class Pix2PixModel(ModelBase):
     def forward(self, batch):
         if  batch.dim()==4:
             self.truePVE = batch.to(self.device).float()
-        elif (batch.dim()==5) and (batch.shape[1]==2):
-            self.input_data(batch=batch)
-        elif batch.dim()==5 and (batch.shape[1]==1):
+        elif batch.dim()==5:
             self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
 
-        fakePVfree = self.Generator(self.truePVE)
-        return fakePVfree
+        return self.Generator(self.truePVE)
+
 
     def optimize_parameters(self):
         # Discriminator Updates
@@ -410,11 +408,7 @@ class UNetModel(ModelBase):
         if batch.dim()==4:
             self.truePVE = batch.to(self.device).float()
         elif batch.dim()==5:
-            if (batch.shape[1] == 1 or batch.shape[1] == 2):
-                self.truePVE = batch[:,0,:,:,:].to(self.device).float()
-            elif batch.shape[1] == 3:
-                self.truePVE = batch[:,0,:,:,:].to(self.device).float()
-
+            self.truePVE = batch[:,0,:,:,:].to(self.device).float()
 
         fakePVfree = self.UNet(self.truePVE)
         return fakePVfree
