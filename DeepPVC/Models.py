@@ -46,9 +46,9 @@ class ModelBase():
 
         self.resume_training = resume_training
 
+    @abstractmethod
     def input_data(self, batch):
-        self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
-        self.truePVfree = batch[:, -1,0:1, :, :].to(self.device).float()
+        pass
 
     def format_params(self):
         formatted_params = copy.deepcopy(self.params)
@@ -148,10 +148,10 @@ class Pix2PixModel(ModelBase):
 
     def init_model(self):
         self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel=self.input_channels,generator_activation = self.generator_activation,use_dropout=self.use_dropout,
+                                                output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout,
                                                 sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
 
-        self.Discriminator = networks.NEncodingLayers(input_channel=2*self.input_channels,
+        self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,
                                                           ndc = self.hidden_channels_disc,
                                                           output_channel=self.input_channels).to(device=self.device)
 
@@ -172,9 +172,17 @@ class Pix2PixModel(ModelBase):
 
 
     def init_losses(self):
-        self.losses_params = {'adv_loss': self.params['adv_loss'], 'recon_loss': self.params['recon_loss'], 'lambda_recon': self.params['lambda_recon']}
+        self.gp = self.params['with_gradient_penalty']
+
+        self.losses_params = {'adv_loss': self.params['adv_loss'], 'recon_loss': self.params['recon_loss'],
+                              'lambda_recon': self.params['lambda_recon'], 'gradient_penalty': self.gp, 'device':self.device}
 
         self.losses = losses.Pix2PixLosses(self.losses_params)
+
+
+    def input_data(self, batch):
+        self.truePVE = batch[:, 0, :, :, :].to(self.device).float()
+        self.truePVfree = batch[:, -1, 0:1, :, :].to(self.device).float()
 
     def forward_D(self):
         ## Update Discriminator
@@ -188,6 +196,9 @@ class Pix2PixModel(ModelBase):
         disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, torch.zeros_like(self.Ddisc_fake_hat))
         disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, torch.ones_like(self.Ddisc_real_hat))
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
+
+        if self.gp:
+            self.disc_loss += 10 * self.losses.get_gradient_penalty(Discriminator=self.Discriminator, real = self.truePVfree,fake = self.DfakePVfree, condition=self.truePVE)
 
         self.disc_loss.backward(retain_graph=True)
         self.discriminator_optimizer.step()
