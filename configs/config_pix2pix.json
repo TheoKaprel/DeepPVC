@@ -17,7 +17,7 @@
   "sum_norm": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
-  "test_every_n_epoch": 99,
+  "test_every_n_epoch": 1,
   "optimizer":"Adam",
   "device":"cuda",
   "validation_norm": "L1",
