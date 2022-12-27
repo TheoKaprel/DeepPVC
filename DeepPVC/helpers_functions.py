@@ -14,8 +14,6 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
             fakePVfree = model.forward(batch)
 
             batch_targets = batch[:,-1,0:1,:,:]
-            print(batch_targets.shape)
-            print(fakePVfree.shape)
 
             mean_norm = (torch.sum(torch.abs(batch_targets),dim = (1,2,3)) / batch.shape[2] / batch.shape[3])
 
