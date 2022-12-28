@@ -23,6 +23,7 @@
   "validation_norm": "L1",
   "comment": "",
 
+  "init_feature_kernel_denoiser": 3,
   "nb_ed_layers_gen_denoiser": 3,
   "hidden_channels_gen_denoiser":64,
   "gen_denoiser_norm": "inst_norm",
@@ -35,6 +36,7 @@
   "generator_update_denoiser": 1,
   "discriminator_update_denoiser": 1,
 
+  "init_feature_kernel_pvc": 3,
   "nb_ed_layers_gen_pvc": 3,
   "hidden_channels_gen_pvc":64,
   "gen_pvc_norm": "batch_norm",

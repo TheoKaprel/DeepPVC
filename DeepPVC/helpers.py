@@ -15,3 +15,6 @@ def get_auto_device(device_mode):
 
     print(f'Device : {device}')
     return device
+
+def calc_2dConv_output_shape(input_dim, kernel_size, stride=1,padding=0, dilation=1):
+    return int((input_dim + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1)
