@@ -14,13 +14,13 @@ class DownSamplingBlock(nn.Module):
     si dim(x) = (I,I) et y = Conv2D(x)
     alors dim(y) = (I - kernel_size + 2*padding)/stride +1 = (I-4+2)/2 +1 = I/2
     """
-    def __init__(self, input_nc, output_nc, kernel_size = (4,4), stride = (2,2), padding = 1, norm="batch_norm"):
+    def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (4,4), stride = (2,2), padding = 1, norm="batch_norm"):
         super(DownSamplingBlock, self).__init__()
 
         self.do_norm = (norm!="none")
         self.normtype = norm
         self.downConv = nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
-        self.downRelu = nn.LeakyReLU(0.2, True)
+        self.downRelu = nn.LeakyReLU(leaky_relu_val, True)
 
         if self.normtype=="batch_norm":
             self.downNorm = nn.BatchNorm2d(output_nc, track_running_stats=False)
@@ -46,14 +46,14 @@ class UpSamplingBlock(nn.Module):
     si dim(x) = (I,I) et y = ConvTranspose2d(x)
     alors dim(y) = (I-1)stride - 2*padding + kernel_size =  (I-1)*2 - 2 * 1 + 4 = 2 I
     """
-    def __init__(self, input_nc, output_nc, norm="batch_norm", use_dropout = False):
+    def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, norm="batch_norm", use_dropout = False):
         super(UpSamplingBlock, self).__init__()
         self.do_norm = (norm!="none")
         self.normtype = norm
         self.use_dropout = use_dropout
 
         self.upConv = nn.ConvTranspose2d(input_nc, output_nc, kernel_size=(4,4), stride=(2,2), padding = (1,1))
-        self.upRelu = nn.LeakyReLU(0.2,True)
+        self.upRelu = nn.LeakyReLU(leaky_relu_val,True)
 
         if self.normtype=="batch_norm":
             self.upNorm = nn.BatchNorm2d(output_nc,track_running_stats=False)
@@ -106,7 +106,7 @@ class UNet(nn.Module):
     - norm
     - vmin = None
     """
-    def __init__(self,input_channel, ngc,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,sum_norm, norm, vmin = None):
+    def __init__(self,input_channel, ngc,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu,sum_norm, norm, vmin = None):
         super(UNet, self).__init__()
 
         init_feature_kernel_size = (int(init_feature_kernel),int(init_feature_kernel))
@@ -119,23 +119,22 @@ class UNet(nn.Module):
         # Contracting layers :
         k = 1
         for _ in range(self.nb_ed_layers):
-            down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm))
+            down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu))
             k = 2 * k
         self.down_layers = nn.Sequential(*down_layers)
 
         # Core layer
         # If any dropout layer is used, it is here
-        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout))
+        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout,leaky_relu_val=leaky_relu))
 
         # Extracting layers :
         for _ in range(self.nb_ed_layers - 1):
-            up_layers.append(UpSamplingBlock(k * ngc, int(k / 4) * ngc, norm = norm))
+            up_layers.append(UpSamplingBlock(k * ngc, int(k / 4) * ngc, norm = norm,leaky_relu_val=leaky_relu))
             k = int( k / 2)
 
         self.up_layers = nn.Sequential(*up_layers)
 
         self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
-
 
         if generator_activation=="sigmoid":
             self.activation = nn.Sigmoid()
@@ -189,17 +188,17 @@ class NEncodingLayers(nn.Module):
     - output_channel : number of channels desired for the output
     FIXME : ajouter options : nb_layers, dropout, normlayer
     """
-    def __init__(self, input_channel, ndc, output_channel=1):
+    def __init__(self, input_channel, ndc,leaky_relu, output_channel=1):
         super(NEncodingLayers, self).__init__()
 
         # initial layer
-        sequence = [nn.Conv2d(input_channel, ndc, kernel_size=(4, 4), stride=(2, 2), padding = 1), nn.LeakyReLU(0.2, True)]
+        sequence = [nn.Conv2d(input_channel, ndc, kernel_size=(4, 4), stride=(2, 2), padding = 1), nn.LeakyReLU(leaky_relu, True)]
 
         #contracting lagers
-        sequence += [DownSamplingBlock(ndc, 2 * ndc)]
-        sequence += [DownSamplingBlock(2 * ndc, 4 * ndc)]
+        sequence += [DownSamplingBlock(ndc, 2 * ndc,leaky_relu_val=leaky_relu)]
+        sequence += [DownSamplingBlock(2 * ndc, 4 * ndc,leaky_relu_val=leaky_relu)]
 
-        sequence += [DownSamplingBlock(4*ndc, 8*ndc, stride = 1)]
+        sequence += [DownSamplingBlock(4*ndc, 8*ndc, stride = 1,leaky_relu_val=leaky_relu)]
 
         sequence += [nn.Conv2d(8 * ndc, output_channel, kernel_size=(4, 4), stride = (1, 1), padding=1)]
         self.model = nn.Sequential(*sequence)

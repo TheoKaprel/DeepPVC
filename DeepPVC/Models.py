@@ -38,6 +38,7 @@ class ModelBase():
         self.input_channels = params['input_channels']
 
         self.use_dropout = params['use_dropout']
+        self.leaky_relu = params['leaky_relu']
         self.sum_norm = params['sum_norm']
         self.optimizer = params['optimizer']
 
@@ -149,12 +150,11 @@ class Pix2PixModel(ModelBase):
 
     def init_model(self):
         self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
-                                                output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout,
+                                                output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
                                                 sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
 
-        self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,
-                                                          ndc = self.hidden_channels_disc,
-                                                          output_channel=self.input_channels).to(device=self.device)
+        self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,
+                                                    output_channel=self.input_channels,leaky_relu=self.leaky_relu).to(device=self.device)
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
@@ -335,8 +335,7 @@ class Pix2PixModel(ModelBase):
         print(self.Discriminator)
         print('*' * 80)
 
-        helpers_params.make_and_print_params_info_table([self.params])
-
+        # helpers_params.make_and_print_params_info_table([self.params])
 
 class UNetModel(ModelBase):
     def __init__(self, params, from_pth = None,resume_training=False,device=None):
@@ -377,7 +376,7 @@ class UNetModel(ModelBase):
         self.UNet = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet,
                                   init_feature_kernel=self.init_feature_kernel,nb_ed_layers=self.nb_ed_layers,
                                   output_channel=1,generator_activation = self.unet_activation,use_dropout=self.use_dropout,
-                                sum_norm = self.sum_norm,norm = self.unet_norm, vmin=self.vmin).to(device=self.device)
+                                sum_norm = self.sum_norm,norm = self.unet_norm, vmin=self.vmin,leaky_relu = self.leaky_relu,).to(device=self.device)
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
@@ -563,12 +562,12 @@ class UNet_Denoiser_PVC(ModelBase):
         self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet_denoiser,
                                            init_feature_kernel=self.init_feature_kernel_denoiser,nb_ed_layers=self.nb_ed_layers_denoiser,
                                                 output_channel=self.input_channels,generator_activation = self.unet_denoiser_activation,use_dropout=self.use_dropout,
-                                                sum_norm = self.sum_norm,norm = self.unet_denoiser_norm, vmin=self.vmin).to(device=self.device)
+                                                sum_norm = self.sum_norm,norm = self.unet_denoiser_norm, vmin=self.vmin,leaky_relu = self.leaky_relu).to(device=self.device)
 
         self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet_pvc,
                                   init_feature_kernel=self.init_feature_kernel_pvc,nb_ed_layers=self.nb_ed_layers_pvc,
                                     output_channel=1,generator_activation = self.unet_pvc_activation,use_dropout=self.use_dropout,
-                                    sum_norm = self.sum_norm,norm = self.unet_pvc_norm, vmin=self.vmin).to(device=self.device)
+                                    sum_norm = self.sum_norm,norm = self.unet_pvc_norm, vmin=self.vmin,leaky_relu = self.leaky_relu).to(device=self.device)
 
     def init_optimization(self):
         self.denoiser_update = self.params['denoiser_update']
@@ -824,16 +823,16 @@ class GAN_Denoiser_PVC(ModelBase):
         self.Denoiser_Generator = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_gen_denoiser,
                                                 init_feature_kernel=self.init_feature_kernel_denoiser,nb_ed_layers=self.nb_ed_layers_gen_denoiser,
                                                 output_channel= self.input_channels, generator_activation=self.gen_denoiser_activation, use_dropout=self.use_dropout,
-                                                sum_norm=self.sum_norm, norm=self.gen_denoiser_norm, vmin=self.vmin).to(device=self.device)
+                                                sum_norm=self.sum_norm, norm=self.gen_denoiser_norm, vmin=self.vmin,leaky_relu = self.leaky_relu).to(device=self.device)
 
         self.Denoiser_Discriminator = networks.NEncodingLayers(input_channel=2*self.input_channels,
                                                                ndc=self.hidden_channels_disc_denoiser,
-                                                               output_channel=self.input_channels).to(device=self.device)
+                                                               output_channel=self.input_channels,leaky_relu=self.leaky_relu).to(device=self.device)
         #---------PVC----------
         self.PVC_Generator = networks.UNet(input_channel=self.input_channels,ngc=self.hidden_channels_gen_pvc,
                                            init_feature_kernel=self.init_feature_kernel_pvc,nb_ed_layers=self.nb_ed_layers_gen_pvc,
                                             output_channel=1,generator_activation=self.gen_pvc_activation,use_dropout=self.use_dropout,
-                                            sum_norm=self.sum_norm, norm=self.gen_pvc_norm, vmin=self.vmin).to(device=self.device)
+                                            sum_norm=self.sum_norm, norm=self.gen_pvc_norm, vmin=self.vmin,leaky_relu = self.leaky_relu).to(device=self.device)
 
         self.PVC_Discriminator = networks.NEncodingLayers(input_channel= self.input_channels + 1,
                                                             ndc=self.hidden_channels_disc_pvc,
