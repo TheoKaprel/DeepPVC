@@ -107,7 +107,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
     random_data_index = []
 
-    dict_data = {}
+    dict_data = {'validation_losses': {}}
     lpth_ref = []
 
     for (id,pth) in enumerate(lpth):
@@ -125,6 +125,8 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
             model.show_infos()
             if verbose > 1:
                 model.plot_losses(save=False, wait=True, title=pth)
+                dict_data['validation_losses'][pth_ref] = model.test_error
+
 
         if input:
             test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type, nb_channels=params['input_channels'],noisy=params['with_noise']),device=device)
@@ -160,6 +162,12 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
 
     if verbose>1:
+        fig_test,ax_test = plt.subplots()
+        for i ,(pth,test) in  enumerate(dict_data['validation_losses'].items()):
+            ax_test.plot([e[0] for e in test],[e[1] for e in test],label = pth, linewidth= 2)
+        ax_test.set_title('validation losses')
+        plt.legend()
+
         plt.show()
 
 
