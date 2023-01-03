@@ -103,19 +103,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
 
-
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
-            if step==1:
-                np_batch = batch[0,:,:,:,:].cpu().numpy()
-                fig,ax = plt.subplots(4,np_batch.shape[1])
-                for i in range(3):
-                    for j in range(np_batch.shape[1]):
-                        ax[i,j].imshow(np_batch[i,j,:,:])
-                output = DeepPVEModel.GfakePVfree
-                ax[3,0].imshow(output[0,0,:,:].detach().cpu().numpy())
-                plt.show()
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()
