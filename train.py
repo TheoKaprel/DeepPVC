@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 import time
 import json as js
@@ -73,12 +74,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
 
     # Update parameters specified in command line
-    helpers_params.update_params_user_option(params, user_params=user_param_str, is_resume=resume_pth)
-    helpers_params.update_params_user_option(params, user_params=user_param_float, is_resume=resume_pth)
-    helpers_params.update_params_user_option(params, user_params=user_param_int, is_resume=resume_pth)
-    helpers_params.update_params_user_option(params, user_params=user_param_bool, is_resume=resume_pth)
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
-    helpers_params.update_params_user_option(params,user_params=user_param_list,is_resume=resume_pth)
+    for user_param_to_modify in (user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list):
+        helpers_params.update_params_user_option(params,user_params=user_param_to_modify,is_resume=resume_pth)
 
     network_architecture = params['network']
 
@@ -88,7 +86,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     helpers_params.check_params(params)
 
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
-
 
     train_normalized_dataloader, test_dataloader, params = dataset.load_data(params)
 
@@ -105,8 +102,20 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
+
+
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
+
+            if step==1:
+                np_batch = batch[0,:,:,:,:].cpu().numpy()
+                fig,ax = plt.subplots(4,np_batch.shape[1])
+                for i in range(3):
+                    for j in range(np_batch.shape[1]):
+                        ax[i,j].imshow(np_batch[i,j,:,:])
+                output = DeepPVEModel.GfakePVfree
+                ax[3,0].imshow(output[0,0,:,:].detach().cpu().numpy())
+                plt.show()
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()

@@ -53,15 +53,15 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
     if ('global' in data_normalisation or data_normalisation=='none'):
         norm = None
     elif data_normalisation == 'img_standard':
-        mean = np.mean(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
-        std = np.std(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
+        mean = torch.mean(dataset_or_img[:, 0:1, :, :, :], dim=(1, 2, 3,4), keepdim=True)
+        std = torch.std(dataset_or_img[:, 0:1, :, :, :], dim=(1, 2, 3,4), keepdim=True)
         norm = [mean, std]
     elif data_normalisation == 'img_0_1':
-        min = np.min(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
-        max = np.max(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
+        min = torch.amin(dataset_or_img[:, 0:1, :, :, :],dim=(1, 2, 3,4),keepdim=True)
+        max = torch.amax(dataset_or_img[:, 0:1, :, :, :],dim=(1, 2, 3,4),keepdim=True)
         norm = [min, max]
     elif data_normalisation == 'img_mean':
-        mean = np.mean(dataset_or_img[:, 0:1, :, :, :], axis=(1, 2, 3,4), keepdims=True)
+        mean = torch.mean(dataset_or_img[:, 0:1, :, :, :], dim=(1, 2, 3,4), keepdim=True)
         norm = [mean]
     else:
         print(f"ERROR in data_normalisation : {data_normalisation}")

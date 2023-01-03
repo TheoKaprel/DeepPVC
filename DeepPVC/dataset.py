@@ -9,11 +9,13 @@ from . import helpers_data, helpers
 
 
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, paths):
+    def __init__(self, params, paths, dataset_type):
+
         self.dataset_path = paths
         self.datatype = params["datatype"]
         self.noisy = (params['with_noise'])
         self.input_channels = params['input_channels']
+        self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
 
         self.list_files = []
@@ -25,11 +27,19 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.build_numpy_dataset()
 
+        del self.list_files
+        if (dataset_type=='train'):
+            print('Dataset prenormalisation ...')
+            self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
+            self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
+                                                            normtype=self.data_normalisation,norm=self.norm,to_torch=False,
+                                                            device='notneededbutitiscpu')
+
     def build_numpy_dataset(self):
         print(f'Loading data ...')
         t0 = time.time()
         if self.noisy:
-            projs_per_item = 3
+            projs_per_item = 3 #todo: changer le nom de cette variable qui n'a aucun sens
         else:
             projs_per_item = 2
 
@@ -57,6 +67,7 @@ class CustomPVEProjectionsDataset(Dataset):
         print(self.numpy_cpu_dataset.shape)
         print(f'Done! in {elapsed_time1} s')
 
+
     def __len__(self):
         return self.numpy_cpu_dataset.shape[0]
 
@@ -65,11 +76,11 @@ class CustomPVEProjectionsDataset(Dataset):
 
 
 def load_data(params):
-    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])
+    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'], dataset_type='train')
     training_batchsize = params['training_batchsize']
     train_dataloader = DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
 
-    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'])
+    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], dataset_type='validation')
     test_batchsize = params['test_batchsize']
     test_dataloader = DataLoader(test_dataset,batch_size=test_batchsize,shuffle=False)
 
@@ -79,6 +90,6 @@ def load_data(params):
     print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
-    params['norm'] = None
+    params['norm'] = train_dataset.norm
 
     return train_dataloader, test_dataloader,params

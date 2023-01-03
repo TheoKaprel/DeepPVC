@@ -114,6 +114,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
+        data_normalisation = params['data_normalisation']
         pth_ref = params['ref']
         lpth_ref.append(pth_ref)
 
@@ -131,7 +132,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         if input:
             test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type, nb_channels=params['input_channels'],noisy=params['with_noise']),device=device)
         elif dataset_path:
-            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path])
+            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],dataset_type='test')
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
@@ -153,8 +154,15 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         for index in random_data_index:
             input_i = test_dataloader.dataset[index][0, :, :, :][None,None, :, :, :]
             with torch.no_grad():
-                output_i = model.forward(input_i)
-                dict_data[index][pth_ref] = [output_i[0, 0, :, :].cpu().numpy()]
+                norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
+                normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
+                                                           norm=norm_input_i, params=model.params, to_torch=False)
+
+                normed_output_i = model.forward(normed_input_i)
+                denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,data_normalisation=data_normalisation,
+                                                                norm=norm_input_i,params=model.params,to_numpy=False)
+
+                dict_data[index][pth_ref] = [denormed_output_i[0, 0, :, :].cpu().numpy()]
 
                 if verbose>2:
                     denoisedPVE = model.denoisedPVE
