@@ -9,10 +9,13 @@ from . import helpers_data, helpers
 
 
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, paths, dataset_type):
+    def __init__(self, params, paths,dataset_type,filetype = None):
 
         self.dataset_path = paths
-        self.datatype = params["datatype"]
+        if filetype is None:
+            self.filetype = params["datatype"]
+        else:
+            self.filetype = filetype
         self.noisy = (params['with_noise'])
         self.input_channels = params['input_channels']
         self.data_normalisation = params['data_normalisation']
@@ -20,7 +23,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.list_files = []
         for path in self.dataset_path:
-            self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.datatype}'))
+            self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
         first_img = itk.array_from_image(itk.imread(self.list_files[0]))
         self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_img.shape[0],first_img.shape[1],first_img.shape[2]
@@ -47,7 +50,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
         for item_id,filename_PVE in enumerate(self.list_files):
             if self.noisy:
-                filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.datatype}'
+                filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
                 img_noisy = itk.array_from_image(itk.imread(filename_noisy))
                 self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,0:1,:,:,:] = helpers_data.load_img_channels(img_array=img_noisy,nb_channels=self.input_channels)
                 next_input = 1
@@ -58,7 +61,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
             self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input:next_input+1,:,:,:] = helpers_data.load_img_channels(img_array=img_PVE,nb_channels=self.input_channels)
 
-            filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.datatype}'
+            filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.filetype}'
             img_PVf = itk.array_from_image(itk.imread(filename_PVf))
             self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input+1:next_input+2,:,:,:] = helpers_data.load_img_channels(img_array=img_PVf,nb_channels=self.input_channels)
 
