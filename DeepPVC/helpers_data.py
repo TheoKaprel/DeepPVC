@@ -153,7 +153,7 @@ def load_img_channels(img_array,nb_channels, with_adj_angles=False):
             channels_id = np.concatenate((channels_id,adjacent_channels_id))
 
         equiditributed_channels_id = np.array([(proj_i + k*step) % nb_projs for k in range(1,nb_of_equidistributed_angles)])
-        channels_id = np.concatenate((channels_id, equiditributed_channels_id))
+        channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(equiditributed_channels_id)>0 else channels_id
         img_with_channels[proj_i,0,:,:,:] = img_array[channels_id]
 
 
