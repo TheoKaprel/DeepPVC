@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto"],
   "datatype": "mhd",
   "with_noise": true,
   "training_batchsize":16,
@@ -12,7 +12,8 @@
   "n_epochs":5,
   "learning_rate":0.0002,
   "lr_policy": ["multiplicative",1],
-  "input_channels":4,
+  "input_channels":6,
+  "with_adj_angles": true,
   "use_dropout": true,
   "leaky_relu": 0.02,
   "sum_norm": false,

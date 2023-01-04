@@ -12,10 +12,9 @@ class CustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,dataset_type,filetype = None):
 
         self.dataset_path = paths
-        if filetype is None:
-            self.filetype = params["datatype"]
-        else:
-            self.filetype = filetype
+
+        self.filetype = params["datatype"] if (filetype is None) else filetype
+        self.with_adj_angles = params["with_adj_angles"]
         self.noisy = (params['with_noise'])
         self.input_channels = params['input_channels']
         self.data_normalisation = params['data_normalisation']
@@ -52,18 +51,18 @@ class CustomPVEProjectionsDataset(Dataset):
             if self.noisy:
                 filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
                 img_noisy = itk.array_from_image(itk.imread(filename_noisy))
-                self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,0:1,:,:,:] = helpers_data.load_img_channels(img_array=img_noisy,nb_channels=self.input_channels)
+                self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,0:1,:,:,:] = helpers_data.load_img_channels(img_array=img_noisy,nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
                 next_input = 1
             else:
                 next_input = 0
 
             img_PVE = itk.array_from_image(itk.imread(filename_PVE))
 
-            self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input:next_input+1,:,:,:] = helpers_data.load_img_channels(img_array=img_PVE,nb_channels=self.input_channels)
+            self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input:next_input+1,:,:,:] = helpers_data.load_img_channels(img_array=img_PVE,nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
 
             filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.filetype}'
             img_PVf = itk.array_from_image(itk.imread(filename_PVf))
-            self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input+1:next_input+2,:,:,:] = helpers_data.load_img_channels(img_array=img_PVf,nb_channels=self.input_channels)
+            self.numpy_cpu_dataset[item_id*self.nb_projs_per_img:(item_id+1)*self.nb_projs_per_img,next_input+1:next_input+2,:,:,:] = helpers_data.load_img_channels(img_array=img_PVf,nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
 
         t1 = time.time()
         elapsed_time1 = t1 - t0

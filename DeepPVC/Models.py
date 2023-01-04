@@ -836,7 +836,7 @@ class GAN_Denoiser_PVC(ModelBase):
 
         self.PVC_Discriminator = networks.NEncodingLayers(input_channel= self.input_channels + 1,
                                                             ndc=self.hidden_channels_disc_pvc,
-                                                            output_channel=1).to(device=self.device)
+                                                            output_channel=1,leaky_relu=self.leaky_relu).to(device=self.device)
 
 
     def init_optimization(self):

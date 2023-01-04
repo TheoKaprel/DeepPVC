@@ -13,6 +13,7 @@
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.97],
   "input_channels":4,
+  "with_adj_angles": false,
   "use_dropout": true,
   "leaky_relu": 0.2,
   "sum_norm": false,
