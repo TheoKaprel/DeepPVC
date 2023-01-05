@@ -2,6 +2,7 @@
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_train_dataset"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_4projs_test_dataset"],
   "datatype": "mhd",
+  "merged": false,
   "with_noise": true,
   "training_batchsize":16,
   "test_batchsize":16,

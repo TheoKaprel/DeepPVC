@@ -109,6 +109,10 @@ class UNet(nn.Module):
     def __init__(self,input_channel, ngc,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu,sum_norm, norm, vmin = None):
         super(UNet, self).__init__()
 
+
+        # self.threedConv = torch.nn.Conv3d(in_channels=1,out_channels=1,kernel_size=(3,3,3),stride=(1,1,1),padding=1)
+
+
         init_feature_kernel_size = (int(init_feature_kernel),int(init_feature_kernel))
         init_feature_padding = int(init_feature_kernel/2)
         self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=(1,1), padding = init_feature_padding)
@@ -156,6 +160,12 @@ class UNet(nn.Module):
 
     def forward(self, x):
         x = x.float()
+
+        # 3D convolution
+        # x = x[:,None,:,:,:]
+        # x = self.threedConv(x)
+        # x = x[:,0,:,:,:]
+
         # ----------------------------------------------------------
         #first feature extraction
         x0 = self.init_feature(x) # nhc

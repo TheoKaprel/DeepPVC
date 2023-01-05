@@ -103,6 +103,15 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
 
+        # debug dataloading
+            if step == 4:
+                fig,ax = plt.subplots(3,6)
+                batch_np = batch.detach().cpu().numpy()
+                for i in range(3):
+                    for j in range(6):
+                        ax[i,j].imshow(batch_np[5,i,j,:,:])
+                plt.show()
+
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
