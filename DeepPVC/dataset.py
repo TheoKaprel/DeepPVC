@@ -39,7 +39,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.max_nb_data=params['max_nb_data']
         if len(self.list_files)*self.nb_projs_per_img>self.max_nb_data:
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
-
+        self.nb_src = len(self.list_files)
 
         self.build_numpy_dataset()
 
@@ -54,85 +54,77 @@ class CustomPVEProjectionsDataset(Dataset):
     def build_numpy_dataset(self):
         print(f'Loading data ...')
         t0 = time.time()
-        if self.noisy:
-            nb_prob_type = 3
-        else:
-            nb_prob_type = 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files)*self.nb_projs_per_img, nb_prob_type,self.input_channels,self.nb_pix_x,self.nb_pix_y))
+        self.nb_proj_type=3 if self.noisy else 2
 
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y))
 
         print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
-            if self.merged:
-                projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_merged(filename=filename)
-            else:
-                projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_not_merged(filename_PVE=filename)
 
-            if self.noisy:
-                self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img, 0:1,:,:,:] = projs_noisy_PVE
-                next_input = 1
-            else:
-                next_input = 0
+            self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
-            self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input:next_input+1, :, :, :] = projs_PVE
-
-            self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input+1:next_input +2, :, :, :] = projs_PVfree
+            # if self.merged:
+            #     projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_merged(filename=filename)
+            # else:
+            #     projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_not_merged(filename_PVE=filename)
+            #
+            # if self.noisy:
+            #     self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img, 0:1,:,:,:] = projs_noisy_PVE
+            #     next_input = 1
+            # else:
+            #     next_input = 0
+            #
+            # self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input:next_input+1, :, :, :] = projs_PVE
+            #
+            # self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input+1:next_input +2, :, :, :] = projs_PVfree
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
         print(self.numpy_cpu_dataset.shape)
         print(f'Done! in {elapsed_time1} s')
 
-    def get_projections_not_merged(self, filename_PVE):
-        if self.noisy:
-            filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
-            img_noisy = itk.array_from_image(itk.imread(filename_noisy))
-            projs_noisy_PVE = helpers_data.load_img_channels(img_array=img_noisy, nb_channels=self.input_channels, with_adj_angles=self.with_adj_angles)
-        else:
-            projs_noisy_PVE = None
 
-        img_PVE = itk.array_from_image(itk.imread(filename_PVE))
-        projs_PVE = helpers_data.load_img_channels(img_array=img_PVE, nb_channels=self.input_channels, with_adj_angles=self.with_adj_angles)
+    def get_sinogram(self,filename):
+        return self.get_sinogram_merged(filename=filename) if self.merged else self.get_sinogram_not_merged(filename_PVE=filename)
+
+    def get_sinogram_not_merged(self, filename_PVE):
+        sinogram_PVE = itk.array_from_image(itk.imread(filename_PVE))[None,:,:,:]
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.filetype}'
-        img_PVf = itk.array_from_image(itk.imread(filename_PVf))
-        projs_PVfree = helpers_data.load_img_channels(img_array=img_PVf, nb_channels=self.input_channels, with_adj_angles=self.with_adj_angles)
+        sinogram_PVfree = itk.array_from_image(itk.imread(filename_PVf))[None,:,:,:]
 
-        return (projs_noisy_PVE, projs_PVE, projs_PVfree)
+        if self.noisy:
+            filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
+            sinogram_noisy = itk.array_from_image(itk.imread(filename_noisy))[None,:,:,:]
+            return np.concatenate((sinogram_noisy,sinogram_PVE,sinogram_PVfree), axis=0)
+        else:
+            return np.concatenate((sinogram_PVE,sinogram_PVfree),axis=0)
 
-    def get_projections_merged(self,filename):
+    def get_sinogram_merged(self, filename):
         projs_merged = itk.array_from_image(itk.imread(filename))
         total_nb_of_projs = projs_merged.shape[0]
         if self.noisy:
             cut1,cut2 = int(total_nb_of_projs/3),int(2*total_nb_of_projs/3)
-            sinogram_noisy = projs_merged[0:cut1,:,:]
-            sinogram_PVE = projs_merged[cut1:cut2,:,:]
-            sinogram_PVfree = projs_merged[cut2:total_nb_of_projs,:,:]
-
-            projs_noisy_PVE = helpers_data.load_img_channels(img_array=sinogram_noisy, nb_channels=self.input_channels,
-                                                             with_adj_angles=self.with_adj_angles)
+            sinogram_noisy = projs_merged[None,0:cut1,:,:]
+            sinogram_PVE = projs_merged[None,cut1:cut2,:,:]
+            sinogram_PVfree = projs_merged[None,cut2:total_nb_of_projs,:,:]
+            return np.concatenate((sinogram_noisy, sinogram_PVE, sinogram_PVfree), axis=0)
         else:
             cut1 = int(total_nb_of_projs/2)
-            sinogram_PVE = projs_merged[0:cut1,:,:]
-            sinogram_PVfree = projs_merged[cut1:total_nb_of_projs,:,:]
-
-            projs_noisy_PVE = None
-
-        projs_PVE = helpers_data.load_img_channels(img_array=sinogram_PVE, nb_channels=self.input_channels,
-                                                             with_adj_angles=self.with_adj_angles)
-
-        projs_PVfree = helpers_data.load_img_channels(img_array=sinogram_PVfree, nb_channels=self.input_channels,
-                                                             with_adj_angles=self.with_adj_angles)
-
-        return (projs_noisy_PVE, projs_PVE, projs_PVfree)
+            sinogram_PVE = projs_merged[None,0:cut1,:,:]
+            sinogram_PVfree = projs_merged[None,cut1:total_nb_of_projs,:,:]
+            return np.concatenate((sinogram_PVE, sinogram_PVfree), axis=0)
 
     def __len__(self):
-        return self.numpy_cpu_dataset.shape[0]
+        return self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img
 
     def __getitem__(self, item_id):
-        return torch.tensor(self.numpy_cpu_dataset[item_id,:,:,:,:],device=self.device)
+        img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
+                                                      proj_i=item_id//self.nb_src,
+                                                      nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
+        return torch.tensor(img_channels,device=self.device)
 
 
 def load_data(params):

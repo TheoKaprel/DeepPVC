@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged/"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged/"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged"],
   "datatype": "mha",
   "merged": true,
   "with_noise": true,
