@@ -38,7 +38,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.max_nb_data=params['max_nb_data']
         if len(self.list_files)*self.nb_projs_per_img>self.max_nb_data:
-            self.list_files=self.list_files[:self.max_nb_data]
+            self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
 
 
         self.build_numpy_dataset()
@@ -60,6 +60,9 @@ class CustomPVEProjectionsDataset(Dataset):
             nb_prob_type = 2
 
         self.numpy_cpu_dataset = np.zeros((len(self.list_files)*self.nb_projs_per_img, nb_prob_type,self.input_channels,self.nb_pix_x,self.nb_pix_y))
+
+
+        print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
             if self.merged:
