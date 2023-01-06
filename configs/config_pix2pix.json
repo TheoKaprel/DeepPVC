@@ -4,6 +4,7 @@
   "datatype": "mha",
   "merged": true,
   "with_noise": true,
+  "max_nb_data": 20000,
   "training_batchsize":16,
   "test_batchsize":16,
   "data_normalisation": "none",

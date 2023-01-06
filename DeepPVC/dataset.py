@@ -31,6 +31,10 @@ class CustomPVEProjectionsDataset(Dataset):
             else:
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
+        self.max_nb_data=params['max_nb_data']
+        if len(self.list_files)>self.max_nb_data:
+            self.list_files=self.list_files[:self.max_nb_data]
+
         first_img = itk.array_from_image(itk.imread(self.list_files[0]))
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
