@@ -31,13 +31,15 @@ class CustomPVEProjectionsDataset(Dataset):
             else:
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
-        self.max_nb_data=params['max_nb_data']
-        if len(self.list_files)>self.max_nb_data:
-            self.list_files=self.list_files[:self.max_nb_data]
 
         first_img = itk.array_from_image(itk.imread(self.list_files[0]))
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
+
+        self.max_nb_data=params['max_nb_data']
+        if len(self.list_files)*self.nb_projs_per_img>self.max_nb_data:
+            self.list_files=self.list_files[:self.max_nb_data]
+
 
         self.build_numpy_dataset()
 
@@ -53,11 +55,11 @@ class CustomPVEProjectionsDataset(Dataset):
         print(f'Loading data ...')
         t0 = time.time()
         if self.noisy:
-            projs_per_item = 3 #todo: changer le nom de cette variable qui n'a aucun sens
+            nb_prob_type = 3
         else:
-            projs_per_item = 2
+            nb_prob_type = 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files)*self.nb_projs_per_img, projs_per_item,self.input_channels,self.nb_pix_x,self.nb_pix_y))
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files)*self.nb_projs_per_img, nb_prob_type,self.input_channels,self.nb_pix_x,self.nb_pix_y))
 
         for item_id,filename in enumerate(self.list_files):
             if self.merged:
