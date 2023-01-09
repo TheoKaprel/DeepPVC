@@ -26,8 +26,6 @@ def apply(pth, input, output_filename):
     params = pth_file['params']
     helpers_params.check_params(params)
 
-    norm = params['norm']
-    normalisation = params['data_normalisation']
 
     model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
 
@@ -36,11 +34,14 @@ def apply(pth, input, output_filename):
     model.show_infos()
 
     with torch.no_grad():
-        input_image = itk.imread(input)
-        input_array = itk.array_from_image(input_image)
-        input_with_channels = helpers_data.load_img_channels(img_array=input_array, nb_channels=params['input_channels'])
+
+
+
+        input_with_channels = torch.tensor(helpers_data.load_image(filename=input, is_ref=False, type=None, params=params),
+                                    device=device)
         tensor_input_with_channels = torch.tensor(input_with_channels,device=device)
 
+        input_image = itk.imread(input)
         vSpacing = np.array(input_image.GetSpacing())
         vOffset = np.array(input_image.GetOrigin())
 

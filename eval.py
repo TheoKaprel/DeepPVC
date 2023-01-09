@@ -110,7 +110,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
     dict_data = {'validation_losses': {}}
     lpth_ref = []
 
-    for (id,pth) in enumerate(lpth):
+    for (pth_id,pth) in enumerate(lpth):
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
@@ -130,7 +130,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
 
 
         if input:
-            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type, nb_channels=params['input_channels'],noisy=params['with_noise']),device=device)
+            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device)
         elif dataset_path:
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],dataset_type='test',filetype=type)
         else:
@@ -140,7 +140,7 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
 
 
-        if id==0:
+        if pth_id==0:
             N_data = len(test_dataloader.dataset)
             random_data_index = [random.randint(0, N_data - 1) for _ in range(n)]
             for id in random_data_index:

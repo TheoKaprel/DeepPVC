@@ -162,32 +162,37 @@ def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
 
 
 
-def load_image(filename, is_ref, type,nb_channels, noisy=False):
+def load_image(filename, is_ref, type,params):
     if is_ref:
-        return load_PVE_PVfree(ref = filename, type=type,nb_channels=nb_channels, noisy=noisy)
+        return load_PVE_PVfree(ref = filename,type=type,params=params)
     else:
-        return load_from_filename(filename, nb_channels)
+        return load_from_filename(filename, params)
 
 
-def load_from_filename(filename, nb_channels):
-    img = itk.array_from_image(itk.imread(filename))
-    return load_img_channels(img_array=img, nb_channels=nb_channels)
+def load_from_filename(filename,params):
+    img = itk.array_from_image(itk.imread(filename))[None,:,:,:]
+    nb_projs=img.shape[1]
+    nb_channels=params['input_channels']
+    with_adh_angles=params['with_adj_angles']
+
+    input_img = np.zeros((nb_projs,1, nb_channels,img.shape[2], img.shape[3]))
+    for proj_i in range(nb_projs):
+        input_img[proj_i,:,:,:,:] = load_img_channels(img_array=img, nb_channels=nb_channels,proj_i=proj_i,with_adj_angles=with_adh_angles)
+    return input_img
 
 
-def load_PVE_PVfree(ref, type,nb_channels, noisy):
+def load_PVE_PVfree(ref, type,params):
+    noisy=params['with_noise']
 
     proj_PVE_filename = f'{ref}_PVE.{type}'
     proj_PVfree_filename = f'{ref}_PVfree.{type}'
 
-    imgPVE = load_from_filename(proj_PVE_filename,nb_channels)
-
-    imgPVfree = load_from_filename(proj_PVfree_filename,nb_channels)
+    imgPVE = load_from_filename(proj_PVE_filename,params)
+    imgPVfree = load_from_filename(proj_PVfree_filename,params)
 
     if noisy:
         proj_PVE_noisy_filename = f'{ref}_PVE_noisy.{type}'
-        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,nb_channels)
-        array = np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (nb_projs,3,nb_channels,Npix,Npix)
+        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,params)
+        return np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (nb_projs,3,nb_channels,Npix,Npix)
     else:
-        array = np.concatenate((imgPVE, imgPVfree), axis=1) # (nb_projs,2,nb_channels,Npix,Npix)
-
-    return array
+        return np.concatenate((imgPVE, imgPVfree), axis=1) # (nb_projs,2,nb_channels,Npix,Npix)
