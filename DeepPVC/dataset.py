@@ -65,21 +65,6 @@ class CustomPVEProjectionsDataset(Dataset):
 
             self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
-            # if self.merged:
-            #     projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_merged(filename=filename)
-            # else:
-            #     projs_noisy_PVE,projs_PVE,projs_PVfree = self.get_projections_not_merged(filename_PVE=filename)
-            #
-            # if self.noisy:
-            #     self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img, 0:1,:,:,:] = projs_noisy_PVE
-            #     next_input = 1
-            # else:
-            #     next_input = 0
-            #
-            # self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input:next_input+1, :, :, :] = projs_PVE
-            #
-            # self.numpy_cpu_dataset[item_id * self.nb_projs_per_img:(item_id + 1) * self.nb_projs_per_img,next_input+1:next_input +2, :, :, :] = projs_PVfree
-
         t1 = time.time()
         elapsed_time1 = t1 - t0
         print(self.numpy_cpu_dataset.shape)
