@@ -31,8 +31,7 @@ class CustomPVEProjectionsDataset(Dataset):
             else:
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
-
-        first_img = itk.array_from_image(itk.imread(self.list_files[0]))
+        first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
 
@@ -51,6 +50,13 @@ class CustomPVEProjectionsDataset(Dataset):
                                                             normtype=self.data_normalisation,norm=self.norm,to_torch=False,
                                                             device='notneededbutitiscpu')
             print('normalisation done!')
+
+    def read(self,filename):
+        if self.filetype in ['mha', 'mhd']:
+            return itk.array_from_image(itk.imread(filename))
+        elif self.filetype=='npy':
+            return np.load(filename)
+
 
     def build_numpy_dataset(self):
         print(f'Loading data ...')
@@ -76,20 +82,20 @@ class CustomPVEProjectionsDataset(Dataset):
         return self.get_sinogram_merged(filename=filename) if self.merged else self.get_sinogram_not_merged(filename_PVE=filename)
 
     def get_sinogram_not_merged(self, filename_PVE):
-        sinogram_PVE = itk.array_from_image(itk.imread(filename_PVE))[None,:,:,:]
+        sinogram_PVE = self.read(filename=filename_PVE)[None,:,:,:]
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.filetype}'
-        sinogram_PVfree = itk.array_from_image(itk.imread(filename_PVf))[None,:,:,:]
+        sinogram_PVfree = self.read(filename=filename_PVf)[None,:,:,:]
 
         if self.noisy:
             filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
-            sinogram_noisy = itk.array_from_image(itk.imread(filename_noisy))[None,:,:,:]
+            sinogram_noisy = self.read(filename=filename_noisy)[None,:,:,:]
             return np.concatenate((sinogram_noisy,sinogram_PVE,sinogram_PVfree), axis=0)
         else:
             return np.concatenate((sinogram_PVE,sinogram_PVfree),axis=0)
 
     def get_sinogram_merged(self, filename):
-        projs_merged = itk.array_from_image(itk.imread(filename))
+        projs_merged = self.read(filename=filename)
         total_nb_of_projs = projs_merged.shape[0]
         if self.noisy:
             cut1,cut2 = int(total_nb_of_projs/3),int(2*total_nb_of_projs/3)
