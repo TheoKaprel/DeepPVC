@@ -7,11 +7,11 @@
   "max_nb_data": 99999999999,
   "training_batchsize":16,
   "test_batchsize":16,
-  "data_normalisation": "img_0_1",
+  "data_normalisation": "none",
 
   "network": "pix2pix",
 
-  "n_epochs":10,
+  "n_epochs":4,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",1],
   "input_channels":6,
