@@ -39,7 +39,7 @@ def normalize(dataset_or_img,normtype,norm, to_torch, device):
         max_per_img = np.max(dataset_or_img[:,0:1,:,:,:], axis=(2,3,4), keepdims=True)
         out = (dataset_or_img - min_per_img) / (max_per_img - min_per_img)
     elif normtype=="img_mean":
-        out = dataset_or_img / np.mean(dataset_or_img[:,0,:,:,:], axis = (1,2,3))[:,None,None,None,None]
+        out = dataset_or_img / np.mean(dataset_or_img[:,0,:,:,:], axis = (1,2,3),dtype=np.float16)[:,None,None,None,None]
     else:
         out = dataset_or_img
 

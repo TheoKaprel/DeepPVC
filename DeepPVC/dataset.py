@@ -58,7 +58,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.nb_proj_type=3 if self.noisy else 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y))
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=np.float16)
 
         print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
 
