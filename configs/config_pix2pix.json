@@ -1,8 +1,8 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto"],
-  "datatype": "mhd",
-  "merged": false,
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/toto_merged"],
+  "datatype": "mha",
+  "merged": true,
   "with_noise": true,
   "max_nb_data": 99999999999,
   "training_batchsize":16,
