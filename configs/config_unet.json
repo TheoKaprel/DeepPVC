@@ -15,6 +15,7 @@
   "lr_policy": ["multiplicative",1],
   "input_channels":4,
   "with_adj_angles": false,
+  "layer_norm": "inst_norm",
   "use_dropout": false,
   "leaky_relu": 0.2,
   "sum_norm": false,
@@ -30,6 +31,5 @@
   "nb_ed_layers": 4,
   "hidden_channels_unet":64,
   "unet_activation": "relu",
-  "unet_norm": "inst_norm",
   "recon_loss":"L1"
 }

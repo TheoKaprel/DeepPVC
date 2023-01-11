@@ -198,17 +198,17 @@ class NEncodingLayers(nn.Module):
     - output_channel : number of channels desired for the output
     FIXME : ajouter options : nb_layers, dropout, normlayer
     """
-    def __init__(self, input_channel, ndc,leaky_relu, output_channel=1):
+    def __init__(self, input_channel, ndc,norm,leaky_relu, output_channel=1):
         super(NEncodingLayers, self).__init__()
 
         # initial layer
         sequence = [nn.Conv2d(input_channel, ndc, kernel_size=(4, 4), stride=(2, 2), padding = 1), nn.LeakyReLU(leaky_relu, True)]
 
         #contracting lagers
-        sequence += [DownSamplingBlock(ndc, 2 * ndc,leaky_relu_val=leaky_relu)]
-        sequence += [DownSamplingBlock(2 * ndc, 4 * ndc,leaky_relu_val=leaky_relu)]
+        sequence += [DownSamplingBlock(ndc, 2 * ndc,leaky_relu_val=leaky_relu,norm=norm)]
+        sequence += [DownSamplingBlock(2 * ndc, 4 * ndc,leaky_relu_val=leaky_relu,norm=norm)]
 
-        sequence += [DownSamplingBlock(4*ndc, 8*ndc, stride = 1,leaky_relu_val=leaky_relu)]
+        sequence += [DownSamplingBlock(4*ndc, 8*ndc, stride = 1,leaky_relu_val=leaky_relu,norm=norm)]
 
         sequence += [nn.Conv2d(8 * ndc, output_channel, kernel_size=(4, 4), stride = (1, 1), padding=1)]
         self.model = nn.Sequential(*sequence)

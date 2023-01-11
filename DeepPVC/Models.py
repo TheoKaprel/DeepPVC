@@ -117,7 +117,7 @@ class Pix2PixModel(ModelBase):
         self.hidden_channels_gen = params['hidden_channels_gen']
         self.hidden_channels_disc = params['hidden_channels_disc']
         self.generator_activation = params['generator_activation']
-        self.generator_norm = params['generator_norm']
+        self.layer_norm = params['layer_norm']
         if self.generator_activation=='relu_min':
             norm = self.params['norm']
             self.vmin = -norm[0]/norm[1]
@@ -151,9 +151,9 @@ class Pix2PixModel(ModelBase):
     def init_model(self):
         self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
-                                                sum_norm = self.sum_norm,norm = self.generator_norm, vmin=self.vmin).to(device=self.device)
+                                                sum_norm = self.sum_norm,norm = self.layer_norm, vmin=self.vmin).to(device=self.device)
 
-        self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,
+        self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,norm=self.layer_norm,
                                                     output_channel=1,leaky_relu=self.leaky_relu).to(device=self.device)
 
     def init_optimization(self):

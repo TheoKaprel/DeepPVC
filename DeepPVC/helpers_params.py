@@ -21,10 +21,10 @@ default_params_values = [["datatype", "mhd"], ['training_batchsize', 5],
 default_params = [param for param, value in default_params_values]
 
 required_pix2pix = ["nb_ed_layers", "hidden_channels_gen", "hidden_channels_disc",
-                    "generator_activation", "generator_norm",
+                    "generator_activation", "layer_norm",
                     "adv_loss", "recon_loss", "lambda_recon", "generator_update", "discriminator_update"]
 
-required_unet = ["nb_ed_layers", "hidden_channels_unet", "unet_activation", "unet_norm", "recon_loss"]
+required_unet = ["nb_ed_layers", "hidden_channels_unet", "unet_activation", "layer_norm", "recon_loss"]
 
 required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_denoiser","unet_denoiser_activation","recon_loss_denoiser","unet_denoiser_norm",
                               "nb_ed_layers_pvc","hidden_channels_unet_pvc","unet_pvc_activation","recon_loss_pvc","unet_pvc_norm",
@@ -130,7 +130,7 @@ def check_params_pix2pix(params, fatal_on_unknown):
         assert(params[int_param]>0)
 
     assert(params['generator_activation'] in activation_functions)
-    assert(params['generator_norm'] in pre_layer_normalisations)
+    assert(params['layer_norm'] in pre_layer_normalisations)
     assert(params['adv_loss'] in losses)
     assert(params['recon_loss'] in losses)
     assert((type(params['lambda_recon']) in [int, float]))
@@ -158,7 +158,7 @@ def check_params_unet(params, fatal_on_unknown):
         assert(params[int_param]>0)
 
     assert(params['unet_activation'] in activation_functions)
-    assert(params['unet_norm'] in pre_layer_normalisations)
+    assert(params['layer_norm'] in pre_layer_normalisations)
     assert(params['recon_loss'] in losses)
 
     for p in params:
