@@ -50,6 +50,7 @@ class CustomPVEProjectionsDataset(Dataset):
             self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
                                                             normtype=self.data_normalisation,norm=self.norm,to_torch=False,
                                                             device='notneededbutitiscpu')
+            print('normalisation done!')
 
     def build_numpy_dataset(self):
         print(f'Loading data ...')
