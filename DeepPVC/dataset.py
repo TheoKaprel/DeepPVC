@@ -7,6 +7,7 @@ from torch.utils.data import Dataset,DataLoader
 
 from . import helpers_data, helpers
 
+#todo : comment gerer les normes sur tout le dataset (standardization du dataset) si on le store pas en entier mais à la volée..
 
 class CustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,dataset_type,filetype = None):
@@ -21,6 +22,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
 
+        self.store_dataset = params['store_dataset']
 
         self.list_files = []
         for path in self.dataset_path:
@@ -41,16 +43,19 @@ class CustomPVEProjectionsDataset(Dataset):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
         self.nb_src = len(self.list_files)
 
-        self.build_numpy_dataset()
+        if self.store_dataset:
+            self.build_numpy_dataset()
+            del self.list_files
+            if (dataset_type=='train'):
+                print('Dataset prenormalisation ...')
+                self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
+                self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
+                                                                normtype=self.data_normalisation,norm=self.norm,to_torch=False,
+                                                                device='notneededbutitiscpu')
+                print('normalisation done!')
 
-        del self.list_files
-        if (dataset_type=='train'):
-            print('Dataset prenormalisation ...')
-            self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
-            self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
-                                                            normtype=self.data_normalisation,norm=self.norm,to_torch=False,
-                                                            device='notneededbutitiscpu')
-            print('normalisation done!')
+        self.len_dataset = self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
+            else len(self.list_files) * self.nb_projs_per_img
 
     def read(self,filename):
         if self.filetype in ['mha', 'mhd']:
@@ -115,13 +120,28 @@ class CustomPVEProjectionsDataset(Dataset):
             return np.concatenate((sinogram_PVE, sinogram_PVfree), axis=0)
 
     def __len__(self):
-        return self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img
+        return self.len_dataset
 
     def __getitem__(self, item_id):
-        img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
-                                                      proj_i=item_id//self.nb_src,
-                                                      nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
-        return torch.tensor(img_channels,device=self.device)
+        if self.store_dataset:
+            img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
+                                                          proj_i=item_id//self.nb_src,
+                                                          nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
+            return torch.tensor(img_channels,device=self.device)
+        else:
+            img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
+                                                          proj_i=item_id//self.nb_src,
+                                                          nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
+            norm = helpers_data.compute_norm(dataset=img_channels,
+                                                  data_normalisation=self.data_normalisation)
+
+            img_channels = helpers_data.normalize(dataset_or_img = img_channels,
+                                                            normtype=self.data_normalisation, norm=norm,
+                                                            to_torch=False,
+                                                            device='notneededbutitiscpu')
+            if img_channels.dtype == np.uint16:
+                img_channels = img_channels.astype(np.int16)
+            return torch.tensor(img_channels,device=self.device)
 
 
 def load_data(params):
@@ -139,6 +159,7 @@ def load_data(params):
     print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
-    params['norm'] = train_dataset.norm
+    # params['norm'] = train_dataset.norm
+    params['norm'] = 'none'
 
     return train_dataloader, test_dataloader,params

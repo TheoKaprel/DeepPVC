@@ -109,7 +109,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             if debug:
                 if step==4:
-                    random_sample = torch.randint(0,batch.shape[0])
+                    random_sample = torch.randint(0,batch.shape[0],(1,)).item()
                     print(f'batch shape : {batch.shape}')
                     print(f'batch type : {batch.dtype}')
                     fig,ax = plt.subplots(batch.shape[1]+1,batch.shape[2],squeeze=False)
