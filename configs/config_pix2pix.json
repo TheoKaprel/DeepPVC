@@ -4,7 +4,7 @@
   "datatype": "npy",
   "merged": true,
   "with_noise": true,
-  "max_nb_data": 99999999999,
+  "max_nb_data": 500,
   "training_batchsize":16,
   "test_batchsize":16,
   "data_normalisation": "none",

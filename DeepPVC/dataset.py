@@ -21,6 +21,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
 
+
         self.list_files = []
         for path in self.dataset_path:
             if self.merged:
@@ -71,6 +72,10 @@ class CustomPVEProjectionsDataset(Dataset):
         for item_id,filename in enumerate(self.list_files):
 
             self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
+
+        # conversion if the array is type uint16 because impossible for torch to convert it (why?)
+        if self.numpy_cpu_dataset.dtype==np.uint16:
+            self.numpy_cpu_dataset=self.numpy_cpu_dataset.astype(np.int16)
 
         t1 = time.time()
         elapsed_time1 = t1 - t0

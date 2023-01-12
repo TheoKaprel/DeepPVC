@@ -145,7 +145,6 @@ def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
     nb_of_equidistributed_angles = nb_channels-2 if with_adj_angles else nb_channels
     step = int(nb_projs/(nb_of_equidistributed_angles))
 
-    img_with_channels = np.zeros((img_array.shape[0],nb_channels,img_array.shape[2], img_array.shape[3]))
 
     channels_id = np.array([proj_i])
     if with_adj_angles:
@@ -154,9 +153,8 @@ def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
 
     equiditributed_channels_id = np.array([(proj_i + k*step) % nb_projs for k in range(1,nb_of_equidistributed_angles)])
     channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(equiditributed_channels_id)>0 else channels_id
-    img_with_channels[:,:,:,:] = img_array[:,channels_id,:,:]
 
-    return img_with_channels # (3,nb_channels,Npix,Npix)
+    return img_array[:,channels_id,:,:]# (3,nb_channels,Npix,Npix)
 
 
 

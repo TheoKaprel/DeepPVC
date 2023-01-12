@@ -31,11 +31,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--plot_at_end', is_flag = True, default = False)
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
-def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder):
-    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder)
+@click.option('--debug', is_flag=True, default = False)
+def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder,debug):
+    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug)
 
 
-def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder):
+def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug):
     if (json==None) and (resume_pth ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
@@ -103,16 +104,22 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
 
-            # if step==4:
-            #     # (16,3,6,128,128)
-            #     fig,ax = plt.subplots(batch.shape[1],batch.shape[2])
-            #     for i in range(batch.shape[1]):
-            #         for j in range(batch.shape[2]):
-            #             ax[i,j].imshow(batch[0,i,j,:,:].detach().cpu().numpy())
-            #     plt.show()
-
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
+
+            if debug:
+                if step==4:
+                    print(f'batch shape : {batch.shape}')
+                    print(f'batch type : {batch.dtype}')
+                    fig,ax = plt.subplots(batch.shape[1]+1,batch.shape[2],squeeze=False)
+                    for i in range(batch.shape[1]):
+                        for j in range(batch.shape[2]):
+                            ax[i,j].imshow(batch[0,i,j,:,:].detach().cpu().numpy())
+                    with torch.no_grad():
+                        debug_output = DeepPVEModel.forward(batch=batch)
+                        print(f'output shape : {debug_output.shape}')
+                    ax[batch.shape[1],0].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
+                    plt.show()
 
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
