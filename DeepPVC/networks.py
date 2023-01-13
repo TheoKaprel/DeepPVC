@@ -159,13 +159,10 @@ class UNet(nn.Module):
 
 
     def forward(self, x):
-        x = x.float()
-
         # 3D convolution
         # x = x[:,None,:,:,:]
         # x = self.threedConv(x)
         # x = x[:,0,:,:,:]
-
         # ----------------------------------------------------------
         #first feature extraction
         x0 = self.init_feature(x) # nhc
@@ -214,7 +211,7 @@ class NEncodingLayers(nn.Module):
         self.model = nn.Sequential(*sequence)
 
     def forward(self, A, B):
-        x = torch.cat([A.float(), B.float()], 1)
+        x = torch.cat([A, B], 1)
         return self.model(x)
 
     def get_receptive_field(self):

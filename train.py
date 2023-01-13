@@ -107,20 +107,20 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
-            batch = batch.to(device)
+            batch = batch.to(device).float()
 
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
             if debug:
-                if step==4:
+                if step==0:
                     random_sample = torch.randint(0,batch.shape[0],(1,)).item()
                     print(f'batch shape : {batch.shape}')
                     print(f'batch type : {batch.dtype}')
                     fig,ax = plt.subplots(batch.shape[1]+1,batch.shape[2],squeeze=False)
                     for i in range(batch.shape[1]):
                         for j in range(batch.shape[2]):
-                            ax[i,j].imshow(batch[random_sample,i,j,:,:].detach().cpu().numpy())
+                            ax[i,j].imshow(batch[random_sample,i,j,:,:].float().detach().cpu().numpy())
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch)
                         print(f'output shape : {debug_output.shape}')

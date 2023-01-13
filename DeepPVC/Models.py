@@ -198,8 +198,8 @@ class Pix2PixModel(ModelBase):
 
 
     def input_data(self, batch):
-        self.truePVE = batch[:, 0, :, :, :].to(self.device).float()
-        self.truePVfree = batch[:, -1, 0:1, :, :].to(self.device).float()
+        self.truePVE = batch[:, 0, :, :, :]
+        self.truePVfree = batch[:, -1, 0:1, :, :]
 
     def forward_D(self):
         ## Update Discriminator
@@ -233,9 +233,9 @@ class Pix2PixModel(ModelBase):
 
     def forward(self, batch):
         if  batch.dim()==4:
-            self.truePVE = batch.to(self.device).float()
+            self.truePVE = batch
         elif batch.dim()==5:
-            self.truePVE = batch[:, 0,:, :, :].to(self.device).float()
+            self.truePVE = batch[:, 0,:, :, :]
 
         return self.Generator(self.truePVE)
 

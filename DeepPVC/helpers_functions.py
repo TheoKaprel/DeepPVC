@@ -15,7 +15,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
 
     with torch.no_grad():
         for test_it,batch in enumerate(test_dataloader):
-            batch = batch.to(device)
+            batch = batch.to(device).float()
 
             norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             normed_batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,
