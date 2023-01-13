@@ -6,7 +6,7 @@ import json
 import copy
 from abc import abstractmethod
 
-from . import networks, losses,plots, helpers, helpers_params
+from . import networks, losses,plots, helpers
 
 class ModelInstance():
     def __new__(cls, params, from_pth = None, resume_training=False, device = None):
@@ -46,6 +46,9 @@ class ModelBase():
         self.output_pth = self.params['output_pth']
 
         self.resume_training = resume_training
+
+        self.ones = torch.tensor([1.0],device=self.device,requires_grad=False)
+        self.zeros = torch.tensor([0.0],device=self.device,requires_grad=False)
 
     @abstractmethod
     def input_data(self, batch):
@@ -104,6 +107,19 @@ class ModelBase():
     @abstractmethod
     def switch_device(self, device):
         pass
+
+    def set_requires_grad(self, nets, requires_grad=False):
+        """Set requies_grad=Fasle for all the networks to avoid unnecessary computations
+        Parameters:
+            nets (network list)   -- a list of networks
+            requires_grad (bool)  -- whether the networks require gradients or not
+        """
+        if not isinstance(nets, list):
+            nets = [nets]
+        for net in nets:
+            if net is not None:
+                for param in net.parameters():
+                    param.requires_grad = requires_grad
 
 
 
@@ -194,8 +210,10 @@ class Pix2PixModel(ModelBase):
         self.Ddisc_real_hat = self.Discriminator(self.truePVfree, self.truePVE)
 
     def backward_D(self):
-        disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, torch.zeros_like(self.Ddisc_fake_hat))
-        disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, torch.ones_like(self.Ddisc_real_hat))
+        # disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, torch.zeros_like(self.Ddisc_fake_hat))
+        # disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, torch.ones_like(self.Ddisc_real_hat))
+        disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, self.zeros.expand_as(self.Ddisc_fake_hat))
+        disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, self.ones.expand_as(self.Ddisc_real_hat))
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
 
         if self.gp:
@@ -224,12 +242,14 @@ class Pix2PixModel(ModelBase):
 
     def optimize_parameters(self):
         # Discriminator Updates
+        self.set_requires_grad(self.Discriminator, requires_grad=True)
         for _ in range(self.discriminator_update):
             self.discriminator_optimizer.zero_grad()
             self.forward_D()
             self.backward_D()
 
         # Generator Updates
+        self.set_requires_grad(self.Discriminator, requires_grad=False)
         for _ in range(self.generator_update):
             self.generator_optimizer.zero_grad()
             self.forward_G()

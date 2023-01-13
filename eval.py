@@ -14,16 +14,17 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-n',type=int, help = 'If no input is specified, choose the number of random images on which you want to test', default = 1)
 @click.option('--dataset','dataset_path', help = 'path to the dataset folder in which to randomly select n images')
 @click.option('--type', default = 'mhd', help = "mhd or mha", show_default = True)
+@click.option('--merged', is_flag = True, default = False)
 @click.option('--ref/--no-ref')
 @click.option('--error', is_flag=True, help="Compute the MSE on the provided dataset")
 @click.option('--plot', is_flag=True)
 @click.option('-v', '--verbose', count=True)
-def eval_click(pth, input, n, dataset_path,type, ref, error, plot, verbose):
+def eval_click(pth, input, n, dataset_path,type,merged, ref, error, plot, verbose):
 
     if error:
         eval_error(pth, input, dataset_path,type, ref, verbose)
     if plot:
-        eval_plot(pth, input, n, dataset_path,type, ref, verbose)
+        eval_plot(pth, input, n, dataset_path,type,merged, ref, verbose)
 
 
 def add_or_modify_error(dataset_path, params, error_ref, error_val):
@@ -102,7 +103,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
 
 
 
-def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
+def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
     device = helpers.get_auto_device("cuda")
 
     random_data_index = []
@@ -132,7 +133,8 @@ def eval_plot(lpth, input, n, dataset_path, type, ref, verbose):
         if input:
             test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device)
         elif dataset_path:
-            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],dataset_type='test',filetype=type)
+            params['store_dataset']=True
+            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],dataset_type='test',filetype=type,merged=merged)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)

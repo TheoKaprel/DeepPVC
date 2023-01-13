@@ -10,12 +10,12 @@ from . import helpers_data, helpers
 #todo : comment gerer les normes sur tout le dataset (standardization du dataset) si on le store pas en entier mais à la volée..
 
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, paths,dataset_type,filetype = None):
+    def __init__(self, params, paths,dataset_type,filetype=None,merged=None):
 
         self.dataset_path = paths
 
         self.filetype = params["datatype"] if (filetype is None) else filetype
-        self.merged = params["merged"]
+        self.merged = params["merged"] if (merged is None) else merged
         self.with_adj_angles = params["with_adj_angles"]
         self.noisy = (params['with_noise'])
         self.input_channels = params['input_channels']
@@ -141,7 +141,7 @@ class CustomPVEProjectionsDataset(Dataset):
                                                             device='notneededbutitiscpu')
             if img_channels.dtype == np.uint16:
                 img_channels = img_channels.astype(np.int16)
-            return torch.tensor(img_channels,device=self.device)
+            return torch.tensor(img_channels)
 
 
 def load_data(params):

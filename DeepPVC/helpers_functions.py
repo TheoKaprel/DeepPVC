@@ -8,12 +8,14 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     MNMAE,std_NMAE = 0,0
 
     data_normalisation = model.params['data_normalisation']
+    device = model.device
 
     list_NRMSE = np.array([])
     list_NMAE = np.array([])
 
     with torch.no_grad():
         for test_it,batch in enumerate(test_dataloader):
+            batch = batch.to(device)
 
             norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             normed_batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,

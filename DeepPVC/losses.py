@@ -71,6 +71,7 @@ class Pix2PixLosses:
         self.device = losses_params['device']
 
         self.gradient_penalty = gradient_penalty(device=self.device)
+        self.ones = torch.tensor([0.0],device=self.device)
 
     def get_adv_loss(self):
         return self.adv_loss
@@ -78,7 +79,8 @@ class Pix2PixLosses:
         return self.recon_loss
 
     def get_gen_loss(self, disc_fake_hat, truePVfree, fakePVfree):
-        gen_adv_loss = self.adv_loss(disc_fake_hat, torch.ones_like(disc_fake_hat))
+        # gen_adv_loss = self.adv_loss(disc_fake_hat, torch.ones_like(disc_fake_hat))
+        gen_adv_loss = self.adv_loss(disc_fake_hat, self.ones.expand_as(disc_fake_hat))
         gen_rec_loss = self.recon_loss(truePVfree, fakePVfree)
         gen_loss = gen_adv_loss + self.lambda_recon * gen_rec_loss
         return gen_loss

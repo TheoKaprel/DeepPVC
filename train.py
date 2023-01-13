@@ -73,6 +73,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         params,start_epoch,ref = None,0,None
         exit(0)
 
+    # torch.multiprocessing.set_start_method('spawn')
 
     # Update parameters specified in command line
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
@@ -93,6 +94,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
     DeepPVEModel.show_infos()
 
+    device = DeepPVEModel.device
+
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
     t0 = time.time()
@@ -100,15 +103,19 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
+        t0_epoch=time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
+            batch = batch.to(device)
 
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 
             if debug:
                 if step==4:
+                    print(batch.requires_grad)
+
                     random_sample = torch.randint(0,batch.shape[0],(1,)).item()
                     print(f'batch shape : {batch.shape}')
                     print(f'batch type : {batch.dtype}')
@@ -143,6 +150,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()
+        tf_epoch = time.time()
+        print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
 
 
     tf = time.time()

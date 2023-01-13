@@ -5,10 +5,10 @@
   "datatype": "npy",
   "merged": true,
   "with_noise": true,
-  "max_nb_data": 900000,
+  "max_nb_data": 120,
   "training_batchsize":16,
   "test_batchsize":16,
-  "data_normalisation": "none",
+  "data_normalisation": "img_mean",
 
   "network": "pix2pix",
 
