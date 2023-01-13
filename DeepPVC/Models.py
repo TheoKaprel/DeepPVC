@@ -219,7 +219,7 @@ class Pix2PixModel(ModelBase):
         if self.gp:
             self.disc_loss += 10 * self.losses.get_gradient_penalty(Discriminator=self.Discriminator, real = self.truePVfree,fake = self.DfakePVfree, condition=self.truePVE)
 
-        self.disc_loss.backward(retain_graph=True)
+        self.disc_loss.backward()
         self.discriminator_optimizer.step()
 
     def forward_G(self):
