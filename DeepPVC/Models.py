@@ -165,6 +165,8 @@ class Pix2PixModel(ModelBase):
 
 
     def init_model(self):
+        print('models device is supposed to be : ')
+        print(self.device)
         self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
                                                 sum_norm = self.sum_norm,norm = self.layer_norm, vmin=self.vmin).to(device=self.device)
