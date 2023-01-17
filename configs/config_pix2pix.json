@@ -16,6 +16,7 @@
   "learning_rate":0.0002,
   "lr_policy": ["multiplicative",1],
   "input_channels":6,
+  "conv3d": false,
   "with_adj_angles": true,
   "layer_norm": "inst_norm",
   "use_dropout": true,

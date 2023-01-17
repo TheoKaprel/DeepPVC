@@ -131,7 +131,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
 
 
         if input:
-            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device)
+            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device).float()
         elif dataset_path:
             params['store_dataset']=True
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],dataset_type='test',filetype=type,merged=merged)
@@ -139,8 +139,9 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
-        test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
+        # print(test_dataset.numpy_cpu_dataset.dtype)
 
+        test_dataloader = DataLoader(dataset=test_dataset,batch_size=params['test_batchsize'],shuffle=False)
 
         if pth_id==0:
             N_data = len(test_dataloader.dataset)
@@ -160,11 +161,14 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
                 normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
                                                            norm=norm_input_i, params=model.params, to_torch=False)
 
+
+
                 normed_output_i = model.forward(normed_input_i)
                 denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,data_normalisation=data_normalisation,
                                                                 norm=norm_input_i,params=model.params,to_numpy=False)
 
-                dict_data[index][pth_ref] = [denormed_output_i[0, 0, :, :].cpu().numpy()]
+
+                dict_data[index][pth_ref] = [denormed_output_i[0, 0, :, :].float().cpu().numpy()]
 
                 if verbose>2:
                     denoisedPVE = model.denoisedPVE

@@ -37,6 +37,7 @@ class CustomPVEProjectionsDataset(Dataset):
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
+        self.img_type=first_img.dtype
 
         self.max_nb_data=params['max_nb_data']
         if len(self.list_files)*self.nb_projs_per_img>self.max_nb_data:
@@ -70,12 +71,11 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.nb_proj_type=3 if self.noisy else 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=np.uint16)
+        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=self.img_type)
 
         print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
-
             self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
         # conversion if the array is type uint16 because impossible for torch to convert it (why?)
@@ -127,6 +127,7 @@ class CustomPVEProjectionsDataset(Dataset):
             img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
                                                           proj_i=item_id//self.nb_src,
                                                           nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
+
             return torch.tensor(img_channels,device=self.device)
         else:
             img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
