@@ -5,7 +5,7 @@ import json as js
 import os
 import click
 
-from DeepPVC import dataset, helpers, helpers_params, helpers_functions, Models
+from DeepPVC import dataset, helpers, helpers_params, helpers_functions,helpers_data, Models
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -72,8 +72,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         params,start_epoch,ref = None,0,None
         exit(0)
 
-    # torch.multiprocessing.set_start_method('spawn')
-
     # Update parameters specified in command line
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
     for user_param_to_modify in (user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list):
@@ -99,6 +97,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     t0 = time.time()
 
+    data_normalisation = params['data_normalisation']
+
     print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
@@ -106,6 +106,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
+            norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
+            batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
             batch = batch.to(device)
             DeepPVEModel.input_data(batch)

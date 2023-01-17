@@ -47,13 +47,13 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.store_dataset:
             self.build_numpy_dataset()
             del self.list_files
-            if (dataset_type=='train'):
-                print('Dataset prenormalisation ...')
-                self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
-                self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
-                                                                normtype=self.data_normalisation,norm=self.norm,to_torch=False,
-                                                                device='notneededbutitiscpu')
-                print('normalisation done!')
+            # if (dataset_type=='train'):
+            #     print('Dataset prenormalisation ...')
+            #     self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
+            #     self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
+            #                                                     normtype=self.data_normalisation,norm=self.norm,to_torch=False,
+            #                                                     device='notneededbutitiscpu')
+            #     print('normalisation done!')
 
         self.len_dataset = self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
             else len(self.list_files) * self.nb_projs_per_img
@@ -127,22 +127,23 @@ class CustomPVEProjectionsDataset(Dataset):
             img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
                                                           proj_i=item_id//self.nb_src,
                                                           nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
-
-            return torch.tensor(img_channels).float()
         else:
             img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
                                                           proj_i=item_id//self.nb_src,
                                                           nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
-            norm = helpers_data.compute_norm(dataset=img_channels,
-                                                  data_normalisation=self.data_normalisation)
 
-            img_channels = helpers_data.normalize(dataset_or_img = img_channels,
-                                                            normtype=self.data_normalisation, norm=norm,
-                                                            to_torch=False,
-                                                            device='notneededbutitiscpu')
             if img_channels.dtype == np.uint16:
                 img_channels = img_channels.astype(np.int16)
-            return torch.tensor(img_channels).float()
+
+        # norm = helpers_data.compute_norm(dataset=img_channels,
+        #                                       data_normalisation=self.data_normalisation)
+        #
+        # img_channels = helpers_data.normalize(dataset_or_img = img_channels,
+        #                                                 normtype=self.data_normalisation, norm=norm,
+        #                                                 to_torch=False,
+        #                                                 device='notneededbutitiscpu')
+
+        return torch.tensor(img_channels).float()
 
 
 def load_data(params):
