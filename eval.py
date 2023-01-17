@@ -104,7 +104,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
 
 
 def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
-    device = helpers.get_auto_device("cuda")
+    device = helpers.get_auto_device("cpu")
 
     random_data_index = []
 

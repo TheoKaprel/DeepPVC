@@ -7,7 +7,6 @@ import click
 
 from DeepPVC import dataset, helpers, helpers_params, helpers_functions, Models
 
-
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 
@@ -107,8 +106,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # Optimisation loop
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_normalized_dataloader):
-            batch = batch.to(device).float()
 
+            batch = batch.to(device)
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 

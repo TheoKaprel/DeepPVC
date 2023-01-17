@@ -7,6 +7,7 @@ import copy
 from abc import abstractmethod
 
 from . import networks, losses,plots, helpers
+from torch.cuda.amp import autocast, GradScaler
 
 class ModelInstance():
     def __new__(cls, params, from_pth = None, resume_training=False, device = None):
@@ -162,6 +163,8 @@ class Pix2PixModel(ModelBase):
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
 
+        self.scaler = GradScaler()
+
 
 
 
@@ -212,27 +215,30 @@ class Pix2PixModel(ModelBase):
         self.Ddisc_fake_hat = self.Discriminator(self.DfakePVfree.detach(), self.truePVE)
         self.Ddisc_real_hat = self.Discriminator(self.truePVfree, self.truePVE)
 
-    def backward_D(self):
-        # disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, torch.zeros_like(self.Ddisc_fake_hat))
-        # disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, torch.ones_like(self.Ddisc_real_hat))
+    def losses_D(self):
         disc_fake_loss = self.losses.adv_loss(self.Ddisc_fake_hat, self.zeros.expand_as(self.Ddisc_fake_hat))
         disc_real_loss = self.losses.adv_loss(self.Ddisc_real_hat, self.ones.expand_as(self.Ddisc_real_hat))
         self.disc_loss = ((disc_fake_loss + disc_real_loss) / 2)
 
         if self.gp:
-            self.disc_loss += 10 * self.losses.get_gradient_penalty(Discriminator=self.Discriminator, real = self.truePVfree,fake = self.DfakePVfree, condition=self.truePVE)
+            self.disc_loss += 10 * self.losses.get_gradient_penalty(Discriminator=self.Discriminator,
+                                                                    real=self.truePVfree, fake=self.DfakePVfree,
+                                                                    condition=self.truePVE)
 
-        self.disc_loss.backward()
-        self.discriminator_optimizer.step()
+    def backward_D(self):
+        self.scaler.scale(self.disc_loss).backward()
+        self.scaler.step(self.discriminator_optimizer)
 
     def forward_G(self):
         self.GfakePVfree = self.Generator(self.truePVE)
         self.Gdisc_fake_hat = self.Discriminator(self.GfakePVfree, self.truePVE)
 
-    def backward_G(self):
+    def losses_G(self):
         self.gen_loss = self.losses.get_gen_loss(self.Gdisc_fake_hat, self.truePVfree, self.GfakePVfree)
-        self.gen_loss.backward()
-        self.generator_optimizer.step()
+
+    def backward_G(self):
+        self.scaler.scale(self.gen_loss).backward()
+        self.scaler.step(self.generator_optimizer)
 
     def forward(self, batch):
         if  batch.dim()==4:
@@ -248,15 +254,21 @@ class Pix2PixModel(ModelBase):
         self.set_requires_grad(self.Discriminator, requires_grad=True)
         for _ in range(self.discriminator_update):
             self.discriminator_optimizer.zero_grad()
-            self.forward_D()
+            with autocast():
+                self.forward_D()
+                self.losses_D()
             self.backward_D()
+            self.scaler.update()
 
         # Generator Updates
         self.set_requires_grad(self.Discriminator, requires_grad=False)
         for _ in range(self.generator_update):
             self.generator_optimizer.zero_grad()
-            self.forward_G()
+            with autocast():
+                self.forward_G()
+                self.losses_G()
             self.backward_G()
+            self.scaler.update()
 
         self.mean_generator_loss+=self.gen_loss.item()
         self.mean_discriminator_loss+=self.disc_loss.item()

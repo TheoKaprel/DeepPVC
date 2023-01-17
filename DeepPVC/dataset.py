@@ -40,7 +40,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.img_type=first_img.dtype
 
         self.max_nb_data=params['max_nb_data']
-        if len(self.list_files)*self.nb_projs_per_img>self.max_nb_data:
+        if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
         self.nb_src = len(self.list_files)
 
@@ -128,7 +128,7 @@ class CustomPVEProjectionsDataset(Dataset):
                                                           proj_i=item_id//self.nb_src,
                                                           nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
 
-            return torch.tensor(img_channels,device=self.device)
+            return torch.tensor(img_channels).float()
         else:
             img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
                                                           proj_i=item_id//self.nb_src,
@@ -142,7 +142,7 @@ class CustomPVEProjectionsDataset(Dataset):
                                                             device='notneededbutitiscpu')
             if img_channels.dtype == np.uint16:
                 img_channels = img_channels.astype(np.int16)
-            return torch.tensor(img_channels)
+            return torch.tensor(img_channels).float()
 
 
 def load_data(params):
