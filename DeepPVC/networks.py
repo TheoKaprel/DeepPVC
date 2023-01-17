@@ -112,6 +112,7 @@ class UNet(nn.Module):
         if conv3d:
             self.conv3d=True
             self.threedConv = torch.nn.Conv3d(in_channels=1,out_channels=1,kernel_size=(3,3,3),stride=(1,1,1),padding=1)
+            self.relu = torch.nn.ReLU()
         else:
             self.conv3d=False
 
@@ -166,6 +167,7 @@ class UNet(nn.Module):
         if self.conv3d:
             x = x[:,None,:,:,:]
             x = self.threedConv(x)
+            x = self.relu(x)
             x = x[:,0,:,:,:]
         # ----------------------------------------------------------
         #first feature extraction
