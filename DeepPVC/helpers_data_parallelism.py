@@ -12,9 +12,8 @@ def init_data_parallelism(model):
     torch.cuda.set_device(idr_torch.local_rank)
     gpu = torch.device("cuda")
     model = model.to(gpu)
-    ddp_model = DistributedDataParallel(model, device_ids=[idr_torch.local_rank])
-
-    return ddp_model
+    model.Generator = DistributedDataParallel(model.Generator, device_ids=[idr_torch.local_rank])
+    model.Discriminator = DistributedDataParallel(model.Discriminator, device_ids=[idr_torch.local_rank])
 
 
 def get_dataloader_params(dataset,batch_size,jean_zay):

@@ -93,7 +93,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
 
     if params['jean_zay']:
-        DeepPVEModel = helpers_data_parallelism.init_data_parallelism(model=DeepPVEModel)
+        helpers_data_parallelism.init_data_parallelism(model=DeepPVEModel)
 
     DeepPVEModel.show_infos()
 
