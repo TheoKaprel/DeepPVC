@@ -6,6 +6,8 @@ import os
 import click
 
 from DeepPVC import dataset, helpers, helpers_params, helpers_functions,helpers_data, Models
+from torch.cuda.amp import autocast
+
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -123,9 +125,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         for j in range(batch.shape[2]):
                             ax[i,j].imshow(batch[random_sample,i,j,:,:].float().detach().cpu().numpy())
                     with torch.no_grad():
-                        debug_output = DeepPVEModel.forward(batch=batch)
+                        with autocast():
+                            debug_output = DeepPVEModel.forward(batch=batch)
                         print(f'output shape : {debug_output.shape}')
-                    ax[batch.shape[1],0].imshow(debug_output[random_sample,0,:,:].detach().cpu().numpy())
+                    ax[batch.shape[1],0].imshow(debug_output[random_sample,0,:,:].float().detach().cpu().numpy())
                     plt.show()
 
 

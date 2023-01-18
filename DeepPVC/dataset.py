@@ -5,15 +5,13 @@ import glob
 import time
 from torch.utils.data import Dataset,DataLoader
 
+
 from . import helpers_data, helpers
 
-#todo : comment gerer les normes sur tout le dataset (standardization du dataset) si on le store pas en entier mais à la volée..
-
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, paths,dataset_type,filetype=None,merged=None):
+    def __init__(self, params, paths,filetype=None,merged=None):
 
         self.dataset_path = paths
-
         self.filetype = params["datatype"] if (filetype is None) else filetype
         self.merged = params["merged"] if (merged is None) else merged
         self.with_adj_angles = params["with_adj_angles"]
@@ -21,7 +19,6 @@ class CustomPVEProjectionsDataset(Dataset):
         self.input_channels = params['input_channels']
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
-
         self.store_dataset = params['store_dataset']
 
         self.list_files = []
@@ -47,16 +44,10 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.store_dataset:
             self.build_numpy_dataset()
             del self.list_files
-            # if (dataset_type=='train'):
-            #     print('Dataset prenormalisation ...')
-            #     self.norm = helpers_data.compute_norm(dataset=self.numpy_cpu_dataset,data_normalisation=self.data_normalisation)
-            #     self.numpy_cpu_dataset = helpers_data.normalize(dataset_or_img=self.numpy_cpu_dataset,
-            #                                                     normtype=self.data_normalisation,norm=self.norm,to_torch=False,
-            #                                                     device='notneededbutitiscpu')
-            #     print('normalisation done!')
 
         self.len_dataset = self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
             else len(self.list_files) * self.nb_projs_per_img
+
 
     def read(self,filename):
         if self.filetype in ['mha', 'mhd']:
@@ -143,15 +134,15 @@ class CustomPVEProjectionsDataset(Dataset):
         #                                                 to_torch=False,
         #                                                 device='notneededbutitiscpu')
 
-        return torch.tensor(img_channels).float()
+        return torch.from_numpy(img_channels)
 
 
 def load_data(params):
-    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'], dataset_type='train')
+    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])
     training_batchsize = params['training_batchsize']
     train_dataloader = DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
 
-    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], dataset_type='validation')
+    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'])
     test_batchsize = params['test_batchsize']
     test_dataloader = DataLoader(test_dataset,batch_size=test_batchsize,shuffle=False)
 
