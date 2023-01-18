@@ -354,6 +354,8 @@ class Pix2PixModel(ModelBase):
 
     def switch_device(self, device):
         self.device = device
+        self.ones = self.ones.to(device=device)
+        self.zeros = self.ones.to(device=device)
         self.Generator.to(device=device)
         self.Discriminator.to(device=device)
 

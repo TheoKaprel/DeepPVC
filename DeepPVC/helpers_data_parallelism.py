@@ -11,7 +11,7 @@ def init_data_parallelism(model):
     dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
     torch.cuda.set_device(idr_torch.local_rank)
     gpu = torch.device("cuda")
-    model = model.to(gpu)
+    model.switch_device(gpu)
     model.Generator = DistributedDataParallel(model.Generator, device_ids=[idr_torch.local_rank])
     model.Discriminator = DistributedDataParallel(model.Discriminator, device_ids=[idr_torch.local_rank])
 
