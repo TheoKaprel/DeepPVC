@@ -33,6 +33,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
 @click.option('--debug', is_flag=True, default = False)
 def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder,debug):
+
     train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug)
 
 
@@ -171,6 +172,19 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
 
 if __name__ == '__main__':
+    host = os.uname()[1]
+    if (host !='siullus'):
+        import idr_torch
+        # get distributed configuration from Slurm environment
+        NODE_ID = os.environ['SLURM_NODEID']
+        MASTER_ADDR = os.environ['MASTER_ADDR']
+
+        # display info
+        if idr_torch.rank == 0:
+            print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
+                  " processes, master node is ", MASTER_ADDR)
+        print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
+
     train_onclick()
 
 
