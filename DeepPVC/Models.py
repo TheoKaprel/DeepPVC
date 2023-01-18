@@ -294,24 +294,37 @@ class Pix2PixModel(ModelBase):
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
         self.params['current_epoch'] = self.current_epoch
+        jean_zay = self.params['jean_zay']
 
         if not output_path:
             if self.output_folder:
                 output_path = os.path.join(self.output_folder, self.output_pth)
             else:
                 raise ValueError("Error: no output_folder specified")
-
-        torch.save({'saving_date': time.asctime(),
-                    'epoch': self.current_epoch,
-                    'gen': self.Generator.state_dict(),
-                    'gen_opt': self.generator_optimizer.state_dict(),
-                    'disc': self.Discriminator.state_dict(),
-                    'disc_opt': self.discriminator_optimizer.state_dict(),
-                    'gen_losses': self.generator_losses,
-                    'disc_losses': self.discriminator_losses,
-                    'test_error': self.test_error,
-                    'params': self.params
-                    }, output_path )
+        if jean_zay:
+            torch.save({'saving_date': time.asctime(),
+                        'epoch': self.current_epoch,
+                        'gen': self.Generator.module.state_dict(),
+                        'gen_opt': self.generator_optimizer.state_dict(),
+                        'disc': self.Discriminator.module.state_dict(),
+                        'disc_opt': self.discriminator_optimizer.state_dict(),
+                        'gen_losses': self.generator_losses,
+                        'disc_losses': self.discriminator_losses,
+                        'test_error': self.test_error,
+                        'params': self.params
+                        }, output_path )
+        else:
+            torch.save({'saving_date': time.asctime(),
+                        'epoch': self.current_epoch,
+                        'gen': self.Generator.state_dict(),
+                        'gen_opt': self.generator_optimizer.state_dict(),
+                        'disc': self.Discriminator.state_dict(),
+                        'disc_opt': self.discriminator_optimizer.state_dict(),
+                        'gen_losses': self.generator_losses,
+                        'disc_losses': self.discriminator_losses,
+                        'test_error': self.test_error,
+                        'params': self.params
+                        }, output_path )
         print(f'Model saved at : {output_path}')
 
         if save_json:
