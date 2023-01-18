@@ -12,8 +12,8 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     data_normalisation = model.params['data_normalisation']
     device = model.device
 
-    list_NRMSE = np.array([])
-    list_NMAE = np.array([])
+    list_NRMSE = torch.Tensor([0.]).to(device)
+    list_NMAE = torch.Tensor([0.]).to(device)
 
     with torch.no_grad():
         for test_it,batch in enumerate(test_dataloader):
@@ -36,21 +36,23 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                     MSE = torch.sum((fakePVfree_denormed - batch_targets)**2, dim = (1,2,3)) / batch.shape[2] / batch.shape[3]
                     RMSE = torch.sqrt(MSE)
                     NRMSE = RMSE / mean_norm
-                    list_NRMSE = np.concatenate((list_NRMSE,NRMSE.cpu().numpy()))
+                    # list_NRMSE = np.concatenate((list_NRMSE,NRMSE.cpu().numpy()))
+                    list_NRMSE = torch.concat((list_NRMSE,NRMSE))
 
                 if do_NMAE:
                     MAE = torch.sum(torch.abs(fakePVfree_denormed - batch_targets), dim=(1,2,3)) / batch.shape[2] / batch.shape[3]
                     NMAE = MAE / mean_norm
-                    list_NMAE = np.concatenate((list_NMAE, NMAE.cpu().numpy()))
+                    # list_NMAE = np.concatenate((list_NMAE, NMAE.cpu().numpy()))
+                    list_NMAE = torch.concat((list_NMAE,NMAE))
 
     if do_NRMSE:
-        MNRMSE = np.mean(list_NRMSE)
-        std_NRMSE = np.std(list_NRMSE)
+        MNRMSE = torch.mean(list_NRMSE).item()
+        std_NRMSE = torch.std(list_NRMSE).item()
         dist.all_reduce(MNRMSE, op=dist.ReduceOp.SUM)
         dist.all_reduce(std_NRMSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
-        MNMAE = np.mean(list_NMAE)
-        std_NMAE = np.std(list_NMAE)
+        MNMAE = torch.mean(list_NMAE).item()
+        std_NMAE = torch.std(list_NMAE).item()
         dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
         dist.all_reduce(std_NMAE, op=dist.ReduceOp.SUM)
 
