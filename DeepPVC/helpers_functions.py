@@ -46,14 +46,14 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                     list_NMAE = torch.concat((list_NMAE,NMAE))
 
     if do_NRMSE:
-        MNRMSE = torch.mean(list_NRMSE)
-        std_NRMSE = torch.std(list_NRMSE)
+        MNRMSE = torch.mean(list_NRMSE) / model.params['nb_gpu']
+        # std_NRMSE = torch.std(list_NRMSE)
         dist.all_reduce(MNRMSE, op=dist.ReduceOp.SUM)
-        dist.all_reduce(std_NRMSE, op=dist.ReduceOp.SUM)
+        # dist.all_reduce(std_NRMSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
-        MNMAE = torch.mean(list_NMAE)
-        std_NMAE = torch.std(list_NMAE)
+        MNMAE = torch.mean(list_NMAE)  / model.params['nb_gpu']
+        # std_NMAE = torch.std(list_NMAE)
         dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
-        dist.all_reduce(std_NMAE, op=dist.ReduceOp.SUM)
+        # dist.all_reduce(std_NMAE, op=dist.ReduceOp.SUM)
 
-    return (MNRMSE,std_NRMSE), (MNMAE,std_NMAE)
+    return MNRMSE, MNMAE
