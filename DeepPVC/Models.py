@@ -26,8 +26,9 @@ class ModelInstance():
             exit(0)
 
 
-class ModelBase():
+class ModelBase(torch.nn.Module):
     def __init__(self,  params, resume_training, device = None):
+        super(ModelBase, self).__init__()
         self.params = params
         if device==None:
             self.device = helpers.get_auto_device(self.params['device'])

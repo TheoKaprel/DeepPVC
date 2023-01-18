@@ -160,7 +160,6 @@ def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
 
 
 
-
 def load_image(filename, is_ref, type,params):
     if is_ref:
         return load_PVE_PVfree(ref = filename,type=type,params=params)

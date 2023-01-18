@@ -1,17 +1,16 @@
 import matplotlib.pyplot as plt
 import torch
+from torch.cuda.amp import autocast
 import time
 import json as js
 import os
 import click
 
-from DeepPVC import dataset, helpers, helpers_params, helpers_functions,helpers_data, Models
-from torch.cuda.amp import autocast
-
+from DeepPVC import dataset, Models
+from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data, helpers_data_parallelism
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
-
 @click.option('--json', help = 'JSON parameter file to start training FROM SCRATCH')
 @click.option('--resume', 'resume_pth', help = 'PTH file from which to RESUME training')
 @click.option('--user_param_str', '-ps',
@@ -91,6 +90,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     train_normalized_dataloader, test_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
+
+    if params['jean_zay']:
+        DeepPVEModel = helpers_data_parallelism.init_data_parallelism(model=DeepPVEModel)
+
     DeepPVEModel.show_infos()
 
     device = DeepPVEModel.device
@@ -111,7 +114,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
-            batch = batch.to(device)
+            batch = batch.to(device,non_blocking=True)
             DeepPVEModel.input_data(batch)
             DeepPVEModel.optimize_parameters()
 

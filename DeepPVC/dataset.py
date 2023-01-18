@@ -6,7 +6,7 @@ import time
 from torch.utils.data import Dataset,DataLoader
 
 
-from . import helpers_data, helpers
+from . import helpers_data,helpers_data_parallelism, helpers
 
 class CustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,filetype=None,merged=None):
@@ -126,25 +126,36 @@ class CustomPVEProjectionsDataset(Dataset):
             if img_channels.dtype == np.uint16:
                 img_channels = img_channels.astype(np.int16)
 
-        # norm = helpers_data.compute_norm(dataset=img_channels,
-        #                                       data_normalisation=self.data_normalisation)
-        #
-        # img_channels = helpers_data.normalize(dataset_or_img = img_channels,
-        #                                                 normtype=self.data_normalisation, norm=norm,
-        #                                                 to_torch=False,
-        #                                                 device='notneededbutitiscpu')
-
         return torch.from_numpy(img_channels)
 
 
 def load_data(params):
+    jean_zay=params['jean_zay']
+
     train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])
     training_batchsize = params['training_batchsize']
-    train_dataloader = DataLoader(train_dataset, batch_size=training_batchsize, shuffle=True)
+    train_sampler, shuffle, training_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
+                                                                                                            batch_size=training_batchsize,
+                                                                                                            jean_zay=jean_zay)
+
+    train_dataloader = DataLoader(dataset=train_dataset,
+                                  batch_size=training_batch_size_per_gpu,
+                                  shuffle=shuffle,
+                                  num_workers=0,
+                                  pin_memory=pin_memory,
+                                  sampler=train_sampler)
 
     test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'])
     test_batchsize = params['test_batchsize']
-    test_dataloader = DataLoader(test_dataset,batch_size=test_batchsize,shuffle=False)
+    test_sampler, shuffle, test_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=test_dataset,
+                                                                                                            batch_size=test_batchsize,
+                                                                                                            jean_zay=jean_zay)
+    test_dataloader = DataLoader(dataset=test_dataset,
+                                  batch_size=test_batch_size_per_gpu,
+                                  shuffle=False,
+                                  num_workers=0,
+                                  pin_memory=pin_memory,
+                                  sampler=test_sampler)
 
     nb_training_data = len(train_dataloader.dataset)
     nb_testing_data = len(test_dataloader.dataset)
@@ -152,7 +163,9 @@ def load_data(params):
     print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
-    # params['norm'] = train_dataset.norm
+    params['nb_gpu'] = number_gpu
+    params['training_mini_batchsize'] = training_batch_size_per_gpu
+    params['test_mini_batchsize'] = test_batch_size_per_gpu
     params['norm'] = 'none'
 
     return train_dataloader, test_dataloader,params

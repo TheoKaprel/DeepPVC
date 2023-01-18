@@ -1,6 +1,7 @@
 {
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/np_float_dataset"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/np_float_dataset"],
+  "jean_zay": false,
   "store_dataset": true,
   "datatype": "npy",
   "merged": true,
