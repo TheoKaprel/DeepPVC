@@ -166,7 +166,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     DeepPVEModel.params['training_endtime'] = time.asctime()
     DeepPVEModel.params['training_duration'] = total_time
 
-    DeepPVEModel.save_model(save_json=True)
+    if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+        DeepPVEModel.save_model(save_json=True)
 
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])

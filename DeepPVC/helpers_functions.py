@@ -3,6 +3,7 @@ import torch
 
 from . import helpers_data
 from torch.cuda.amp import autocast
+import torch.distributed as dist
 
 def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     MNRMSE,std_NRMSE = 0,0
@@ -45,6 +46,8 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     if do_NRMSE:
         MNRMSE = np.mean(list_NRMSE)
         std_NRMSE = np.std(list_NRMSE)
+        dist.all_reduce(MNRMSE, op=dist.ReduceOp.SUM)
+        dist.all_reduce(std_NRMSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
         MNMAE = np.mean(list_NMAE)
         std_NMAE = np.std(list_NMAE)
