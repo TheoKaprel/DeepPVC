@@ -51,6 +51,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     if do_NMAE:
         MNMAE = np.mean(list_NMAE)
         std_NMAE = np.std(list_NMAE)
-
+        dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
+        dist.all_reduce(std_NMAE, op=dist.ReduceOp.SUM)
 
     return (MNRMSE,std_NRMSE), (MNMAE,std_NMAE)
