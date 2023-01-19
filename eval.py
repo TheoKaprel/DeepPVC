@@ -19,12 +19,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--error', is_flag=True, help="Compute the MSE on the provided dataset")
 @click.option('--plot', is_flag=True)
 @click.option('-v', '--verbose', count=True)
-def eval_click(pth, input, n, dataset_path,type,merged, ref, error, plot, verbose):
+@click.option('--param_comp')
+def eval_click(pth, input, n, dataset_path,type,merged, ref, error, plot, verbose,param_comp):
 
     if error:
         eval_error(pth, input, dataset_path,type, ref, verbose)
     if plot:
-        eval_plot(pth, input, n, dataset_path,type,merged, ref, verbose)
+        eval_plot(pth, input, n, dataset_path,type,merged, ref, verbose,param_comp)
 
 
 def add_or_modify_error(dataset_path, params, error_ref, error_val):
@@ -103,7 +104,7 @@ def eval_error(lpth, input,dataset_path,type,ref, verbose):
 
 
 
-def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
+def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_comp):
     device = helpers.get_auto_device("cpu")
 
     random_data_index = []
@@ -115,6 +116,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
+        params['jean_zay']=False
         data_normalisation = params['data_normalisation']
         pth_ref = params['ref']
         lpth_ref.append(pth_ref)
@@ -127,7 +129,9 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
             model.show_infos()
             if verbose > 1:
                 model.plot_losses(save=False, wait=True, title=pth)
-                dict_data['validation_losses'][pth_ref] = model.test_error
+                dict_data['validation_losses'][pth_ref] = {}
+                dict_data['validation_losses'][pth_ref]['losses'] = model.test_error
+                dict_data['validation_losses'][pth_ref]['legend'] = params[param_comp] if param_comp else pth_ref
 
 
         if input:
@@ -178,7 +182,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose):
     if verbose>1:
         fig_test,ax_test = plt.subplots()
         for i ,(pth,test) in  enumerate(dict_data['validation_losses'].items()):
-            ax_test.plot([e[0] for e in test],[e[1] for e in test],label = pth, linewidth= 2)
+            ax_test.plot([e[0] for e in test['losses']],[e[1] for e in test['losses']],label = test['legend'], linewidth= 2)
         ax_test.set_title('validation losses')
         plt.legend()
 
