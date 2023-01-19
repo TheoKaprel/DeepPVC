@@ -107,7 +107,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     print('Begining of training .....')
     for epoch in range(1,DeepPVEModel.n_epochs+1):
-        print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
+        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+            print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
         t0_epoch=time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
@@ -146,27 +147,28 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE.item()])
 
-            print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
+            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+                print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
 
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
-            current_time = round(time.time() - t0)
-            DeepPVEModel.params['training_duration'] = current_time
-            temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
-            DeepPVEModel.save_model(output_path=temp_output_filename)
+            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+                current_time = round(time.time() - t0)
+                DeepPVEModel.params['training_duration'] = current_time
+                temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
+                DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()
-        tf_epoch = time.time()
-        print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
-
-
-    tf = time.time()
-    total_time = round(tf-t0)
-    print(f'Total training time : {total_time} s ({round(total_time/60/60,3)} h)')
-    DeepPVEModel.params['training_endtime'] = time.asctime()
-    DeepPVEModel.params['training_duration'] = total_time
+        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+            tf_epoch = time.time()
+            print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
 
     if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+        tf = time.time()
+        total_time = round(tf-t0)
+        print(f'Total training time : {total_time} s ({round(total_time/60/60,3)} h)')
+        DeepPVEModel.params['training_endtime'] = time.asctime()
+        DeepPVEModel.params['training_duration'] = total_time
         DeepPVEModel.save_model(save_json=True)
 
     if plot_at_end:
