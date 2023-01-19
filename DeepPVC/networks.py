@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn import functional as F
-from torch.cuda.amp import custom_fwd
 
 class DownSamplingBlock(nn.Module):
     """ DownSampling Block = One Subblock of the left part of a Unet --> Encoding
@@ -218,8 +217,6 @@ class NEncodingLayers(nn.Module):
         self.model = nn.Sequential(*sequence)
 
 
-    @staticmethod
-    @custom_fwd
     def forward(self, A, B):
         x = torch.cat([A, B], 1)
         return self.model(x)
