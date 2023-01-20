@@ -280,6 +280,9 @@ class Pix2PixModel(ModelBase):
         self.discriminator_losses.append(self.mean_discriminator_loss / self.current_iteration)
         self.generator_losses.append(self.mean_generator_loss / self.current_iteration)
 
+        print(f'D loss : {round(self.discriminator_losses[-1],5)}')
+        print(f'G loss : {round(self.generator_losses[-1],5)}')
+
         self.current_epoch+=1
         self.current_iteration=0
         self.mean_generator_loss = 0

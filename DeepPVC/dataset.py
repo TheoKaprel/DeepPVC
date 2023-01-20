@@ -40,8 +40,7 @@ class CustomPVEProjectionsDataset(Dataset):
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
 
-        self.split_dataset = params['split_dataset']
-        if (self.split_dataset and not test):
+        if ('split_dataset' in params and params['split_dataset'] and not test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
 
