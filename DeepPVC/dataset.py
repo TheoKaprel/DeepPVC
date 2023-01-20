@@ -9,7 +9,7 @@ from torch.utils.data import Dataset,DataLoader
 from . import helpers_data,helpers_data_parallelism, helpers
 
 class CustomPVEProjectionsDataset(Dataset):
-    def __init__(self, params, paths,filetype=None,merged=None):
+    def __init__(self, params, paths,filetype=None,merged=None,test=False):
 
         self.dataset_path = paths
         self.filetype = params["datatype"] if (filetype is None) else filetype
@@ -39,6 +39,12 @@ class CustomPVEProjectionsDataset(Dataset):
         self.max_nb_data=params['max_nb_data']
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
+
+        self.split_dataset = params['split_dataset']
+        if (self.split_dataset and not test):
+            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
+            self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
+
         self.nb_src = len(self.list_files)
 
         if self.store_dataset:
@@ -132,11 +138,13 @@ class CustomPVEProjectionsDataset(Dataset):
 def load_data(params):
     jean_zay=params['jean_zay']
 
-    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'])
+    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'],test=False)
     training_batchsize = params['training_batchsize']
+    split_dataset = params['split_dataset']
     train_sampler, shuffle, training_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
                                                                                                             batch_size=training_batchsize,
-                                                                                                            jean_zay=jean_zay)
+                                                                                                            jean_zay=jean_zay,
+                                                                                                            split_dataset=split_dataset)
 
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=training_batch_size_per_gpu,
@@ -145,17 +153,15 @@ def load_data(params):
                                   pin_memory=pin_memory,
                                   sampler=train_sampler)
 
-    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'])
+    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], test=True)
     test_batchsize = params['test_batchsize']
-    test_sampler, shuffle, test_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=test_dataset,
-                                                                                                            batch_size=test_batchsize,
-                                                                                                            jean_zay=jean_zay)
+
     test_dataloader = DataLoader(dataset=test_dataset,
-                                  batch_size=test_batch_size_per_gpu,
+                                  batch_size=test_batchsize,
                                   shuffle=False,
                                   num_workers=0,
-                                  pin_memory=pin_memory,
-                                  sampler=test_sampler)
+                                  pin_memory=True,
+                                  sampler=None)
 
     nb_training_data = len(train_dataloader.dataset)
     nb_testing_data = len(test_dataloader.dataset)
@@ -165,7 +171,7 @@ def load_data(params):
     params['nb_testing_data'] = nb_testing_data
     params['nb_gpu'] = number_gpu
     params['training_mini_batchsize'] = training_batch_size_per_gpu
-    params['test_mini_batchsize'] = test_batch_size_per_gpu
+    params['test_mini_batchsize'] = test_batchsize
     params['norm'] = 'none'
 
     return train_dataloader, test_dataloader,params

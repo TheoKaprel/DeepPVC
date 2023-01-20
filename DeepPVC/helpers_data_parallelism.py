@@ -16,19 +16,32 @@ def init_data_parallelism(model):
     model.Discriminator = DistributedDataParallel(model.Discriminator, device_ids=[idr_torch.local_rank])
 
 
-def get_dataloader_params(dataset,batch_size,jean_zay):
+def get_dataloader_params(dataset,batch_size,jean_zay,split_dataset):
     if jean_zay:
         import idr_torch
-        sampler = torch.utils.data.distributed.DistributedSampler(dataset,
-                                                                        shuffle=True,
-                                                                        num_replicas=idr_torch.size,
-                                                                        rank=idr_torch.rank)
-        shuffle = False
         batch_size_per_gpu = batch_size // idr_torch.size
         pin_memory = True
-        number_gpu=idr_torch.size
+        number_gpu = idr_torch.size
+        if split_dataset:
+            sampler=None
+            shuffle=True
+        else:
+            sampler = torch.utils.data.distributed.DistributedSampler(dataset,
+                                                                            shuffle=True,
+                                                                            num_replicas=idr_torch.size,
+                                                                            rank=idr_torch.rank)
+            shuffle = False
+
     else:
         number_gpu = torch.cuda.device_count()
         sampler,shuffle,batch_size_per_gpu,pin_memory= None, True,batch_size,False
 
     return sampler,shuffle,batch_size_per_gpu,pin_memory,number_gpu
+
+
+def get_gpu_id_nb_gpu(jean_zay):
+    if jean_zay:
+        import idr_torch
+        return (idr_torch.rank,idr_torch.size)
+    else:
+        return (torch.cuda.current_device(), torch.cuda.device_count())
