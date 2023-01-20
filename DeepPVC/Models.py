@@ -164,7 +164,9 @@ class Pix2PixModel(ModelBase):
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
 
-        self.scaler = GradScaler()
+        self.amp = self.params['amp']
+        if self.amp:
+            self.scaler = GradScaler()
 
 
 
@@ -227,8 +229,12 @@ class Pix2PixModel(ModelBase):
                                                                     condition=self.truePVE)
 
     def backward_D(self):
-        self.scaler.scale(self.disc_loss).backward()
-        self.scaler.step(self.discriminator_optimizer)
+        if self.amp:
+            self.scaler.scale(self.disc_loss).backward()
+            self.scaler.step(self.discriminator_optimizer)
+        else:
+            self.disc_loss.backward()
+            self.discriminator_optimizer.step()
 
     def forward_G(self):
         self.GfakePVfree = self.Generator(self.truePVE)
@@ -238,8 +244,12 @@ class Pix2PixModel(ModelBase):
         self.gen_loss = self.losses.get_gen_loss(self.Gdisc_fake_hat, self.truePVfree, self.GfakePVfree)
 
     def backward_G(self):
-        self.scaler.scale(self.gen_loss).backward()
-        self.scaler.step(self.generator_optimizer)
+        if self.amp:
+            self.scaler.scale(self.gen_loss).backward()
+            self.scaler.step(self.generator_optimizer)
+        else:
+            self.gen_loss.backward()
+            self.generator_optimizer.step()
 
     def forward(self, batch):
         if  batch.dim()==4:
@@ -255,7 +265,7 @@ class Pix2PixModel(ModelBase):
         self.set_requires_grad(self.Discriminator, requires_grad=True)
         for _ in range(self.discriminator_update):
             self.discriminator_optimizer.zero_grad()
-            with autocast():
+            with autocast(enabled=self.amp):
                 self.forward_D()
                 self.losses_D()
             self.backward_D()
@@ -265,11 +275,12 @@ class Pix2PixModel(ModelBase):
         self.set_requires_grad(self.Discriminator, requires_grad=False)
         for _ in range(self.generator_update):
             self.generator_optimizer.zero_grad()
-            with autocast():
+            with autocast(enabled=self.amp):
                 self.forward_G()
                 self.losses_G()
             self.backward_G()
-            self.scaler.update()
+            if self.amp:
+                self.scaler.update()
 
         self.mean_generator_loss+=self.gen_loss.item()
         self.mean_discriminator_loss+=self.disc_loss.item()

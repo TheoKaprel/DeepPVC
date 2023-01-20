@@ -12,6 +12,7 @@
   "training_batchsize":64,
   "test_batchsize":32,
   "data_normalisation": "none",
+  "amp": true,
 
   "network": "pix2pix",
 
