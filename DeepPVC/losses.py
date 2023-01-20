@@ -61,8 +61,9 @@ class Wasserstein_loss(nn.Module):
 
 
 
-class Pix2PixLosses:
+class Pix2PixLosses(nn.Module):
     def __init__(self, losses_params):
+        super(Pix2PixLosses, self).__init__()
         self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
         self.recon_loss = get_nn_loss(loss_name=losses_params['recon_loss'])
@@ -70,7 +71,9 @@ class Pix2PixLosses:
         self.lambda_recon = losses_params['lambda_recon']
         self.device = losses_params['device']
 
-        self.gradient_penalty = gradient_penalty(device=self.device)
+        if losses_params['gradient_penalty']:
+            self.gradient_penalty = gradient_penalty(device=self.device)
+
         self.ones = torch.tensor([0.0],device=self.device)
 
     def get_adv_loss(self):
