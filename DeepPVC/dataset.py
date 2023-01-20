@@ -141,7 +141,7 @@ def load_data(params):
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=training_batch_size_per_gpu,
                                   shuffle=shuffle,
-                                  num_workers=0,
+                                  num_workers=params['num_workers'],
                                   pin_memory=pin_memory,
                                   sampler=train_sampler)
 
@@ -153,7 +153,7 @@ def load_data(params):
     test_dataloader = DataLoader(dataset=test_dataset,
                                   batch_size=test_batch_size_per_gpu,
                                   shuffle=False,
-                                  num_workers=params['num_workers'],
+                                  num_workers=0,
                                   pin_memory=pin_memory,
                                   sampler=test_sampler)
 
