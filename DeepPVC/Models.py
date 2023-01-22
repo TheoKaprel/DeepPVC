@@ -383,8 +383,8 @@ class Pix2PixModel(ModelBase):
         self.device = device
         self.ones = self.ones.to(device=device)
         self.zeros = self.zeros.to(device=device)
-        self.Generator.to(device=device)
-        self.Discriminator.to(device=device)
+        self.Generator = self.Generator.to(device=device)
+        self.Discriminator = self.Discriminator.to(device=device)
         if hasattr(self, "losses"):
             self.losses.ones = self.losses.ones.to(device=device)
 
