@@ -50,14 +50,15 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             params_file = open(json).read()
             params = js.loads(params_file)
             params['start_pth'] = [resume_pth]
-            if output:
-                ref = output
-            else:
-                ref = checkpoint['params']['ref']
         else:
             params = checkpoint['params']
             params['start_pth'].append(resume_pth)
-            ref = params['ref']
+
+        if output:
+            ref=output
+        else:
+            ref=chechpoint['params']['ref']
+
         start_epoch = checkpoint['epoch']
 
     elif json and not(resume_pth):
