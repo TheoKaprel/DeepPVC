@@ -57,7 +57,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         if output:
             ref=output
         else:
-            ref=chechpoint['params']['ref']
+            ref=checkpoint['params']['ref']
 
         start_epoch = checkpoint['epoch']
 
