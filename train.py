@@ -112,7 +112,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch=time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
+        debug_split=0
         for step,batch in enumerate(train_normalized_dataloader):
+            if epoch==1:
+                debug_split+=batch.shape[0]
+
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
@@ -136,6 +140,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     ax[batch.shape[1],0].imshow(debug_output[random_sample,0,:,:].float().detach().cpu().numpy())
                     plt.show()
 
+        if epoch==1:
+            print(f'total nb of training data : {debug_split}')
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             DeepPVEModel.switch_eval()

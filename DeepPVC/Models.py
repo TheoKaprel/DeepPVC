@@ -401,10 +401,11 @@ class Pix2PixModel(ModelBase):
         print(self.Generator)
         print(self.Discriminator)
         print('*' * 80)
-        print('Losses : ')
-        print(self.losses_params)
-        print(self.losses)
-        print('*' * 80)
+        if hasattr(self, "losses"):
+            print('Losses : ')
+            print(self.losses_params)
+            print(self.losses)
+            print('*' * 80)
 
         # helpers_params.make_and_print_params_info_table([self.params])
 
