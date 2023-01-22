@@ -149,7 +149,8 @@ class Pix2PixModel(ModelBase):
         self.init_model()
 
         if from_pth:
-            self.load_model(from_pth)
+            # self.load_model(from_pth)
+            print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
 
             self.init_optimization()
