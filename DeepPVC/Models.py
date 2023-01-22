@@ -146,10 +146,12 @@ class Pix2PixModel(ModelBase):
         self.generator_update = params['generator_update']
         self.discriminator_update = params['discriminator_update']
 
+        self.init_model()
+
         if from_pth:
             self.load_model(from_pth)
         else:
-            self.init_model()
+
             self.init_optimization()
             self.init_losses()
 
@@ -352,8 +354,6 @@ class Pix2PixModel(ModelBase):
 
         print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path, map_location=self.device)
-
-        self.init_model()
 
 
         self.Generator.load_state_dict(checkpoint['gen'])
