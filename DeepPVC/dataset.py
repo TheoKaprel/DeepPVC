@@ -43,7 +43,6 @@ class CustomPVEProjectionsDataset(Dataset):
         if ('split_dataset' in params and params['split_dataset'] and not test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
-            print(self.list_files[0])
 
         self.nb_src = len(self.list_files)
 

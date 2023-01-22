@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import torch
-import torch.multiprocessing as mp
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 
