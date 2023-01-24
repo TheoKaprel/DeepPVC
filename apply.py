@@ -29,7 +29,7 @@ def apply(pth, input, output_filename):
     data_normalisation = params['data_normalisation']
 
     model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False,device=device)
-
+    model.load_model(pth_path=pth)
     model.switch_device("cpu")
     model.switch_eval()
     model.show_infos()

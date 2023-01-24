@@ -122,6 +122,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         lpth_ref.append(pth_ref)
 
         model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
+        model.load_model(pth_path=pth)
         model.switch_device(device)
         model.switch_eval()
 

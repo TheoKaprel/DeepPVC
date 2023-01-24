@@ -356,7 +356,7 @@ class Pix2PixModel(ModelBase):
         print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path, map_location=self.device)
 
-        if self.params['jean_zay']:
+        if hasattr(self.Generator, 'module'):
             self.Generator.module.load_state_dict(checkpoint['gen'])
             self.Discriminator.module.load_state_dict(checkpoint['disc'])
         else:
