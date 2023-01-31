@@ -272,7 +272,8 @@ class Pix2PixModel(ModelBase):
                 self.forward_D()
                 self.losses_D()
             self.backward_D()
-            # self.scaler.update()
+            if self.amp:
+                self.scaler.update()
 
         # Generator Updates
         self.set_requires_grad(self.Discriminator, requires_grad=False)
