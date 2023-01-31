@@ -392,6 +392,8 @@ class Pix2PixModel(ModelBase):
         self.Discriminator = self.Discriminator.to(device=device)
         if hasattr(self, "losses"):
             self.losses.ones = self.losses.ones.to(device=device)
+            if hasattr(self.losses, "gradient_penalty"):
+                self.losses.gradient_penalty.switch_device(device=device)
 
     def show_infos(self, mse = False):
         formatted_params = self.format_params()

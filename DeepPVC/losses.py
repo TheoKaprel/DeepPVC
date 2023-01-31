@@ -37,6 +37,9 @@ class gradient_penalty(nn.Module):
         super(gradient_penalty, self).__init__()
         self.device = device
 
+    def switch_device(self,device):
+        self.device=device
+
     def forward(self,interpolates, model_interpolates):
         grad_outputs = torch.ones(model_interpolates.size(),device=self.device, requires_grad=False)
 
@@ -51,6 +54,7 @@ class gradient_penalty(nn.Module):
         gradients = gradients.view(gradients.size(0), -1)
         gradient_penalty = torch.mean((gradients.norm(2, dim=1) - 1) ** 2)
         return gradient_penalty
+
 
 class Wasserstein_loss(nn.Module):
     def __init__(self):
