@@ -6,7 +6,7 @@ import json
 import copy
 from abc import abstractmethod
 
-from . import networks, losses,plots, helpers
+from . import networks, losses,plots, helpers,helpers_data_parallelism
 from torch.cuda.amp import autocast, GradScaler
 
 class ModelInstance():
@@ -183,6 +183,9 @@ class Pix2PixModel(ModelBase):
 
         self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,norm=self.layer_norm,
                                                     output_channel=1,leaky_relu=self.leaky_relu).to(device=self.device)
+
+        if self.params['jean_zay']:
+            helpers_data_parallelism.init_data_parallelism(model=self)
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
