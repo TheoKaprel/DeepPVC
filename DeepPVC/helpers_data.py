@@ -168,14 +168,17 @@ def load_image(filename, is_ref, type,params):
 
 
 def load_from_filename(filename,params):
-    img = itk.array_from_image(itk.imread(filename))[None,:,:,:]
+    if filename[-3:]=="npy":
+        img=np.load(filename)[None,:,:,:]
+    else:
+        img = itk.array_from_image(itk.imread(filename))[None,:,:,:]
     nb_projs=img.shape[1]
     nb_channels=params['input_channels']
-    with_adh_angles=params['with_adj_angles']
+    with_adj_angles=params['with_adj_angles']
 
     input_img = np.zeros((nb_projs,1, nb_channels,img.shape[2], img.shape[3]))
     for proj_i in range(nb_projs):
-        input_img[proj_i,:,:,:,:] = load_img_channels(img_array=img, nb_channels=nb_channels,proj_i=proj_i,with_adj_angles=with_adh_angles)
+        input_img[proj_i,:,:,:,:] = load_img_channels(img_array=img, nb_channels=nb_channels,proj_i=proj_i,with_adj_angles=with_adj_angles)
     return input_img
 
 

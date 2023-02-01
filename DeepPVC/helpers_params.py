@@ -34,7 +34,7 @@ option_unet_denoiser_pvc = ["lambda_losses_denoiser", "lambda_losses_pvc"]
 
 activation_functions = ["sigmoid", "tanh", "relu","softplus", "linear", "none", "relu_min"]
 pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
-losses = ["L1", "L2", "BCE", "Wasserstein"]
+losses = ["L1", "L2", "BCE", "Wasserstein", "Poisson"]
 lr_policies = ["multiplicative"]
 
 
@@ -132,9 +132,17 @@ def check_params_pix2pix(params, fatal_on_unknown):
     assert(params['generator_activation'] in activation_functions)
     assert(params['layer_norm'] in pre_layer_normalisations)
     assert(params['adv_loss'] in losses)
-    assert(params['recon_loss'] in losses)
-    assert((type(params['lambda_recon']) in [int, float]))
-    assert(params['lambda_recon'] >= 0)
+    if type(params['recon_loss'])==list:
+        assert(type(params['lambda_recon'])==list)
+        for l in params['recon_loss']:
+            assert(l in losses)
+        for lbda in params['lambda_recon']:
+            assert(type(lbda) in [int,float])
+            assert(lbda>= 0)
+    else:
+        assert(params['recon_loss'] in losses)
+        assert(type(params['lambda_recon']) in [int,float])
+        assert(params['lambda_recon']>=0)
 
 
     for p in params:

@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-
 def get_nn_loss(loss_name):
     if loss_name=="L1":
         return nn.L1Loss()
@@ -70,9 +69,16 @@ class Pix2PixLosses(nn.Module):
         super(Pix2PixLosses, self).__init__()
         self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
-        self.recon_loss = get_nn_loss(loss_name=losses_params['recon_loss'])
+        self.recon_loss,self.lambdas=[],[]
+        if type(losses_params['recon_loss'])==list:
+            for (loss,lbda) in zip(losses_params['recon_loss'],losses_params['lambda_recon']):
+                self.recon_loss.append(get_nn_loss(loss_name=loss))
+                self.lambdas.append(lbda)
+        else:
+            self.recon_loss=[get_nn_loss(loss_name=losses_params['recon_loss'])]
+            self.lambdas=[losses_params['lambda_recon']]
 
-        self.lambda_recon = losses_params['lambda_recon']
+
         self.device = losses_params['device']
 
         if losses_params['gradient_penalty']:
@@ -82,14 +88,15 @@ class Pix2PixLosses(nn.Module):
 
     def get_adv_loss(self):
         return self.adv_loss
-    def get_recon_loss(self):
-        return self.recon_loss
+    def get_recon_loss(self,target,output):
+        weighted_recon_loss=sum([lbda * loss(target,output) for (lbda,loss) in zip(self.lambdas,self.recon_loss)])
+        return weighted_recon_loss
 
     def get_gen_loss(self, disc_fake_hat, truePVfree, fakePVfree):
         # gen_adv_loss = self.adv_loss(disc_fake_hat, torch.ones_like(disc_fake_hat))
         gen_adv_loss = self.adv_loss(disc_fake_hat, self.ones.expand_as(disc_fake_hat))
-        gen_rec_loss = self.recon_loss(truePVfree, fakePVfree)
-        gen_loss = gen_adv_loss + self.lambda_recon * gen_rec_loss
+        gen_rec_loss = self.get_recon_loss(truePVfree, fakePVfree)
+        gen_loss = gen_adv_loss + gen_rec_loss
         return gen_loss
 
     def get_gradient_penalty(self,Discriminator,real,fake,condition):
@@ -97,6 +104,19 @@ class Pix2PixLosses(nn.Module):
         interpolates = (alpha * real + ((1 - alpha) * fake)).requires_grad_(True)
         model_interpolates = Discriminator(interpolates,condition)
         return self.gradient_penalty(interpolates, model_interpolates)
+
+    def extra_repr(self):
+        extra_repr_str=''
+        extra_repr_str+='(recon_loss):'
+        for loss in self.recon_loss:
+            mod_str = repr(loss)
+            extra_repr_str+='  '+mod_str+','
+        extra_repr_str+='\n'
+        extra_repr_str+='(lambdas_recon):'
+        for lbda in self.lambdas:
+            extra_repr_str+='  ' + str(lbda)+','
+
+        return extra_repr_str
 
 
 
