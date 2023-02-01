@@ -31,6 +31,9 @@ class CustomPVEProjectionsDataset(Dataset):
             else:
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
+        self.list_files=sorted(self.list_files)
+
+
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
@@ -43,6 +46,7 @@ class CustomPVEProjectionsDataset(Dataset):
         if ('split_dataset' in params and params['split_dataset'] and not test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
+        print(f'First : {self.list_files[0]}')
 
         self.nb_src = len(self.list_files)
 
