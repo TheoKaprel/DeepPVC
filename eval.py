@@ -139,6 +139,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device).float()
         elif dataset_path:
             params['store_dataset']=True
+            params['max_nb_data']=-1
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],filetype=type,merged=merged,test=True)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')

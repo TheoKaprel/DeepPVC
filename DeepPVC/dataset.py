@@ -40,7 +40,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.img_type=first_img.dtype
 
         self.max_nb_data=params['max_nb_data']
-        if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data and not test):
+        if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
 
         if ('split_dataset' in params and params['split_dataset'] and not test):
