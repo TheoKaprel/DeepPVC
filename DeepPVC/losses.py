@@ -12,6 +12,8 @@ def get_nn_loss(loss_name):
         return nn.BCEWithLogitsLoss()
     elif loss_name=="Wasserstein":
         return Wasserstein_loss()
+    elif loss_name=="Sum":
+        return Sum_loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -62,7 +64,12 @@ class Wasserstein_loss(nn.Module):
     def forward(self, D_disc,target):
         return (torch.mean( (-2*target+1) * D_disc))
 
+class Sum_loss(nn.Module):
+    def __init__(self):
+        super(Sum_loss, self).__init__()
 
+    def forward(self,target,output):
+        return torch.abs(target.sum() - output.sum())
 
 class Pix2PixLosses(nn.Module):
     def __init__(self, losses_params):
