@@ -63,7 +63,8 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
         model.switch_eval()
 
         if input:
-            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type,params=params))
+            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type,params=params),
+                                        device=device).float()
         elif dataset_path:
             params['store_dataset']=True
             params['max_nb_data']=-1

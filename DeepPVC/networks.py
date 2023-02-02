@@ -5,16 +5,6 @@ from torch.nn import functional as F
 from torch.cuda.amp import custom_fwd
 
 class DownSamplingBlock(nn.Module):
-    """ DownSampling Block = One Subblock of the left part of a Unet --> Encoding
-    Parameters :
-    - input_nc : number of channels in the input
-    - output_nc : number of desired channels in the output
-
-    For an input X of dimension (N,N, input_nc) the output of this block is dimension (N/2,N/2,output_nc)
-    car
-    si dim(x) = (I,I) et y = Conv2D(x)
-    alors dim(y) = (I - kernel_size + 2*padding)/stride +1 = (I-4+2)/2 +1 = I/2
-    """
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (4,4), stride = (2,2), padding = 1, norm="batch_norm"):
         super(DownSamplingBlock, self).__init__()
 
@@ -36,17 +26,6 @@ class DownSamplingBlock(nn.Module):
         return(x)
 
 class UpSamplingBlock(nn.Module):
-    """ Up-sampling Block = One block of the right part of a Unet  --> Decoding
-    Parameters :
-    - input_nc : number of channels in the input
-    - output_nc : number of desired channels in the output
-    - norm : wether or not to normalize the output
-
-    For an input X of dimension (N,N, input_nc) the output of this block is dimension (2N,2N,output_nc)
-    car
-    si dim(x) = (I,I) et y = ConvTranspose2d(x)
-    alors dim(y) = (I-1)stride - 2*padding + kernel_size =  (I-1)*2 - 2 * 1 + 4 = 2 I
-    """
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, norm="batch_norm", use_dropout = False):
         super(UpSamplingBlock, self).__init__()
         self.do_norm = (norm!="none")
@@ -97,16 +76,6 @@ def mySumNormAtivationFct(x0,x):
 
 
 class UNet(nn.Module):
-    """UNet shaped Generator
-    Parameters :
-    - input_channel : number of channels in input data
-    - ngc : number of channels/features after first feature extraction
-    - output_channel : number of channels desired for the output
-    - nb_ed_layers
-    - generator_activation
-    - norm
-    - vmin = None
-    """
     def __init__(self,input_channel, ngc,conv3d,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu,sum_norm, norm, vmin = None):
         super(UNet, self).__init__()
 

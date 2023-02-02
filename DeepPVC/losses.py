@@ -1,5 +1,7 @@
 import torch
 from torch import nn
+from torch.cuda.amp import custom_fwd
+
 
 def get_nn_loss(loss_name):
     if loss_name=="L1":
@@ -23,6 +25,7 @@ class PoissonLikelihood_loss(nn.Module):
     def __init__(self):
         super(PoissonLikelihood_loss, self).__init__()
 
+    @custom_fwd
     def forward(self, y_true,y_pred):
         eps = 1e-6
         y_pred = y_pred.view(y_pred.shape[0], -1)
@@ -41,6 +44,7 @@ class gradient_penalty(nn.Module):
     def switch_device(self,device):
         self.device=device
 
+    @custom_fwd
     def forward(self,interpolates, model_interpolates):
         grad_outputs = torch.ones(model_interpolates.size(),device=self.device, requires_grad=False)
 
@@ -61,6 +65,7 @@ class Wasserstein_loss(nn.Module):
     def __init__(self):
         super(Wasserstein_loss, self).__init__()
 
+    @custom_fwd
     def forward(self, D_disc,target):
         return (torch.mean( (-2*target+1) * D_disc))
 
@@ -68,6 +73,7 @@ class Sum_loss(nn.Module):
     def __init__(self):
         super(Sum_loss, self).__init__()
 
+    @custom_fwd
     def forward(self,target,output):
         return torch.abs(target.sum() - output.sum())
 

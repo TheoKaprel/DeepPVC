@@ -21,6 +21,7 @@ def show_pth(lpth, losses):
         nn = torch.load(pth,map_location=device)
         params = nn['params']
         helpers_params.check_params(params)
+        params['jean_zay']=False
         lparams.append(params)
 
         print(params)
