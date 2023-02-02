@@ -17,12 +17,15 @@ def show_pth(lpth, losses):
     lparams = []
     device = helpers.get_auto_device("cpu")
 
+    dict_test={}
+
     for pth in lpth:
         nn = torch.load(pth,map_location=device)
         params = nn['params']
         helpers_params.check_params(params)
         params['jean_zay']=False
         lparams.append(params)
+        ref=params['ref']
 
         print(params)
 
@@ -34,8 +37,14 @@ def show_pth(lpth, losses):
 
         if losses:
             model.plot_losses(save=False, wait=True, title=pth)
+            dict_test[ref]=model.test_error
 
     if losses:
+        fig_test,ax_test=plt.subplots()
+        for ref_i,test_i in dict_test.items():
+            print(test_i)
+            ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i], label=ref_i)
+        ax_test.legend()
         plt.show()
 
     # helpers_params.make_and_print_params_info_table(lparams)

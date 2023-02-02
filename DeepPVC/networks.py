@@ -66,7 +66,9 @@ class myminRelu(nn.ReLU):
 
 
 class UNet(nn.Module):
-    def __init__(self,input_channel, ngc,conv3d,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu, norm, vmin = None):
+    def __init__(self,input_channel, ngc,conv3d,init_feature_kernel,
+                 output_channel,nb_ed_layers,generator_activation,
+                 use_dropout,leaky_relu, norm, vmin = None, residual_layer=False):
         super(UNet, self).__init__()
 
         if conv3d:
@@ -104,6 +106,8 @@ class UNet(nn.Module):
 
         self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
 
+        self.residual_layer=residual_layer
+
         if generator_activation=="sigmoid":
             self.activation = nn.Sigmoid()
         elif generator_activation=="tanh":
@@ -119,6 +123,9 @@ class UNet(nn.Module):
 
 
     def forward(self, x):
+        if self.residual_layer:
+            residual=x
+
         # 3D convolution
         if self.conv3d:
             x = x[:,None,:,:,:]
@@ -143,6 +150,11 @@ class UNet(nn.Module):
         # ----------------------------------------------------------
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
+
+        # residual
+        if self.residual_layer:
+            y += residual[:,0:1,:,:]
+
         y = self.activation(y)
         # ----------------------------------------------------------
         return(y)
