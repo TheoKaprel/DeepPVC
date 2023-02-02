@@ -273,7 +273,7 @@ class Pix2PixModel(ModelBase):
             self.discriminator_optimizer.zero_grad()
             with autocast(enabled=self.amp):
                 self.forward_D()
-                self.losses_D()
+            self.losses_D()
             self.backward_D()
             if self.amp:
                 self.scaler.update()
@@ -284,7 +284,7 @@ class Pix2PixModel(ModelBase):
             self.generator_optimizer.zero_grad()
             with autocast(enabled=self.amp):
                 self.forward_G()
-                self.losses_G()
+            self.losses_G()
             self.backward_G()
             if self.amp:
                 self.scaler.update()
