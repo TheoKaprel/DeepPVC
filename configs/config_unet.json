@@ -18,7 +18,6 @@
   "layer_norm": "inst_norm",
   "use_dropout": false,
   "leaky_relu": 0.2,
-  "sum_norm": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,
   "test_every_n_epoch": 1,

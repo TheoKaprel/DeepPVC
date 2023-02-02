@@ -65,18 +65,8 @@ class myminRelu(nn.ReLU):
 
 
 
-def mySumNormAtivationFct(x0,x):
-    y = nn.Softmax(2)(x.view(*x.size()[:2], -1)).view_as(x)
-
-    sum_x0 = x0.sum(dim=(2, 3), keepdims=True)
-    z = y * sum_x0
-
-    return z
-
-
-
 class UNet(nn.Module):
-    def __init__(self,input_channel, ngc,conv3d,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu,sum_norm, norm, vmin = None):
+    def __init__(self,input_channel, ngc,conv3d,init_feature_kernel, output_channel,nb_ed_layers,generator_activation,use_dropout,leaky_relu, norm, vmin = None):
         super(UNet, self).__init__()
 
         if conv3d:
@@ -128,10 +118,6 @@ class UNet(nn.Module):
             self.activation = myminRelu(vmin)
 
 
-        self.sum_norm = sum_norm
-
-
-
     def forward(self, x):
         # 3D convolution
         if self.conv3d:
@@ -158,8 +144,6 @@ class UNet(nn.Module):
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
         y = self.activation(y)
-        if self.sum_norm:
-            y = mySumNormAtivationFct(x, y)
         # ----------------------------------------------------------
         return(y)
 
