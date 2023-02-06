@@ -16,7 +16,7 @@
 
   "network": "pix2pix",
 
-  "n_epochs":10,
+  "n_epochs":20,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",1],
   "input_channels":6,
@@ -34,7 +34,7 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "init_feature_kernel": 5,
+  "init_feature_kernel": 9,
   "nb_ed_layers": 4,
   "hidden_channels_gen":64,
   "hidden_channels_disc":9,

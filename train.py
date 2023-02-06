@@ -114,13 +114,25 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch=time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
+        t_loading,timer_loading1=0,time.time()
+        t_preopt,t_opt=0,0
+
         for step,batch in enumerate(train_normalized_dataloader):
+            timer_loading2=time.time()
+            t_loading+=timer_loading2-timer_loading1
+
+            timer_preopt1=time.time()
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
             batch = batch.to(device,non_blocking=True)
             DeepPVEModel.input_data(batch)
+
+            t_preopt+=time.time()-timer_preopt1
+
+            timer_opt1=time.time()
             DeepPVEModel.optimize_parameters()
+            t_opt+=time.time() - timer_opt1
 
             if debug:
                 if step==0:
@@ -138,19 +150,24 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     ax[batch.shape[1],0].imshow(debug_output[random_sample,0,:,:].float().detach().cpu().numpy())
                     plt.show()
 
+            timer_loading1 = time.time()
+
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
+            timer_test=time.time()
             DeepPVEModel.switch_eval()
 
+
+            MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
+                                                                do_NMAE=(params['validation_norm']=="L1"))
             if params['validation_norm']=="L1":
-                MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=False, do_NMAE=True)
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNMAE.item()])
-            if params['validation_norm']=="L2":
-                MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=False)
+            elif params['validation_norm']=="L2":
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE.item()])
 
             if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
 
+            t_test=time.time() - timer_test
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
             if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
@@ -163,6 +180,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
             tf_epoch = time.time()
             print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
+
+            print(f'loading time : {t_loading}')
+            print(f'preopt time : {t_preopt}')
+            print(f'opt time : {t_opt}')
+            print(f'test time : {t_test}')
+
 
     if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
         tf = time.time()
