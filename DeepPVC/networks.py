@@ -68,7 +68,7 @@ class myminRelu(nn.ReLU):
 class UNet(nn.Module):
     def __init__(self,input_channel, ngc,conv3d,init_feature_kernel,
                  output_channel,nb_ed_layers,generator_activation,
-                 use_dropout,leaky_relu, norm, vmin = None, residual_layer=False):
+                 use_dropout,leaky_relu, norm, residual_layer=False):
         super(UNet, self).__init__()
 
         if conv3d:
@@ -118,9 +118,6 @@ class UNet(nn.Module):
             self.activation = nn.Softplus()
         elif generator_activation=="none":
             self.activation = nn.Identity()
-        elif generator_activation=='relu_min':
-            self.activation = myminRelu(vmin)
-
 
     def forward(self, x):
         if self.residual_layer:
@@ -200,3 +197,146 @@ class NEncodingLayers(nn.Module):
                         R = R + (sublayer.kernel_size[0] - 1) * prod_S
                         prod_S = prod_S * sublayer.stride[0]
         return R
+
+
+
+
+class AttentionBlock(nn.Module):
+    def __init__(self, x_l_channels,x_l1_channels,int_channels):
+        super(AttentionBlock, self).__init__()
+
+        self.W_xl = nn.Sequential(
+            nn.Conv2d(x_l_channels, int_channels, kernel_size=(1,1), stride=(1,1), padding=0, bias=True),
+            nn.BatchNorm2d(int_channels)
+        )
+
+        self.W_xl1 = nn.Sequential(
+            nn.Conv2d(x_l1_channels, int_channels,kernel_size=(1,1), stride=(1,1), padding=0, bias=True),
+            nn.BatchNorm2d(int_channels)
+        )
+
+        self.psi = nn.Sequential(
+            nn.Conv2d(int_channels, 1, kernel_size=(1,1), stride=(1,1), padding=0, bias=True),
+            nn.BatchNorm2d(1),
+            nn.Sigmoid()
+        )
+
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self,x_l,x_l1):
+        y_l = self.W_xl(x_l)
+        y_l1 = self.W_xl1(x_l1)
+        z = self.relu(y_l+y_l1)
+        psi = self.psi(z)
+        return x_l1*psi
+
+
+
+class AttentionUNet(nn.Module):
+    def __init__(self,input_channel, ngc,conv3d,init_feature_kernel,
+                 output_channel,nb_ed_layers,generator_activation,
+                 use_dropout,leaky_relu, norm, residual_layer=False):
+        super(AttentionUNet, self).__init__()
+
+        if conv3d:
+            self.conv3d=True
+            self.threedConv = torch.nn.Conv3d(in_channels=1,out_channels=1,kernel_size=(3,3,3),stride=(1,1,1),padding=1)
+            self.relu = torch.nn.ReLU()
+        else:
+            self.conv3d=False
+
+        init_feature_kernel_size = (int(init_feature_kernel),int(init_feature_kernel))
+        init_feature_padding = int(init_feature_kernel/2)
+        self.init_feature = nn.Conv2d(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=(1,1), padding = init_feature_padding)
+
+        self.nb_ed_layers = nb_ed_layers
+        down_layers = []
+        up_layers = []
+        # Contracting layers :
+        k = 1
+        for _ in range(self.nb_ed_layers):
+            down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu))
+            k = 2 * k
+        self.down_layers = nn.Sequential(*down_layers)
+
+        # Core layer
+        # If any dropout layer is used, it is here
+        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout,leaky_relu_val=leaky_relu))
+
+        att_layers= []
+        att_layers.append(AttentionBlock(x_l_channels=int(k/2) * ngc,
+                                         x_l1_channels=int(k/2) * ngc,
+                                         int_channels=int(k/4)*ngc))
+
+        # Extracting layers :
+        for _ in range(self.nb_ed_layers - 1):
+            print(k)
+            up_layers.append(UpSamplingBlock(k * ngc, int(k/4) * ngc, norm = norm,leaky_relu_val=leaky_relu))
+            att_layers.append(AttentionBlock(x_l_channels= int(k/4*ngc),
+                                         x_l1_channels=int(k/4*ngc),
+                                         int_channels=int(k/8*ngc)))
+            k = int(k / 2)
+
+        self.up_layers = nn.Sequential(*up_layers)
+        self.att_layers = nn.Sequential(*att_layers)
+
+        self.final_feature = nn.Conv2d(2 * ngc, output_channel, kernel_size=(3, 3), stride=(1, 1), padding = 1)
+
+        self.residual_layer=residual_layer
+
+        if generator_activation=="sigmoid":
+            self.activation = nn.Sigmoid()
+        elif generator_activation=="tanh":
+            self.activation = nn.Tanh()
+        elif generator_activation=="relu":
+            self.activation = nn.ReLU()
+        elif generator_activation=="softplus":
+            self.activation = nn.Softplus()
+        elif generator_activation=="none":
+            self.activation = nn.Identity()
+
+
+    def forward(self, x):
+        if self.residual_layer:
+            residual=x
+
+        # 3D convolution
+        if self.conv3d:
+            x = x[:,None,:,:,:]
+            x = self.threedConv(x)
+            x = self.relu(x)
+            x = x[:,0,:,:,:]
+        # ----------------------------------------------------------
+        #first feature extraction
+        x0 = self.init_feature(x) # nhc
+        # ----------------------------------------------------------
+        # Contracting layers :
+        xk  = [x0]
+        for l in range(self.nb_ed_layers):
+            xk.append(self.down_layers[l](xk[-1]))
+        # ----------------------------------------------------------
+        # Extracting layers :
+        xy = xk[-1]
+        for l in range(self.nb_ed_layers):
+            y = self.up_layers[l](xy)
+            z = self.att_layers[l](xk[-l-2],y)
+            xy = torch.cat([z,y],1)
+
+        # ----------------------------------------------------------
+        # Final feature extraction
+        y = self.final_feature(xy) # output_channel
+
+        # residual
+        if self.residual_layer:
+            y += residual[:,0:1,:,:]
+
+        y = self.activation(y)
+        # ----------------------------------------------------------
+        return(y)
+
+
+        # # Extracting layers :
+        # xy = xk[-1]
+        # for l in range(self.nb_ed_layers):
+        #     y = self.up_layers[l](xy)
+        #     xy = torch.cat([xk[-l-2],y],1)

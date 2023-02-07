@@ -137,11 +137,7 @@ class Pix2PixModel(ModelBase):
         self.generator_activation = params['generator_activation']
         self.layer_norm = params['layer_norm']
         self.residual_layer=params['residual_layer']
-        if self.generator_activation=='relu_min':
-            norm = self.params['norm']
-            self.vmin = -norm[0]/norm[1]
-        else:
-            self.vmin = None
+        self.attention=False if 'attention' not in params else params['attention']
 
         self.generator_update = params['generator_update']
         self.discriminator_update = params['discriminator_update']
@@ -179,9 +175,15 @@ class Pix2PixModel(ModelBase):
     def init_model(self):
         print('models device is supposed to be : ')
         print(self.device)
-        self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
+        if self.attention:
+            self.Generator=networks.AttentionUNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
-                                                norm = self.layer_norm, vmin=self.vmin,).to(device=self.device)
+                                                norm = self.layer_norm, residual_layer=self.residual_layer).to(device=self.device)
+        else:
+            self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
+                                                output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
+                                                norm = self.layer_norm, residual_layer=self.residual_layer).to(device=self.device)
+
 
         self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,norm=self.layer_norm,
                                                     output_channel=1,leaky_relu=self.leaky_relu).to(device=self.device)

@@ -220,8 +220,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
 
-    writer.flush()
-    writer.close()
+    if with_tensorboard:
+        writer.flush()
+        writer.close()
 
 if __name__ == '__main__':
     host = os.uname()[1]
