@@ -5,9 +5,11 @@ import time
 import json as js
 import os
 import click
+from torch.utils.tensorboard import SummaryWriter
+import torchvision
 
 from DeepPVC import dataset, Models
-from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data, helpers_data_parallelism
+from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -32,12 +34,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--output', '-o', help='Output Reference. Highly recommended to specify one.', default = None)
 @click.option('--output_folder', '-f', help='Output folder ', default='.')
 @click.option('--debug', is_flag=True, default = False)
-def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder,debug):
+@click.option('--tensorboard','with_tensorboard', is_flag=True, default = False)
+def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder,debug, with_tensorboard):
 
-    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug)
+    train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug,with_tensorboard)
 
 
-def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug):
+def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug,with_tensorboard):
     if (json==None) and (resume_pth ==None):
         print('ERROR : no json parameter file nor pth file to start/resume training')
         exit(0)
@@ -107,55 +110,71 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     data_normalisation = params['data_normalisation']
 
+    if with_tensorboard:
+        writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs'),flush_secs=60,filename_suffix=ref)
+
     print('Begining of training .....')
+    it=0
+
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
-        t0_epoch=time.time()
+
+        if debug:
+            t_loading,timer_loading1=0,time.time()
+            t_preopt,t_opt=0,0
+
+        t0_epoch = time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
-        t_loading,timer_loading1=0,time.time()
-        t_preopt,t_opt=0,0
-
         for step,batch in enumerate(train_normalized_dataloader):
-            timer_loading2=time.time()
-            t_loading+=timer_loading2-timer_loading1
+            if debug:
+                timer_loading2=time.time()
+                t_loading+=timer_loading2-timer_loading1
+                timer_preopt1=time.time()
 
-            timer_preopt1=time.time()
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
             batch = batch.to(device,non_blocking=True)
             DeepPVEModel.input_data(batch)
 
-            t_preopt+=time.time()-timer_preopt1
+            if debug:
+                t_preopt+=time.time()-timer_preopt1
+                timer_opt1=time.time()
 
-            timer_opt1=time.time()
             DeepPVEModel.optimize_parameters()
-            t_opt+=time.time() - timer_opt1
 
             if debug:
+                t_opt += time.time() - timer_opt1
                 if step==0:
-                    random_sample = torch.randint(0,batch.shape[0],(1,)).item()
                     print(f'batch shape : {batch.shape}')
                     print(f'batch type : {batch.dtype}')
-                    fig,ax = plt.subplots(batch.shape[1]+1,batch.shape[2],squeeze=False)
-                    for i in range(batch.shape[1]):
-                        for j in range(batch.shape[2]):
-                            ax[i,j].imshow(batch[random_sample,i,j,:,:].float().detach().cpu().numpy())
                     with torch.no_grad():
                         with autocast():
                             debug_output = DeepPVEModel.forward(batch=batch)
                         print(f'output shape : {debug_output.shape}')
-                    ax[batch.shape[1],0].imshow(debug_output[random_sample,0,:,:].float().detach().cpu().numpy())
-                    plt.show()
 
-            timer_loading1 = time.time()
+                timer_loading1 = time.time()
+
+            if with_tensorboard:
+                writer.add_scalar("Loss/G_train", DeepPVEModel.gen_loss.item(), it)
+                writer.add_scalar("Loss/D_train", DeepPVEModel.disc_loss.item(), it)
+                # writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
+                tb_batch=next(iter(train_normalized_dataloader))[0:1,:,:,:,:].to(device)
+                with torch.no_grad():
+                    out_tb_batch=DeepPVEModel.forward(batch=tb_batch)
+                    grid=tb_batch[0,:,0:1,:,:]
+                    grid=torch.concat((grid,out_tb_batch),dim=0)
+                    print(grid.shape)
+                    grid_=torchvision.utils.make_grid([grid[i,0:1,:,:] for i in range(4)])
+                    writer.add_images('images',grid_, it)
+                it+=1
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
-            timer_test=time.time()
+            if debug:
+                timer_test=time.time()
             DeepPVEModel.switch_eval()
-
 
             MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
                                                                 do_NMAE=(params['validation_norm']=="L1"))
@@ -166,8 +185,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
-
-            t_test=time.time() - timer_test
+            if debug:
+                t_test=time.time() - timer_test
 
         if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
             if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
@@ -177,14 +196,17 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()
+
+
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
             tf_epoch = time.time()
             print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
 
-            print(f'loading time : {t_loading}')
-            print(f'preopt time : {t_preopt}')
-            print(f'opt time : {t_opt}')
-            print(f'test time : {t_test}')
+            if debug:
+                print(f'loading time : {t_loading}')
+                print(f'preopt time : {t_preopt}')
+                print(f'opt time : {t_opt}')
+                print(f'test time : {t_test}')
 
 
     if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
@@ -197,6 +219,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
+
+    writer.flush()
+    writer.close()
 
 if __name__ == '__main__':
     host = os.uname()[1]

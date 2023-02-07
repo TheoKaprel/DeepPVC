@@ -1,5 +1,5 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_120projs"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_train_dataset_120projs"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/local_test_dataset_120projs"],
   "jean_zay": false,
   "store_dataset": true,
