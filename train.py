@@ -109,7 +109,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     data_normalisation = params['data_normalisation']
 
     if with_tensorboard:
-        writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+time.strftime("%Y_%m_%d_%Hh_%M_%S")),flush_secs=60,filename_suffix=ref)
+        writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+ref),flush_secs=60,filename_suffix=time.strftime("%Y_%m_%d_%Hh_%M_%S"))
         example=next(iter(test_dataloader)).to(device)[:,0,:,:,:]
         writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example)
 
@@ -184,7 +184,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         if with_tensorboard:
             writer.add_scalar("Loss/G_train", DeepPVEModel.generator_losses[-1], epoch)
             writer.add_scalar("Loss/D_train", DeepPVEModel.discriminator_losses[-1], epoch)
-            # writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
+            writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
             tb_batch=next(iter(test_dataloader))[0:1,:,:,:,:].to(device)
             with torch.no_grad():
                 norm = helpers_data.compute_norm_eval(dataset_or_img=tb_batch, data_normalisation=data_normalisation)
@@ -194,8 +194,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 grid=tb_batch[0,:,0:1,:,:]
                 grid=torch.concat((grid,out_tb_batch),dim=0)
                 grid = grid / grid.max()
-                # grid_=torchvision.utils.make_grid([grid[i,0:1,:,:] for i in range(4)],nrow=4)
-                # print(grid_.shape)
                 writer.add_images('images',grid, epoch)
 
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
