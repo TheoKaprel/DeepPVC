@@ -111,7 +111,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if with_tensorboard:
         writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+ref),flush_secs=60,filename_suffix=time.strftime("%Y_%m_%d_%Hh_%M_%S"))
         example=next(iter(test_dataloader)).to(device)[:,0,:,:,:]
-        writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example)
+        example_like=torch.zeros_like(example)
+        writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example_like)
 
     print('Begining of training .....')
 
