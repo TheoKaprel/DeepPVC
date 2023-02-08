@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import torch
 from torch.cuda.amp import autocast
 import time
@@ -6,7 +5,6 @@ import json as js
 import os
 import click
 from torch.utils.tensorboard import SummaryWriter
-import torchvision
 
 from DeepPVC import dataset, Models
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
@@ -111,10 +109,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     data_normalisation = params['data_normalisation']
 
     if with_tensorboard:
-        writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs'),flush_secs=60,filename_suffix=ref)
+        writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+time.strftime("%Y_%m_%d_%Hh_%M_%S")),flush_secs=60,filename_suffix=ref)
+        example=next(iter(test_dataloader)).to(device)[:,0,:,:,:]
+        writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example)
 
     print('Begining of training .....')
-    it=0
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
@@ -157,20 +156,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
 
-            if with_tensorboard:
-                writer.add_scalar("Loss/G_train", DeepPVEModel.gen_loss.item(), it)
-                writer.add_scalar("Loss/D_train", DeepPVEModel.disc_loss.item(), it)
-                # writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
-                tb_batch=next(iter(train_normalized_dataloader))[0:1,:,:,:,:].to(device)
-                with torch.no_grad():
-                    out_tb_batch=DeepPVEModel.forward(batch=tb_batch)
-                    grid=tb_batch[0,:,0:1,:,:]
-                    grid=torch.concat((grid,out_tb_batch),dim=0)
-                    print(grid.shape)
-                    grid_=torchvision.utils.make_grid([grid[i,0:1,:,:] for i in range(4)])
-                    writer.add_images('images',grid_, it)
-                it+=1
-
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
                 timer_test=time.time()
@@ -196,7 +181,22 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()
-
+        if with_tensorboard:
+            writer.add_scalar("Loss/G_train", DeepPVEModel.generator_losses[-1], epoch)
+            writer.add_scalar("Loss/D_train", DeepPVEModel.discriminator_losses[-1], epoch)
+            # writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
+            tb_batch=next(iter(test_dataloader))[0:1,:,:,:,:].to(device)
+            with torch.no_grad():
+                norm = helpers_data.compute_norm_eval(dataset_or_img=tb_batch, data_normalisation=data_normalisation)
+                tb_batch_n = helpers_data.normalize_eval(dataset_or_img=tb_batch, data_normalisation=data_normalisation,norm=norm, params=params, to_torch=False)
+                out_tb_batch_n=DeepPVEModel.forward(batch=tb_batch_n)
+                out_tb_batch=helpers_data.denormalize_eval(dataset_or_img=out_tb_batch_n,data_normalisation=data_normalisation,norm=norm,params=params,to_numpy=False)
+                grid=tb_batch[0,:,0:1,:,:]
+                grid=torch.concat((grid,out_tb_batch),dim=0)
+                grid = grid / grid.max()
+                # grid_=torchvision.utils.make_grid([grid[i,0:1,:,:] for i in range(4)],nrow=4)
+                # print(grid_.shape)
+                writer.add_images('images',grid, epoch)
 
         if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
             tf_epoch = time.time()
