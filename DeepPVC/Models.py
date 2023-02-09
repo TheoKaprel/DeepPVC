@@ -129,6 +129,7 @@ class Pix2PixModel(ModelBase):
         assert (params['network'] == 'pix2pix')
         super().__init__(params,resume_training,device=device)
 
+        self.verbose=params['verbose']
         self.conv3d = params['conv3d']
         self.init_feature_kernel = params['init_feature_kernel']
         self.nb_ed_layers = params['nb_ed_layers']
@@ -145,8 +146,8 @@ class Pix2PixModel(ModelBase):
         self.init_model()
 
         if from_pth:
-            # self.load_model(from_pth)
-            print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
+            if self.verbose>0:
+                print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
 
             self.init_optimization()
@@ -173,8 +174,9 @@ class Pix2PixModel(ModelBase):
 
 
     def init_model(self):
-        print('models device is supposed to be : ')
-        print(self.device)
+        if self.verbose>0:
+            print('models device is supposed to be : ')
+            print(self.device)
         if self.attention:
             self.Generator=networks.AttentionUNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
@@ -303,9 +305,9 @@ class Pix2PixModel(ModelBase):
     def update_epoch(self):
         self.discriminator_losses.append(self.mean_discriminator_loss / self.current_iteration)
         self.generator_losses.append(self.mean_generator_loss / self.current_iteration)
-
-        print(f'D loss : {round(self.discriminator_losses[-1],5)}')
-        print(f'G loss : {round(self.generator_losses[-1],5)}')
+        if self.verbose > 0:
+            print(f'D loss : {round(self.discriminator_losses[-1],5)}')
+            print(f'G loss : {round(self.generator_losses[-1],5)}')
 
         self.current_epoch+=1
         self.current_iteration=0
@@ -352,7 +354,8 @@ class Pix2PixModel(ModelBase):
                         'test_error': self.test_error,
                         'params': self.params
                         }, output_path )
-        print(f'Model saved at : {output_path}')
+        if self.verbose > 0:
+            print(f'Model saved at : {output_path}')
 
         if save_json:
             output_json = output_path[:-4]+'.json'
@@ -362,8 +365,8 @@ class Pix2PixModel(ModelBase):
             jsonFile.close()
 
     def load_model(self,pth_path):
-
-        print(f'Loading Model from {pth_path}... ')
+        if self.verbose > 0:
+            print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path, map_location=self.device)
 
         if hasattr(self.Generator, 'module'):

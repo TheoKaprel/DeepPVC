@@ -46,7 +46,9 @@ class CustomPVEProjectionsDataset(Dataset):
         if ('split_dataset' in params and params['split_dataset'] and not test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
-        print(f'First : {self.list_files[0]}')
+        self.verbose=params['verbose']
+        if self.verbose>0:
+            print(f'First : {self.list_files[0]}')
 
         self.nb_src = len(self.list_files)
 
@@ -66,14 +68,15 @@ class CustomPVEProjectionsDataset(Dataset):
 
 
     def build_numpy_dataset(self):
-        print(f'Loading data ...')
+        if self.verbose>0:
+            print(f'Loading data ...')
         t0 = time.time()
 
         self.nb_proj_type=3 if self.noisy else 2
 
         self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=self.img_type)
-
-        print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
+        if self.verbose > 0:
+            print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
             self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
@@ -84,8 +87,9 @@ class CustomPVEProjectionsDataset(Dataset):
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
-        print(self.numpy_cpu_dataset.shape)
-        print(f'Done! in {elapsed_time1} s')
+        if self.verbose > 0:
+            print(self.numpy_cpu_dataset.shape)
+            print(f'Done! in {elapsed_time1} s')
 
 
     def get_sinogram(self,filename):
@@ -168,8 +172,9 @@ def load_data(params):
 
     nb_training_data = len(train_dataloader.dataset)
     nb_testing_data = len(test_dataloader.dataset)
-    print(f'Number of training data : {nb_training_data}')
-    print(f'Number of testing data : {nb_testing_data}')
+    if params['verbose']>0:
+        print(f'Number of training data : {nb_training_data}')
+        print(f'Number of testing data : {nb_testing_data}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
     params['nb_gpu'] = number_gpu

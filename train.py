@@ -76,6 +76,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         params,start_epoch,ref = None,0,None
         exit(0)
 
+    verbose=params['verbose']
+
     # Update parameters specified in command line
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
     for user_param_to_modify in (user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list):

@@ -41,9 +41,11 @@ def show_pth(lpth, losses):
 
     if losses:
         fig_test,ax_test=plt.subplots()
-        for ref_i,test_i in dict_test.items():
+        cm = plt.get_cmap('gist_rainbow')
+        NUM_COLORS=len(dict_test.items())
+        for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
-            ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i], label=ref_i)
+            ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i], label=ref_i, color=cm(1.*i/NUM_COLORS))
         ax_test.legend()
         plt.show()
 

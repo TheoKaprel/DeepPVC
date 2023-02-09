@@ -13,7 +13,6 @@ def get_auto_device(device_mode):
             device = torch.device('cpu')
             print(f'WARNING : device was set to cuda but cuda is not available, so cpu...')
 
-    print(f'Device : {device}')
     return device
 
 def calc_2dConv_output_shape(input_dim, kernel_size, stride=1,padding=0, dilation=1):

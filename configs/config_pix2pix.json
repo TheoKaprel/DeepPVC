@@ -8,11 +8,12 @@
   "datatype": "mha",
   "merged": false,
   "with_noise": true,
-  "max_nb_data": -1,
+  "max_nb_data": 120,
   "training_batchsize":32,
   "test_batchsize":32,
   "data_normalisation": "img_mean",
   "amp": true,
+  "verbose": 0,
 
   "network": "pix2pix",
 
