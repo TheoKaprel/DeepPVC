@@ -42,6 +42,7 @@ def train_and_eval(params):
     params['output_folder']="none"
     params['ref']="none"
     params['output_pth']="none"
+    verbose=params['verbose']
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
@@ -51,7 +52,9 @@ def train_and_eval(params):
 
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
-        DeepPVEModel.switch_train()
+        if verbose>0:
+            print("Epoch {}/{}".format(epoch, DeepPVEModel.n_epochs))
+
         for step,batch in enumerate(train_dataloader):
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
