@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import torch.distributed
 
 from DeepPVC import dataset,Models,helpers_data,helpers_functions
 
 import click
 import optuna
 import json
+import os
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -64,6 +66,10 @@ def train_and_eval(params):
     MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel,
                                                         do_NRMSE=(params['validation_norm'] == "L2"),
                                                         do_NMAE=(params['validation_norm'] == "L1"))
+    if params['jean_zay'] and idr_torch.rank==0:
+        torch.distributed.destroy_process_group()
+
+
     if params["validation_norm"]=="L2":
         return MNRMSE.item()
     elif params["validation_norm"]=="L1":
@@ -71,6 +77,20 @@ def train_and_eval(params):
 
 
 if __name__ == '__main__':
+    host = os.uname()[1]
+    if (host !='siullus'):
+        import idr_torch
+        # get distributed configuration from Slurm environment
+        NODE_ID = os.environ['SLURM_NODEID']
+        MASTER_ADDR = os.environ['MASTER_ADDR']
+
+        # display info
+        if idr_torch.rank == 0:
+            print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
+                  " processes, master node is ", MASTER_ADDR)
+        print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
+
+
     optuna_study()
 
 
