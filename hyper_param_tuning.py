@@ -65,9 +65,9 @@ def train_and_eval(params):
                                                         do_NRMSE=(params['validation_norm'] == "L2"),
                                                         do_NMAE=(params['validation_norm'] == "L1"))
     if params["validation_norm"]=="L2":
-        return MNRMSE
+        return MNRMSE.item()
     elif params["validation_norm"]=="L1":
-        return MNMAE
+        return MNMAE.item()
 
 
 if __name__ == '__main__':
