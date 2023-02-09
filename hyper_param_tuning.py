@@ -44,8 +44,6 @@ def train_and_eval(params):
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=None, resume_training=False)
-    if params['jean_zay']:
-        DeepPVEModel.load_model(pth_path=None)
     device = DeepPVEModel.device
     data_normalisation = params['data_normalisation']
 
