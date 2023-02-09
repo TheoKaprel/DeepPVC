@@ -12,6 +12,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option("--parambase")
 def optuna_study(n_trials, parambase):
     params_file = open(parambase).read()
+    print(params_file)
     params = json.loads(params_file)
     objective = lambda trial: objective_w_params(trial=trial,params=params)
 
