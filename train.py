@@ -116,10 +116,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # example_like=torch.zeros_like(example)
         # writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example_like)
 
-    print('Begining of training .....')
+    if verbose>0:
+        print('Begining of training .....')
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
-        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
 
         if debug:
@@ -171,7 +172,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             elif params['validation_norm']=="L2":
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE.item()])
 
-            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
             if debug:
                 t_test=time.time() - timer_test
@@ -199,7 +200,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 grid = grid / grid.max()
                 writer.add_images('images',grid, epoch)
 
-        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
+        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
             tf_epoch = time.time()
             print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
 
@@ -213,7 +214,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
         tf = time.time()
         total_time = round(tf-t0)
-        print(f'Total training time : {total_time} s ({round(total_time/60/60,3)} h)')
+        if verbose>0:
+            print(f'Total training time : {total_time} s ({round(total_time/60/60,3)} h)')
         DeepPVEModel.params['training_endtime'] = time.asctime()
         DeepPVEModel.params['training_duration'] = total_time
         DeepPVEModel.save_model(save_json=True)

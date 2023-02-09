@@ -47,7 +47,7 @@ class CustomPVEProjectionsDataset(Dataset):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
         self.verbose=params['verbose']
-        if self.verbose>0:
+        if self.verbose>1:
             print(f'First : {self.list_files[0]}')
 
         self.nb_src = len(self.list_files)

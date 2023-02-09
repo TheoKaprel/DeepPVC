@@ -146,7 +146,7 @@ class Pix2PixModel(ModelBase):
         self.init_model()
 
         if from_pth:
-            if self.verbose>0:
+            if self.verbose>1:
                 print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
 
@@ -175,8 +175,7 @@ class Pix2PixModel(ModelBase):
 
     def init_model(self):
         if self.verbose>0:
-            print('models device is supposed to be : ')
-            print(self.device)
+            print(f'models device is supposed to be : {self.device}')
         if self.attention:
             self.Generator=networks.AttentionUNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
@@ -305,7 +304,7 @@ class Pix2PixModel(ModelBase):
     def update_epoch(self):
         self.discriminator_losses.append(self.mean_discriminator_loss / self.current_iteration)
         self.generator_losses.append(self.mean_generator_loss / self.current_iteration)
-        if self.verbose > 0:
+        if self.verbose > 1:
             print(f'D loss : {round(self.discriminator_losses[-1],5)}')
             print(f'G loss : {round(self.generator_losses[-1],5)}')
 

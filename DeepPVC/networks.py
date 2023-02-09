@@ -270,7 +270,6 @@ class AttentionUNet(nn.Module):
 
         # Extracting layers :
         for _ in range(self.nb_ed_layers - 1):
-            print(k)
             up_layers.append(UpSamplingBlock(k * ngc, int(k/4) * ngc, norm = norm,leaky_relu_val=leaky_relu))
             att_layers.append(AttentionBlock(x_l_channels= int(k/4*ngc),
                                          x_l1_channels=int(k/4*ngc),

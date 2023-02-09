@@ -271,7 +271,7 @@ def show_images_profiles(images,profile = None,noisy=False, save=False,folder = 
         print('ERROR: Ya un probleme entre le nombre d images et le nombre de labels donné')
         exit(0)
     elif nb_image<2:
-        print('ERROR: CA SERT A RIEN DE DONNER MOINS DE DEUX IMAGES HEIN')
+        print('ERROR: ya moins de deux images la en fait')
     elif not labels:
         if nb_image==2:
             labels = ['PVE', 'Pix2Pix']
