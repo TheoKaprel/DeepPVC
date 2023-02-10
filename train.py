@@ -139,7 +139,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
             batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
-            batch = batch.to(device,non_blocking=True)
+            batch = batch.to(device,non_blocking=False)
             DeepPVEModel.input_data(batch)
 
             if debug:
