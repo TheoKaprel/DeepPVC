@@ -65,8 +65,7 @@ def train_and_eval(params):
             DeepPVEModel.optimize_parameters()
 
         DeepPVEModel.update_epoch()
-        if params['jean_zay']:
-            torch.distributed.barrier()
+
 
     MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel,
                                                         do_NRMSE=(params['validation_norm'] == "L2"),
