@@ -160,7 +160,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_loading1 = time.time()
 
         if params['jean_zay']:
-            torch.dist.barrier()
+            dist.barrier()
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
