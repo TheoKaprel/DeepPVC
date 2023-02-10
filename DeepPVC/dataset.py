@@ -167,7 +167,7 @@ def load_data(params):
                                   batch_size=test_batchsize,
                                   shuffle=False,
                                   num_workers=0,
-                                  pin_memory=True,
+                                  pin_memory=False,
                                   sampler=None)
 
     nb_training_data = len(train_dataloader.dataset)

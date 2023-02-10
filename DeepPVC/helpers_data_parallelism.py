@@ -20,7 +20,7 @@ def get_dataloader_params(dataset,batch_size,jean_zay,split_dataset):
     if jean_zay:
         import idr_torch
         batch_size_per_gpu = batch_size // idr_torch.size
-        pin_memory = True
+        pin_memory = False
         number_gpu = idr_torch.size
         if split_dataset:
             sampler=None
