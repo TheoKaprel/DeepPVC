@@ -131,6 +131,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_dataloader):
             if debug:
+                print("{} / {}".format(step,idr_torch.rank))
                 timer_loading2=time.time()
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
