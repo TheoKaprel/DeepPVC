@@ -316,9 +316,6 @@ class Pix2PixModel(ModelBase):
         self.scheduler_generator.step()
         self.scheduler_discriminator.step()
 
-        if self.params['jean_zay']:
-            torch.distributed.barrier()
-
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_double_model(self.generator_losses, self.discriminator_losses, self.test_error,labels=['Generator Loss','Discriminator Loss'], save=save, wait = wait, title = title)
