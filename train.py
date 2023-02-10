@@ -5,6 +5,7 @@ import json as js
 import os
 import click
 from torch.utils.tensorboard import SummaryWriter
+import torch.distributed as dist
 
 from DeepPVC import dataset, Models
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
@@ -92,35 +93,33 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
-    train_normalized_dataloader, test_dataloader, params = dataset.load_data(params)
+    train_dataloader, test_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
 
-    if params['jean_zay']:
-        if resume_pth is not None:
-            DeepPVEModel.load_model(pth_path=resume_pth)
+    if resume_pth is not None:
+        DeepPVEModel.load_model(pth_path=resume_pth)
 
     DeepPVEModel.show_infos()
-
     device = DeepPVEModel.device
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
-
     t0 = time.time()
 
     data_normalisation = params['data_normalisation']
-
     if with_tensorboard:
         writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+ref),flush_secs=60,filename_suffix=time.strftime("%Y_%m_%d_%Hh_%M_%S"))
         # example=next(iter(test_dataloader)).to(device)[:,0,:,:,:]
         # example_like=torch.zeros_like(example)
         # writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example_like)
 
-    if verbose>0:
+    verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
+
+    if verbose_main_process:
         print('Begining of training .....')
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
-        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
+        if verbose_main_process:
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
 
         if debug:
@@ -130,7 +129,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch = time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
-        for step,batch in enumerate(train_normalized_dataloader):
+        for step,batch in enumerate(train_dataloader):
             if debug:
                 timer_loading2=time.time()
                 t_loading+=timer_loading2-timer_loading1
@@ -160,9 +159,13 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
 
+        if params['jean_zay']:
+            torch.dist.barrier()
+
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
                 timer_test=time.time()
+
             DeepPVEModel.switch_eval()
 
             MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
@@ -172,7 +175,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             elif params['validation_norm']=="L2":
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE.item()])
 
-            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
+            if verbose_main_process:
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
             if debug:
                 t_test=time.time() - timer_test
@@ -200,7 +203,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 grid = grid / grid.max()
                 writer.add_images('images',grid, epoch)
 
-        if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0):
+        if verbose_main_process:
             tf_epoch = time.time()
             print(f'time taken : {round(tf_epoch - t0_epoch,1)} s')
 
