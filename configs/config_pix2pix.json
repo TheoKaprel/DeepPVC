@@ -13,7 +13,7 @@
   "test_batchsize":32,
   "data_normalisation": "img_mean",
   "amp": true,
-  "verbose": 0,
+  "verbose": 1,
 
   "network": "pix2pix",
 
@@ -36,9 +36,9 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "init_feature_kernel": 9,
-  "nb_ed_layers": 4,
-  "hidden_channels_gen":64,
+  "init_feature_kernel": 7,
+  "nb_ed_layers": 5,
+  "hidden_channels_gen":32,
   "hidden_channels_disc":9,
   "generator_activation": "relu",
   "adv_loss":"BCE",

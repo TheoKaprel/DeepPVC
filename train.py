@@ -95,7 +95,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,batch in enumerate(train_dataloader):
             if debug:
-                print("(begin) step {}   /   gpu {}".format(step,idr_torch.rank))
+                print("(begin) step {}   /   gpu {}".format(step,rank))
                 timer_loading2=time.time()
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
@@ -123,7 +123,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         print(f'output shape : {debug_output.shape}')
 
                 timer_loading1 = time.time()
-                print("(end) step {}   /   gpu {}".format(step,idr_torch.rank))
+                print("(end) step {}   /   gpu {}".format(step,rank))
 
 
         # if params['jean_zay']:
@@ -198,24 +198,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         writer.flush()
         writer.close()
 
-if __name__ == '__main__':
-    host = os.uname()[1]
-    if (host !='siullus'):
-        import idr_torch
-        # get distributed configuration from Slurm environment
-        NODE_ID = os.environ['SLURM_NODEID']
-        MASTER_ADDR = os.environ['MASTER_ADDR']
-
-        # display info
-        if idr_torch.rank == 0:
-            print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
-                  " processes, master node is ", MASTER_ADDR)
-        print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
-
-        dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
-
-    train_onclick()
-
 
 def get_init_check_params(resume_pth, json, output):
     if (json==None) and (resume_pth ==None):
@@ -254,3 +236,29 @@ def get_init_check_params(resume_pth, json, output):
         exit(0)
 
     return params,start_epoch,ref
+
+
+
+if __name__ == '__main__':
+    host = os.uname()[1]
+    if (host !='siullus'):
+        import idr_torch
+        # get distributed configuration from Slurm environment
+        NODE_ID = os.environ['SLURM_NODEID']
+        MASTER_ADDR = os.environ['MASTER_ADDR']
+
+        # display info
+        if idr_torch.rank == 0:
+            print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
+                  " processes, master node is ", MASTER_ADDR)
+        print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
+
+        dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
+
+        rank=idr_torch.rank
+    else:
+        rank=0
+
+    train_onclick()
+
+

@@ -15,11 +15,11 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option("--parambase")
 def optuna_study(n_trials, parambase):
     params_file = open(parambase).read()
-    print(params_file)
     params = json.loads(params_file)
     objective = lambda single_trial: objective_w_params(single_trial= single_trial,params=params)
 
     if idr_torch.rank==0:
+        print(params_file)
         study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
         study.optimize(objective, n_trials=n_trials)
     else:
