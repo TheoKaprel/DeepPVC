@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 import torch
-import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 
 
 def init_data_parallelism(model):
     import idr_torch
 
-    dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
     torch.cuda.set_device(idr_torch.local_rank)
     gpu = torch.device("cuda")
     model.switch_device(gpu)

@@ -212,6 +212,8 @@ if __name__ == '__main__':
                   " processes, master node is ", MASTER_ADDR)
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
+        dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
+
     train_onclick()
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import torch.distributed
+import torch.distributed as dist
+
 
 from DeepPVC import dataset,Models,helpers_data,helpers_functions
 
@@ -18,8 +19,15 @@ def optuna_study(n_trials, parambase):
     params = json.loads(params_file)
     objective = lambda trial: objective_w_params(trial=trial,params=params)
 
-    study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
-    study.optimize(objective, n_trials=n_trials)
+    if idr_torch.rank==0:
+        study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
+        study.optimize(objective, n_trials=n_trials)
+    else:
+        for _ in range(n_trials):
+            try:
+                objective(None)
+            except optuna.TrialPruned:
+                pass
 
     best_trial = study.best_trial
     print('*'*50)
@@ -70,9 +78,6 @@ def train_and_eval(params):
     MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel,
                                                         do_NRMSE=(params['validation_norm'] == "L2"),
                                                         do_NMAE=(params['validation_norm'] == "L1"))
-    if params['jean_zay'] and idr_torch.rank==0:
-        torch.distributed.destroy_process_group()
-
 
     if params["validation_norm"]=="L2":
         return MNRMSE.item()
@@ -93,6 +98,8 @@ if __name__ == '__main__':
             print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
                   " processes, master node is ", MASTER_ADDR)
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
+
+        dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
 
 
     optuna_study()
