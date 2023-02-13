@@ -17,7 +17,7 @@ def optuna_study(n_trials, parambase):
     params_file = open(parambase).read()
     print(params_file)
     params = json.loads(params_file)
-    objective = lambda trial: objective_w_params(trial=trial,params=params)
+    objective = lambda single_trial: objective_w_params(single_trial= single_trial,params=params)
 
     if idr_torch.rank==0:
         study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
