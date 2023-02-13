@@ -40,43 +40,8 @@ def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_i
 
 
 def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug,with_tensorboard):
-    if (json==None) and (resume_pth ==None):
-        print('ERROR : no json parameter file nor pth file to start/resume training')
-        exit(0)
 
-
-    if resume_pth is not None:
-        device = helpers.get_auto_device("auto")
-        checkpoint = torch.load(resume_pth, map_location=device)
-        if json:
-            params_file = open(json).read()
-            params = js.loads(params_file)
-            params['start_pth'] = [resume_pth]
-        else:
-            params = checkpoint['params']
-            params['start_pth'].append(resume_pth)
-
-        if output:
-            ref=output
-        else:
-            ref=checkpoint['params']['ref']
-
-        start_epoch = checkpoint['epoch']
-
-    elif json and not(resume_pth):
-        params_file = open(json).read()
-        params = js.loads(params_file)
-        params['start_pth'] = []
-        start_epoch = 0
-        if output:
-            ref = output
-        else:
-            ref = 'NOREF'
-    else:
-        print('ERROR : Absence of params not detected earlier my bad ...')
-        params,start_epoch,ref = None,0,None
-        exit(0)
-
+    params, start_epoch, ref = get_init_check_params(resume_pth=resume_pth,json=json,output=output)
     verbose=params['verbose']
 
     # Update parameters specified in command line
@@ -114,7 +79,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         # writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example_like)
 
     verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
-
     if verbose_main_process:
         print('Begining of training .....')
 
@@ -251,3 +215,40 @@ if __name__ == '__main__':
     train_onclick()
 
 
+def get_init_check_params(resume_pth, json, output):
+    if (json==None) and (resume_pth ==None):
+        print('ERROR : no json parameter file nor pth file to start/resume training')
+        exit(0)
+    if resume_pth is not None:
+        device = helpers.get_auto_device("auto")
+        checkpoint = torch.load(resume_pth, map_location=device)
+        if json:
+            params_file = open(json).read()
+            params = js.loads(params_file)
+            params['start_pth'] = [resume_pth]
+        else:
+            params = checkpoint['params']
+            params['start_pth'].append(resume_pth)
+
+        if output:
+            ref=output
+        else:
+            ref=checkpoint['params']['ref']
+
+        start_epoch = checkpoint['epoch']
+
+    elif json and not(resume_pth):
+        params_file = open(json).read()
+        params = js.loads(params_file)
+        params['start_pth'] = []
+        start_epoch = 0
+        if output:
+            ref = output
+        else:
+            ref = 'NOREF'
+    else:
+        print('ERROR : Absence of params not detected earlier my bad ...')
+        params,start_epoch,ref = None,0,None
+        exit(0)
+
+    return params,start_epoch,ref
