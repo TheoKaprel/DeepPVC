@@ -13,12 +13,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("--n_trials", type=int, default=30)
 @click.option("--parambase")
-def optuna_study(n_trials, parambase):
+@click.option("--tune", multiple=True)
+def optuna_study(n_trials, parambase, tune):
     params_file = open(parambase).read()
     params = json.loads(params_file)
-    objective = lambda single_trial: objective_w_params(single_trial= single_trial,params=params)
+    objective = lambda single_trial: objective_w_params(single_trial= single_trial,params=params, tune=tune)
 
-    if idr_torch.rank==0:
+    if rank==0:
         print(params_file)
         study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.MedianPruner())
         study.optimize(objective, n_trials=n_trials)
@@ -29,7 +30,7 @@ def optuna_study(n_trials, parambase):
             except optuna.TrialPruned:
                 pass
 
-    if idr_torch.rank==0:
+    if rank==0:
         best_trial = study.best_trial
         print('*'*50)
         print('Final Result : ')
@@ -37,10 +38,37 @@ def optuna_study(n_trials, parambase):
             print("{}: {}\n".format(key, value))
 
 
-def objective_w_params(single_trial, params):
-    trial=optuna.integration.TorchDistributedTrial(single_trial)
+def objective_w_params(single_trial, params, tune):
+    if params['jean_zay']:
+        trial=optuna.integration.TorchDistributedTrial(single_trial)
+    else:
+        trial=single_trial
 
-    params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
+    for param_to_tune in tune:
+        if param_to_tune=='learning_rate':
+            params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
+        elif param_to_tune=="lr_mult_rate":
+            policy=["multiplicative",1]
+            policy[1]=trial.suggest_float('lr_mult_rate', 0.9, 1)
+        elif param_to_tune=='conv3d':
+            params['conv3d']=trial.suggest_categorical('conv3d', choices=[True, False])
+        elif param_to_tune == 'residual_layer':
+            params['residual_layer'] = trial.suggest_categorical('residual_layer', choices=[True, False])
+        elif param_to_tune=="init_feature_kernel":
+            params['init_feature_kernel']=trial.suggest_discrete_uniform('init_feature_kernel', low=3,high=9,q=2)
+        elif param_to_tune=="nb_ed_layers":
+            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',3,5)
+        elif param_to_tune=='hidden_channels_gen':
+            params['hidden_channels_gen']=trial.suggest_categorical('hidden_channels_gen', choices=[16,32,64])
+        elif param_to_tune == 'hidden_channels_disc':
+            params['hidden_channels_disc'] = trial.suggest_categorical('hidden_channels_disc', choices=[7, 9, 11,13])
+        elif param_to_tune=='lambda_recon':
+            lambda_recon=[0]
+            lambda_recon[0]=trial.suggest_int('lambda_recon', 50,150)
+            params['lambda_recon']=lambda_recon
+        else:
+            print('ERROR: unrecognized parameter to tune {}'.format(param_to_tune))
+
 
     error=train_and_eval(params=params)
 
@@ -102,7 +130,9 @@ if __name__ == '__main__':
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
         dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
-
+        rank=idr_torch.rank
+    else:
+        rank=0
     optuna_study()
 
 
