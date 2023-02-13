@@ -162,9 +162,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 print("(end) step {}   /   gpu {}".format(step,idr_torch.rank))
 
 
-        if params['jean_zay']:
-            print('barrier {}'.format(idr_torch.rank))
-            dist.barrier()
+        # if params['jean_zay']:
+        #     print('barrier {}'.format(idr_torch.rank))
+        #     dist.barrier()
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
