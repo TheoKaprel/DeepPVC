@@ -29,14 +29,16 @@ def optuna_study(n_trials, parambase):
             except optuna.TrialPruned:
                 pass
 
-    best_trial = study.best_trial
-    print('*'*50)
-    print('Final Result : ')
-    for key, value in best_trial.params.items():
-        print("{}: {}\n".format(key, value))
+    if idr_torch.rank==0:
+        best_trial = study.best_trial
+        print('*'*50)
+        print('Final Result : ')
+        for key, value in best_trial.params.items():
+            print("{}: {}\n".format(key, value))
 
 
-def objective_w_params(trial, params):
+def objective_w_params(single_trial, params):
+    trial=optuna.integration.TorchDistributedTrial(single_trial)
 
     params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
 
@@ -100,7 +102,6 @@ if __name__ == '__main__':
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
         dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
-
 
     optuna_study()
 
