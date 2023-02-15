@@ -72,11 +72,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     t0 = time.time()
 
     data_normalisation = params['data_normalisation']
-    if with_tensorboard:
+    if with_tensorboard and (rank==0):
         writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+ref),flush_secs=60,filename_suffix=time.strftime("%Y_%m_%d_%Hh_%M_%S"))
-        # example=next(iter(test_dataloader)).to(device)[:,0,:,:,:]
-        # example_like=torch.zeros_like(example)
-        # writer.add_graph(model=DeepPVEModel.Generator,input_to_model=example_like)
 
     verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
     if verbose_main_process:
@@ -156,7 +153,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.save_model(output_path=temp_output_filename)
 
         DeepPVEModel.update_epoch()
-        if with_tensorboard:
+        if with_tensorboard and (rank==0):
             writer.add_scalar("Loss/G_train", DeepPVEModel.generator_losses[-1], epoch)
             writer.add_scalar("Loss/D_train", DeepPVEModel.discriminator_losses[-1], epoch)
             writer.add_scalar("Loss/test",DeepPVEModel.test_error[-1][1],DeepPVEModel.test_error[-1][0])
@@ -194,7 +191,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if plot_at_end:
         DeepPVEModel.plot_losses(save = False, wait = False, title = params['ref'])
 
-    if with_tensorboard:
+    if with_tensorboard and (rank==0):
         writer.flush()
         writer.close()
 
