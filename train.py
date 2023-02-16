@@ -152,6 +152,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
                 DeepPVEModel.save_model(output_path=temp_output_filename)
 
+        if params['jean_zay']:
+            dist.barrier()
+
         DeepPVEModel.update_epoch()
         if with_tensorboard and (rank==0):
             writer.add_scalar("Loss/G_train", DeepPVEModel.generator_losses[-1], epoch)
