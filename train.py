@@ -78,7 +78,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
     if verbose_main_process:
         print('Begining of training .....')
-
+    iter=0
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose_main_process:
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
@@ -121,6 +121,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
                 print("(end) step {}   /   gpu {}".format(step,rank))
+            if with_tensorboard:
+                writer.add_scalar(f'Loss/G_train_{rank}', DeepPVEModel.generator_losses_iter[-1], iter)
+                writer.add_scalar(f'Loss/D_train_{rank}', DeepPVEModel.discriminator_losses_iter[-1], iter)
+                iter+=1
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
@@ -151,6 +155,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             dist.barrier()
 
         DeepPVEModel.update_epoch()
+
+
         if with_tensorboard and (rank==0):
             writer.add_scalar("Loss/G_train", DeepPVEModel.generator_losses[-1], epoch)
             writer.add_scalar("Loss/D_train", DeepPVEModel.discriminator_losses[-1], epoch)
