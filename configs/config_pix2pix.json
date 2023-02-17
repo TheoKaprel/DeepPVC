@@ -13,13 +13,13 @@
   "test_batchsize":32,
   "data_normalisation": "img_mean",
   "amp": true,
-  "verbose": 1,
+  "verbose": 2,
 
   "network": "pix2pix",
 
   "n_epochs":10,
   "learning_rate":0.0001,
-  "lr_policy": ["multiplicative",1],
+  "lr_policy": ["multiplicative",0.5, 3],
   "input_channels":6,
   "conv3d": true,
   "with_adj_angles": true,

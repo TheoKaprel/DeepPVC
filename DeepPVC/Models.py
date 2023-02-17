@@ -202,6 +202,7 @@ class Pix2PixModel(ModelBase):
         self.learning_rate_policy_infos = self.params['lr_policy']
         if self.learning_rate_policy_infos[0]=='multiplicative':
             mult_rate = self.learning_rate_policy_infos[1]
+            self.update_lr_every = self.learning_rate_policy_infos[2]
             lbda = lambda epoch: mult_rate
 
             self.scheduler_generator = optim.lr_scheduler.MultiplicativeLR(self.generator_optimizer, lbda)
@@ -308,13 +309,18 @@ class Pix2PixModel(ModelBase):
             print(f'D loss : {round(self.discriminator_losses[-1],5)}')
             print(f'G loss : {round(self.generator_losses[-1],5)}')
 
+
+        if self.current_epoch % self.update_lr_every ==0:
+            self.scheduler_generator.step()
+            self.scheduler_discriminator.step()
+
+        if self.verbose > 1:
+            print(f'next lr (G): {self.scheduler_generator.get_last_lr()}')
+
         self.current_epoch+=1
         self.current_iteration=0
         self.mean_generator_loss = 0
         self.mean_discriminator_loss = 0
-
-        self.scheduler_generator.step()
-        self.scheduler_discriminator.step()
 
 
     def plot_losses(self, save, wait, title):
