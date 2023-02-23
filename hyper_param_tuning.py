@@ -45,11 +45,10 @@ def objective_w_params(single_trial, params, tune):
         trial=single_trial
 
     for param_to_tune in tune:
+        if param_to_tune=='data_normalisation':
+            params['data_normalisation'] = trial.suggest_categorical('data_normalisation', choices = ["none", "img_mean"])
         if param_to_tune=='learning_rate':
             params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
-        elif param_to_tune=="lr_mult_rate":
-            policy=["multiplicative",1]
-            policy[1]=trial.suggest_float('lr_mult_rate', 0.9, 1)
         elif param_to_tune=='conv3d':
             params['conv3d']=trial.suggest_categorical('conv3d', choices=[True, False])
         elif param_to_tune == 'residual_layer':
