@@ -8,7 +8,7 @@
   "datatype": "mha",
   "merged": false,
   "with_noise": true,
-  "max_nb_data": 120,
+  "max_nb_data": -1,
   "training_batchsize":32,
   "test_batchsize":32,
   "data_normalisation": "img_mean",
@@ -37,14 +37,14 @@
   "comment": "",
 
   "init_feature_kernel": 7,
-  "nb_ed_layers": 5,
+  "nb_ed_layers": 3,
   "hidden_channels_gen":32,
   "hidden_channels_disc":9,
   "generator_activation": "relu",
-  "adv_loss":"Wasserstein",
+  "adv_loss":"BCE",
   "recon_loss":["L1"],
   "lambda_recon":[100],
-  "with_gradient_penalty": true,
+  "with_gradient_penalty": false,
   "generator_update": 2,
   "discriminator_update": 1
 }

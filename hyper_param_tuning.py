@@ -50,7 +50,14 @@ def objective_w_params(single_trial, params, tune):
         elif param_to_tune=='learning_rate':
             params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
         elif param_to_tune=='input_channels':
-            params['input_channels'] = trial.suggest_categorical('input_channels', choices=[1,4,6,9,12])
+            params['input_channels'] = trial.suggest_categorical('input_channels', choices=[1,3,4,6,12,14])
+            if params['input_channels'] in [1,4,12]:
+                params['with_adj_angles']=False
+            elif params['input_channels'] in [3,6,14]:
+                params['with_adj_angles']=True
+            else:
+                print(f"ERROR : input_channels not well defined : {params['input_channels']}")
+                exit(0)
         elif param_to_tune=='conv3d':
             params['conv3d']=trial.suggest_categorical('conv3d', choices=[True, False])
         elif param_to_tune == 'residual_layer':
