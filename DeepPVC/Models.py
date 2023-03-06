@@ -9,6 +9,8 @@ from abc import abstractmethod
 from . import networks, losses,plots, helpers,helpers_data_parallelism
 from torch.cuda.amp import autocast, GradScaler
 
+
+
 class ModelInstance():
     def __new__(cls, params, from_pth = None, resume_training=False, device = None):
         network_architecture = params['network']
@@ -133,6 +135,10 @@ class Pix2PixModel(ModelBase):
         self.conv3d = params['conv3d']
         self.init_feature_kernel = params['init_feature_kernel']
         self.nb_ed_layers = params['nb_ed_layers']
+        if "ed_blocks" in params:
+            self.ed_blocks = params["ed_blocks"]
+        else:
+            self.ed_blocks = "conv-relu-norm"
         self.hidden_channels_gen = params['hidden_channels_gen']
         self.hidden_channels_disc = params['hidden_channels_disc']
         self.generator_activation = params['generator_activation']
@@ -180,15 +186,15 @@ class Pix2PixModel(ModelBase):
         if self.attention:
             self.Generator=networks.AttentionUNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
-                                                norm = self.layer_norm, residual_layer=self.residual_layer).to(device=self.device)
+                                                norm = self.layer_norm, residual_layer=self.residual_layer, ).to(device=self.device)
         else:
             self.Generator = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_gen,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1 , generator_activation = self.generator_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
-                                                norm = self.layer_norm, residual_layer=self.residual_layer).to(device=self.device)
+                                                norm = self.layer_norm, residual_layer=self.residual_layer, blocks = self.ed_blocks).to(device=self.device)
 
 
         self.Discriminator = networks.NEncodingLayers(input_channel=self.input_channels+1,ndc = self.hidden_channels_disc,norm=self.layer_norm,
-                                                    output_channel=1,leaky_relu=self.leaky_relu).to(device=self.device)
+                                                    output_channel=1,leaky_relu=self.leaky_relu, blocks = self.ed_blocks).to(device=self.device)
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
