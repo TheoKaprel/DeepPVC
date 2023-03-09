@@ -156,7 +156,7 @@ class Pix2PixModel(ModelBase):
 
             self.generator_losses = []
             self.discriminator_losses = []
-            self.generator_losses_iter,self.discriminator_losses_iter=[],[]
+            # self.generator_losses_iter,self.discriminator_losses_iter=[],[]
             self.test_error = []
 
             self.current_epoch = 1
@@ -301,8 +301,8 @@ class Pix2PixModel(ModelBase):
 
         self.mean_generator_loss+=self.gen_loss.item()
         self.mean_discriminator_loss+=self.disc_loss.item()
-        self.generator_losses_iter.append(self.gen_loss.item())
-        self.discriminator_losses_iter.append(self.disc_loss.item())
+        # self.generator_losses_iter.append(self.gen_loss.item())
+        # self.discriminator_losses_iter.append(self.disc_loss.item())
 
         self.current_iteration+=1
 

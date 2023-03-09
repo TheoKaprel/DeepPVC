@@ -121,10 +121,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
                 print("(end) step {}   /   gpu {}".format(step,rank))
-            if with_tensorboard and (rank==0):
-                writer.add_scalar(f'Loss/G_train_{rank}', DeepPVEModel.generator_losses_iter[-1], iter)
-                writer.add_scalar(f'Loss/D_train_{rank}', DeepPVEModel.discriminator_losses_iter[-1], iter)
-                iter+=1
+            # if with_tensorboard and (rank==0):
+            #     writer.add_scalar(f'Loss/G_train_{rank}', DeepPVEModel.generator_losses_iter[-1], iter)
+            #     writer.add_scalar(f'Loss/D_train_{rank}', DeepPVEModel.discriminator_losses_iter[-1], iter)
+            #     iter+=1
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
