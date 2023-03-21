@@ -5,7 +5,7 @@ import numpy as np
 import click
 import random
 
-from DeepPVC import helpers_data, helpers, Models,dataset, helpers_functions
+from DeepPVC import helpers_data, helpers, Model_instance,dataset, helpers_functions
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -57,7 +57,7 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
         legend=param_comp if (param_comp is not None) else pth_ref
         params['jean_zay']=False
 
-        model = Models.ModelInstance(params=params, from_pth=pth, resume_training=False)
+        model = Model_instance.ModelInstance(params=params, from_pth=pth, resume_training=False)
         model.load_model(pth_path=pth)
         model.switch_device(device)
         model.switch_eval()
@@ -128,7 +128,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         pth_ref = params['ref']
         lpth_ref.append(pth_ref)
 
-        model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False)
+        model = Model_instance.ModelInstance(params=params, from_pth=pth,resume_training=False)
         model.load_model(pth_path=pth)
         model.switch_device(device)
         model.switch_eval()
@@ -220,10 +220,11 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             axs[0,2].set_title('noPVE')
 
 
-        for i,(pth_ref,ax) in enumerate(zip(lpth_ref,axs[1,:])):
+        for i,(pth_ref,ax) in enumerate(zip(lpth_ref,axs[1,::-1])):
 
             ax.imshow(dict_data_id[pth_ref][0], vmin = vmin, vmax = vmax)
             ax.set_title(pth_ref)
+            # ax.set_title("DeepPVC")
 
             if i>=3:
                 axs[0,i].axis('off')
@@ -235,7 +236,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
 
         if len(lpth_ref)<3:
             for j in range(len(lpth_ref),3):
-                axs[1,j].axis('off')
+                axs[1,3-j-1].axis('off')
 
         plt.show()
 

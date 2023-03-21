@@ -7,7 +7,7 @@ import click
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 
-from DeepPVC import dataset, Models
+from DeepPVC import dataset, Model_instance
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -60,7 +60,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     train_dataloader, test_dataloader, params = dataset.load_data(params)
 
-    DeepPVEModel = Models.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
+    DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
 
     if resume_pth is not None:
         DeepPVEModel.load_model(pth_path=resume_pth)
@@ -78,7 +78,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
     if verbose_main_process:
         print('Begining of training .....')
-    iter=0
+
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose_main_process:
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
@@ -121,10 +121,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
                 print("(end) step {}   /   gpu {}".format(step,rank))
-            # if with_tensorboard and (rank==0):
-            #     writer.add_scalar(f'Loss/G_train_{rank}', DeepPVEModel.generator_losses_iter[-1], iter)
-            #     writer.add_scalar(f'Loss/D_train_{rank}', DeepPVEModel.discriminator_losses_iter[-1], iter)
-            #     iter+=1
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:

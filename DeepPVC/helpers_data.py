@@ -133,15 +133,6 @@ def denormalize_eval(dataset_or_img, data_normalisation, norm, params, to_numpy)
 
 
 def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
-
-    # On suppose que img_array est composé de nb_projs d'angles équidistribués entre 0 et 360°
-    # si with_adj_angles=False
-    #     les nb_channels sont choisies de manière équiditribuée dans l'ensemble des projections.
-    # si with_ad_angles=True
-    #     la première proj c'est la cible, puis les deux suivantes sont les deux angles adjacents dispos (-1/+1) puis les nb_channels équidistribués comme précédemment
-
-    # img_array.size = (3, 60, 128, 128)
-
     nb_projs=img_array.shape[1]
 
     nb_of_equidistributed_angles = nb_channels-2 if with_adj_angles else nb_channels

@@ -6,7 +6,7 @@ import itk
 
 
 
-from DeepPVC import Models, helpers_data, helpers, helpers_params
+from DeepPVC import Model_instance, helpers_data, helpers, helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -29,7 +29,7 @@ def apply(pth, input, output_filename):
     data_normalisation = params['data_normalisation']
     params['jean_zay']=False
 
-    model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False,device=device)
+    model = Model_instance.ModelInstance(params=params, from_pth=pth,resume_training=False,device=device)
     model.load_model(pth_path=pth)
     model.switch_device("cpu")
     model.switch_eval()
@@ -39,10 +39,9 @@ def apply(pth, input, output_filename):
 
         input_with_channels = torch.tensor(helpers_data.load_image(filename=input, is_ref=False, type=None, params=params),
                                     device=device).float()
-
+        print(input_with_channels.shape)
         input_with_channels=input_with_channels[:120,:,:,:,:]
         print(input_with_channels.shape)
-
 
         norm_input = helpers_data.compute_norm_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation)
         normed_input = helpers_data.normalize_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation,

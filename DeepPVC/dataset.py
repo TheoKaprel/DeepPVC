@@ -56,7 +56,7 @@ class CustomPVEProjectionsDataset(Dataset):
             self.build_numpy_dataset()
             del self.list_files
 
-        self.len_dataset = self.numpy_cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
+        self.len_dataset = self.cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
             else len(self.list_files) * self.nb_projs_per_img
 
 
@@ -74,23 +74,38 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.nb_proj_type=3 if self.noisy else 2
 
-        self.numpy_cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=self.img_type)
+        self.cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=self.img_type)
         if self.verbose > 0:
-            print(f'Size of numpy_cpu_dataset : {(self.numpy_cpu_dataset.itemsize * self.numpy_cpu_dataset.size)/10**9} GB')
+            print(f'Size of cpu_dataset : {(self.cpu_dataset.itemsize * self.cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
-            self.numpy_cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
+            self.cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
-        # conversion if the array is type uint16 because impossible for torch to convert it (why?)
-        if self.numpy_cpu_dataset.dtype==np.uint16:
-            self.numpy_cpu_dataset=self.numpy_cpu_dataset.astype(np.int16)
+
+        self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
         if self.verbose > 0:
-            print(self.numpy_cpu_dataset.shape)
+            print(self.cpu_dataset.shape)
             print(f'Done! in {elapsed_time1} s')
 
+
+        # rotating channels id
+        nb_of_equidistributed_angles = self.input_channels - 2 if self.with_adj_angles else self.input_channels
+        step = int(self.nb_projs_per_img / (nb_of_equidistributed_angles))
+        self.channels_id = np.array([0])
+        if self.with_adj_angles:
+            adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
+            self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
+
+        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, nb_of_equidistributed_angles)])
+        self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
+            equiditributed_channels_id) > 0 else self.channels_id
+
+
+    def get_channels_id_i(self, proj_i):
+        return (self.channels_id+proj_i)%120
 
     def get_sinogram(self,filename):
         return self.get_sinogram_merged(filename=filename) if self.merged else self.get_sinogram_not_merged(filename_PVE=filename)
@@ -128,18 +143,14 @@ class CustomPVEProjectionsDataset(Dataset):
 
     def __getitem__(self, item_id):
         if self.store_dataset:
-            img_channels = helpers_data.load_img_channels(img_array=self.numpy_cpu_dataset[item_id%self.nb_src,:,:,:,:],
-                                                          proj_i=item_id//self.nb_src,
-                                                          nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
+            proj_i = item_id//self.nb_src
+            channels_id_i = self.get_channels_id_i(proj_i=proj_i)
+            return self.cpu_dataset[item_id%self.nb_src,:,channels_id_i,:,:]
         else:
             img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
                                                           proj_i=item_id//self.nb_src,
                                                           nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
-
-            if img_channels.dtype == np.uint16:
-                img_channels = img_channels.astype(np.int16)
-
-        return torch.from_numpy(img_channels)
+            return img_channels
 
 
 def load_data(params):
