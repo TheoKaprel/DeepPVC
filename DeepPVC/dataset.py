@@ -72,11 +72,11 @@ class CustomPVEProjectionsDataset(Dataset):
             return np.float64
         elif opt_dtype == 'float32':
             return np.float32
-        elif opt_dtype == 'float16' or opt_dtype == 'half':
+        elif opt_dtype == 'float16':
             return np.float16
         elif opt_dtype == 'uint16':
             return np.uint16
-        elif opt_dtype == 'uint64' or opt_dtype == 'uint':
+        elif opt_dtype == 'uint64':
             return np.uint
 
 
@@ -89,14 +89,15 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.cpu_dataset = np.zeros((len(self.list_files), self.nb_proj_type,self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y),dtype=self.img_type)
         if self.verbose > 0:
+            print(f'Shape of cpu_dataset : {self.cpu_dataset.shape}')
             print(f'Size of cpu_dataset : {(self.cpu_dataset.itemsize * self.cpu_dataset.size)/10**9} GB')
 
         for item_id,filename in enumerate(self.list_files):
             self.cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
 
-        # self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
-        self.cpu_dataset=torch.Tensor(self.cpu_dataset, device = "cpu")
+        self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
+        # self.cpu_dataset=torch.Tensor(self.cpu_dataset, device = "cpu")
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
@@ -163,7 +164,7 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.store_dataset:
             proj_i = item_id//self.nb_src
             channels_id_i = self.get_channels_id_i(proj_i=proj_i)
-            return self.cpu_dataset[item_id%self.nb_src,:,channels_id_i,:,:]
+            return self.cpu_dataset[item_id%self.nb_src,:,channels_id_i,:,:].float()
         else:
             img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
                                                           proj_i=item_id//self.nb_src,
