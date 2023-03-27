@@ -105,6 +105,8 @@ class CustomPVEProjectionsDataset(Dataset):
             print(f'Done! in {elapsed_time1} s')
 
 
+
+
         # rotating channels id
         nb_of_equidistributed_angles = self.input_channels - 2 if self.with_adj_angles else self.input_channels
         step = int(self.nb_projs_per_img / (nb_of_equidistributed_angles))
