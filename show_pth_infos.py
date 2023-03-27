@@ -2,7 +2,7 @@ import torch
 import click
 import matplotlib.pyplot as plt
 
-from DeepPVC import helpers,helpers_params, Models
+from DeepPVC import helpers,helpers_params, Model_instance
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -29,7 +29,7 @@ def show_pth(lpth, losses):
 
         print(params)
 
-        model = Models.ModelInstance(params=params, from_pth=pth,resume_training=False, device=device)
+        model = Model_instance.ModelInstance(params=params, from_pth=pth,resume_training=False, device=device)
         model.load_model(pth_path=pth)
         model.switch_device("cpu")
         model.switch_eval()

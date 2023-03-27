@@ -174,7 +174,7 @@ class AttentionResUnet(nn.Module):
         input_channels = channels
 
 
-        self.init_conv = nn.Conv2d(input_channels, init_dim, (1,1), padding=0) # changed to 1 and 0 from 7,3
+        self.init_conv = nn.Conv2d(input_channels, init_dim, (1,1), padding=0)
 
         dims = [init_dim, *map(lambda m: init_dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))

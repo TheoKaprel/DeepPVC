@@ -37,7 +37,8 @@ class CustomPVEProjectionsDataset(Dataset):
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
-        self.img_type=first_img.dtype
+        # self.img_type=first_img.dtype
+        self.img_type = self.get_dtype(params['dtype'])
 
         self.max_nb_data=params['max_nb_data']
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
@@ -66,6 +67,18 @@ class CustomPVEProjectionsDataset(Dataset):
         elif self.filetype=='npy':
             return np.load(filename)
 
+    def get_dtype(self,opt_dtype):
+        if opt_dtype == 'float64':
+            return np.float64
+        elif opt_dtype == 'float32':
+            return np.float32
+        elif opt_dtype == 'float16' or opt_dtype == 'half':
+            return np.float16
+        elif opt_dtype == 'uint16':
+            return np.uint16
+        elif opt_dtype == 'uint64' or opt_dtype == 'uint':
+            return np.uint
+
 
     def build_numpy_dataset(self):
         if self.verbose>0:
@@ -82,7 +95,8 @@ class CustomPVEProjectionsDataset(Dataset):
             self.cpu_dataset[item_id, 0:self.nb_proj_type, :, :, :] = self.get_sinogram(filename=filename)
 
 
-        self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
+        # self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
+        self.cpu_dataset=torch.Tensor(self.cpu_dataset, device = "cpu")
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
