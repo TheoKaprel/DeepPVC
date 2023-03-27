@@ -53,6 +53,8 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.nb_src = len(self.list_files)
 
+        self.build_channels_id()
+
         if self.store_dataset:
             self.build_numpy_dataset()
             del self.list_files
@@ -109,7 +111,7 @@ class CustomPVEProjectionsDataset(Dataset):
 
 
 
-
+    def build_channels_id(self):
         # rotating channels id
         nb_of_equidistributed_angles = self.input_channels - 2 if self.with_adj_angles else self.input_channels
         step = int(self.nb_projs_per_img / (nb_of_equidistributed_angles))
@@ -161,15 +163,14 @@ class CustomPVEProjectionsDataset(Dataset):
         return self.len_dataset
 
     def __getitem__(self, item_id):
+        src_i = item_id%self.nb_src
+        proj_i = item_id // self.nb_src
+        channels_id_i = self.get_channels_id_i(proj_i=proj_i)
         if self.store_dataset:
-            proj_i = item_id//self.nb_src
-            channels_id_i = self.get_channels_id_i(proj_i=proj_i)
-            return self.cpu_dataset[item_id%self.nb_src,:,channels_id_i,:,:].float()
+            return self.cpu_dataset[src_i,:,channels_id_i,:,:].float()
         else:
-            img_channels = helpers_data.load_img_channels(img_array=self.get_sinogram(self.list_files[item_id%self.nb_src]),
-                                                          proj_i=item_id//self.nb_src,
-                                                          nb_channels=self.input_channels,with_adj_angles=self.with_adj_angles)
-            return img_channels
+            sinogram = self.get_sinogram(self.list_files[src_i])
+            return torch.Tensor(sinogram[:,channels_id_i,:,:])
 
 
 def load_data(params):
