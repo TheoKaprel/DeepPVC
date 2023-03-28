@@ -6,7 +6,7 @@ import time
 from torch.utils.data import Dataset,DataLoader
 
 
-from . import helpers_data,helpers_data_parallelism, helpers
+from . import helpers_data_parallelism, helpers
 
 class CustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,filetype=None,merged=None,test=False):
@@ -37,7 +37,6 @@ class CustomPVEProjectionsDataset(Dataset):
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
-        # self.img_type=first_img.dtype
         self.img_type = self.get_dtype(params['dtype'])
 
         self.max_nb_data=params['max_nb_data']
@@ -54,6 +53,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.nb_src = len(self.list_files)
 
         self.build_channels_id()
+        self.build_merged_type_id()
 
         if self.store_dataset:
             self.build_numpy_dataset()
@@ -99,7 +99,6 @@ class CustomPVEProjectionsDataset(Dataset):
 
 
         self.cpu_dataset=torch.from_numpy(self.cpu_dataset).to('cpu')
-        # self.cpu_dataset=torch.Tensor(self.cpu_dataset, device = "cpu")
 
         t1 = time.time()
         elapsed_time1 = t1 - t0
@@ -107,9 +106,21 @@ class CustomPVEProjectionsDataset(Dataset):
             print(self.cpu_dataset.shape)
             print(f'Done! in {elapsed_time1} s')
 
+    def build_merged_type_id(self):
+        if self.noisy:
+            total_nb_of_projs = self.nb_projs_per_img*3
+            cut1, cut2 = int(total_nb_of_projs / 3), int(2 * total_nb_of_projs / 3)
 
-
-
+            d1 = np.arange(0, cut1)
+            d2 = np.arange(cut1, cut2)
+            d3 = np.arange(cut2,total_nb_of_projs)
+            self.merged_type_id = np.concatenate((d1[None,:], d2[None,:], d3[None,:]), axis=0)
+        else:
+            total_nb_of_projs = self.nb_projs_per_img*2
+            cut1 = int(total_nb_of_projs/2)
+            d1 = np.arange(0,cut1)
+            d2 = np.arange(cut1, total_nb_of_projs)
+            self.merged_type_id = np.concatenate((d1[None, :], d2[None, :]), axis=0)
 
     def build_channels_id(self):
         # rotating channels id
@@ -146,24 +157,13 @@ class CustomPVEProjectionsDataset(Dataset):
 
     def get_sinogram_merged(self, filename):
         projs_merged = self.read(filename=filename)
-        total_nb_of_projs = projs_merged.shape[0]
-        if self.noisy:
-            cut1,cut2 = int(total_nb_of_projs/3),int(2*total_nb_of_projs/3)
-            sinogram_noisy = projs_merged[None,0:cut1,:,:]
-            sinogram_PVE = projs_merged[None,cut1:cut2,:,:]
-            sinogram_PVfree = projs_merged[None,cut2:total_nb_of_projs,:,:]
-            return np.concatenate((sinogram_noisy, sinogram_PVE, sinogram_PVfree), axis=0)
-        else:
-            cut1 = int(total_nb_of_projs/2)
-            sinogram_PVE = projs_merged[None,0:cut1,:,:]
-            sinogram_PVfree = projs_merged[None,cut1:total_nb_of_projs,:,:]
-            return np.concatenate((sinogram_PVE, sinogram_PVfree), axis=0)
+        return projs_merged[self.merged_type_id,:,:]
 
     def __len__(self):
         return self.len_dataset
 
     def __getitem__(self, item_id):
-        src_i = item_id%self.nb_src
+        src_i = item_id % self.nb_src
         proj_i = item_id // self.nb_src
         channels_id_i = self.get_channels_id_i(proj_i=proj_i)
         if self.store_dataset:
@@ -188,7 +188,7 @@ def load_data(params):
                                   batch_size=training_batch_size_per_gpu,
                                   shuffle=shuffle,
                                   num_workers=params['num_workers'],
-                                  pin_memory=pin_memory,
+                                  pin_memory=True,
                                   sampler=train_sampler)
 
     test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], test=True)
