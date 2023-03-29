@@ -52,6 +52,9 @@ class CustomPVEProjectionsDataset(Dataset):
 
         self.nb_src = len(self.list_files)
 
+        self.list_transforms = params['data_augmentation']
+        self.init_transforms()
+
         self.build_channels_id()
         self.build_merged_type_id()
 
@@ -159,6 +162,23 @@ class CustomPVEProjectionsDataset(Dataset):
         projs_merged = self.read(filename=filename)
         return projs_merged[self.merged_type_id,:,:]
 
+    def init_transforms(self):
+        self.transforms = []
+        for trsfm in self.list_transforms:
+            if trsfm=='noise':
+                self.transforms.append(self.apply_noise)
+
+    def apply_noise(self, input_sinogram):
+        input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
+        input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
+        return input_sinogram
+
+
+    def np_transforms(self, x):
+        for trnsfm in self.transforms:
+            x = trnsfm(x)
+        return x
+
     def __len__(self):
         return self.len_dataset
 
@@ -170,7 +190,8 @@ class CustomPVEProjectionsDataset(Dataset):
             return self.cpu_dataset[src_i,:,channels_id_i,:,:].float()
         else:
             sinogram = self.get_sinogram(self.list_files[src_i])
-            return torch.Tensor(sinogram[:,channels_id_i,:,:])
+            sinogram_input_channels = sinogram[:,channels_id_i,:,:]
+            return torch.Tensor(self.np_transforms(sinogram_input_channels))
 
 
 def load_data(params):
