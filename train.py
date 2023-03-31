@@ -41,7 +41,7 @@ def train_onclick(json, resume_pth, user_param_str,user_param_float,user_param_i
 
 
 def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list,plot_at_end, output, output_folder, debug,with_tensorboard):
-
+    t0 = time.time()
     params, start_epoch, ref = get_init_check_params(resume_pth=resume_pth,json=json,output=output)
     verbose=params['verbose']
 
@@ -70,7 +70,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     device = DeepPVEModel.device
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
-    t0 = time.time()
+
 
     data_normalisation = params['data_normalisation']
     if with_tensorboard and (rank==0):
@@ -131,6 +131,14 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 timer_loading1 = time.time()
                 print("(end) step {}   /   gpu {}".format(step,rank))
+
+
+            if (time.time() - t0 >= 0.90*TIME_LIMIT_s): # sauvegarde d'urgence
+                if (params['jean_zay'] and idr_torch.rank == 0):
+                    DeepPVEModel.params['training_duration'] = round(time.time() - t0)
+                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
+                    DeepPVEModel.save_model(output_path=emergency_output_filename)
+
 
         if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
