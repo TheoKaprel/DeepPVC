@@ -40,7 +40,7 @@
   "comment": "",
 
   "init_feature_kernel": 5,
-  "nb_ed_layers": 4,
+  "nb_ed_layers": 3,
   "hidden_channels_gen":32,
   "hidden_channels_disc":9,
   "generator_activation": "relu",

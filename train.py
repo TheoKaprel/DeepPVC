@@ -253,6 +253,9 @@ if __name__ == '__main__':
         # get distributed configuration from Slurm environment
         NODE_ID = os.environ['SLURM_NODEID']
         MASTER_ADDR = os.environ['MASTER_ADDR']
+        TIME_LIMIT = os.environ['SBATCH_TIMELIMIT']
+
+        print(f"TIME_LIMIT is : {TIME_LIMIT}")
 
         # display info
         if idr_torch.rank == 0:
