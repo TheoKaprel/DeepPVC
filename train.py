@@ -256,6 +256,11 @@ if __name__ == '__main__':
         TIME_LIMIT = os.environ['SBATCH_TIMELIMIT']
 
         print(f"TIME_LIMIT is : {TIME_LIMIT}")
+        TIME_LIMIT_s = 0
+        TIME_LIMIT_split =  TIME_LIMIT.split(":")
+        TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60*60 + int(TIME_LIMIT_split[1])*60 + int(TIME_LIMIT_split[2])
+        print(f"i.e. {TIME_LIMIT_s} seconds")
+
 
         # display info
         if idr_torch.rank == 0:
