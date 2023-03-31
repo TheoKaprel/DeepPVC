@@ -267,7 +267,10 @@ if __name__ == '__main__':
         print(f"TIME_LIMIT is : {TIME_LIMIT}")
         TIME_LIMIT_s = 0
         TIME_LIMIT_split =  TIME_LIMIT.split(":")
-        TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60*60 + int(TIME_LIMIT_split[1])*60 + int(TIME_LIMIT_split[2])
+        if len(TIME_LIMIT_split)==3:
+            TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60*60 + int(TIME_LIMIT_split[1])*60 + int(TIME_LIMIT_split[2])
+        elif len(TIME_LIMIT_split)==2:
+            TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60 + int(TIME_LIMIT_split[1])
         print(f"i.e. {TIME_LIMIT_s} seconds")
 
 
