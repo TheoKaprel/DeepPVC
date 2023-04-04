@@ -9,7 +9,7 @@
   "dtype": "float16",
   "merged": true,
   "with_noise": true,
-  "max_nb_data": 240,
+  "max_nb_data": -1,
   "training_batchsize":64,
   "test_batchsize":64,
   "data_augmentation": [],
@@ -48,6 +48,6 @@
   "recon_loss":["L1"],
   "lambda_recon":[100],
   "with_gradient_penalty": false,
-  "generator_update": 2,
+  "generator_update": 1,
   "discriminator_update": 1
 }

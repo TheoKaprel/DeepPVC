@@ -44,5 +44,5 @@
   "hidden_channels_unet":32,
   "unet_activation": "relu",
   "recon_loss":["L1"],
-  "lambda_recon":[100]
+  "lambda_recon":[1]
 }
