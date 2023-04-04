@@ -165,7 +165,11 @@ def check_params_unet(params, fatal_on_unknown):
 
     assert(params['unet_activation'] in activation_functions)
     assert(params['layer_norm'] in pre_layer_normalisations)
-    assert(params['recon_loss'] in losses)
+    if type(params['recon_loss'])==list:
+        for l in params['recon_loss']:
+            assert (l in losses)
+    else:
+        assert(params['recon_loss'] in losses)
 
     for p in params:
         if p not in (required+required_unet+automated+default_params+ballek):

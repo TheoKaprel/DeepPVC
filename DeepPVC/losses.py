@@ -137,7 +137,7 @@ class UNetLosses:
     def __init__(self, losses_params):
         if type(losses_params['recon_loss'])==list:
             self.recon_loss, self.lambdas  = [], []
-            for (loss,lbda) in zip(losses_params['recon_loss'], losses_params['lambda_losses']):
+            for (loss,lbda) in zip(losses_params['recon_loss'], losses_params['lambda_recon']):
                 self.recon_loss.append(get_nn_loss(loss))
                 self.lambdas.append(lbda)
         else:

@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import torch
-from torch.cuda.amp import autocast
 import time
 import json as js
 import os
@@ -121,13 +120,13 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                         print(f'output shape : {debug_output.shape}')
                         print(f'output dtype : {debug_output.dtype}')
-                        fig,ax = plt.subplots(1,4)
-                        for i in range(3):
-                            ax[i].imshow(batch[0,i,0,:,:].detach().cpu().numpy())
-                            ax[i].set_title(f'{i}')
-                        ax[3].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
-                        ax[3].set_title('output')
-                        plt.show()
+                        # fig,ax = plt.subplots(1,4)
+                        # for i in range(3):
+                        #     ax[i].imshow(batch[0,i,0,:,:].detach().cpu().numpy())
+                        #     ax[i].set_title(f'{i}')
+                        # ax[3].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
+                        # ax[3].set_title('output')
+                        # plt.show()
 
                 timer_loading1 = time.time()
                 print("(end) step {}   /   gpu {}".format(step,rank))
@@ -135,6 +134,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             if (params['jean_zay']) and (time.time() - t0 >= 0.90*TIME_LIMIT_s): # sauvegarde d'urgence
                 if (idr_torch.rank == 0):
+                    print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
                     DeepPVEModel.params['training_duration'] = round(time.time() - t0)
                     emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
                     DeepPVEModel.save_model(output_path=emergency_output_filename)
