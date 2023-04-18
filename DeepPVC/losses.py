@@ -77,11 +77,10 @@ class Sum_loss(nn.Module):
     def forward(self,target,output):
         return torch.abs(target.sum() - output.sum())
 
-class Pix2PixLosses(nn.Module):
-    def __init__(self, losses_params):
-        super(Pix2PixLosses, self).__init__()
-        self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
+class Model_Loss(nn.Module):
+    def __init__(self, losses_params):
+        super().__init__()
         self.recon_loss,self.lambdas=[],[]
         if type(losses_params['recon_loss'])==list:
             for (loss,lbda) in zip(losses_params['recon_loss'],losses_params['lambda_recon']):
@@ -89,10 +88,28 @@ class Pix2PixLosses(nn.Module):
                 self.lambdas.append(lbda)
         else:
             self.recon_loss=[get_nn_loss(loss_name=losses_params['recon_loss'])]
-            self.lambdas=[losses_params['lambda_recon']]
-
+            self.lambdas=[1]
 
         self.device = losses_params['device']
+
+    def extra_repr(self):
+        extra_repr_str=''
+        extra_repr_str+='(recon_loss):'
+        for loss in self.recon_loss:
+            mod_str = repr(loss)
+            extra_repr_str+='  '+mod_str+','
+        extra_repr_str+='\n'
+        extra_repr_str+='(lambdas_recon):'
+        for lbda in self.lambdas:
+            extra_repr_str+='  ' + str(lbda)+','
+
+        return extra_repr_str
+
+
+class Pix2PixLosses(Model_Loss):
+    def __init__(self, losses_params):
+        super(Model_Loss, self).__init__()
+        self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
         if losses_params['gradient_penalty']:
             self.gradient_penalty = gradient_penalty(device=self.device)
@@ -118,31 +135,10 @@ class Pix2PixLosses(nn.Module):
         model_interpolates = Discriminator(interpolates,condition)
         return self.gradient_penalty(interpolates, model_interpolates)
 
-    def extra_repr(self):
-        extra_repr_str=''
-        extra_repr_str+='(recon_loss):'
-        for loss in self.recon_loss:
-            mod_str = repr(loss)
-            extra_repr_str+='  '+mod_str+','
-        extra_repr_str+='\n'
-        extra_repr_str+='(lambdas_recon):'
-        for lbda in self.lambdas:
-            extra_repr_str+='  ' + str(lbda)+','
 
-        return extra_repr_str
-
-
-
-class UNetLosses:
+class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
-        if type(losses_params['recon_loss'])==list:
-            self.recon_loss, self.lambdas  = [], []
-            for (loss,lbda) in zip(losses_params['recon_loss'], losses_params['lambda_recon']):
-                self.recon_loss.append(get_nn_loss(loss))
-                self.lambdas.append(lbda)
-        else:
-            self.recon_loss = [get_nn_loss(loss_name=losses_params['recon_loss'])]
-            self.lambdas = [1]
+        super().__init__(losses_params)
 
     def get_unet_loss(self, target, output):
         unet_loss = sum([lbda * loss(target,output) for (loss,lbda) in zip(self.recon_loss,self.lambdas)])
