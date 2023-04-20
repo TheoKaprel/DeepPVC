@@ -141,5 +141,7 @@ class UNetLosses(Model_Loss):
         super().__init__(losses_params)
 
     def get_unet_loss(self, target, output):
-        unet_loss = sum([lbda * loss(target,output) for (loss,lbda) in zip(self.recon_loss,self.lambdas)])
+        unet_loss = 0
+        for (loss,lbda) in zip(self.recon_loss,self.lambdas):
+            unet_loss+= lbda * loss(target, output)
         return unet_loss
