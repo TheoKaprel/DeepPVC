@@ -10,9 +10,12 @@ def init_data_parallelism(model):
     torch.cuda.set_device(idr_torch.local_rank)
     gpu = torch.device("cuda")
     model.switch_device(gpu)
-    model.Generator = DistributedDataParallel(model.Generator, device_ids=[idr_torch.local_rank])
-    model.Discriminator = DistributedDataParallel(model.Discriminator, device_ids=[idr_torch.local_rank])
 
+    if model.network_type == 'pix2pix':
+        model.Generator = DistributedDataParallel(model.Generator, device_ids=[idr_torch.local_rank])
+        model.Discriminator = DistributedDataParallel(model.Discriminator, device_ids=[idr_torch.local_rank])
+    elif model.network_type == 'unet':
+        model.UNet = DistributedDataParallel(model.UNet, device_ids=[idr_torch.local_rank])
 
 def get_dataloader_params(dataset,batch_size,jean_zay,split_dataset):
     if jean_zay:

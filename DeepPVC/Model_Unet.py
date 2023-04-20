@@ -12,7 +12,7 @@ class UNetModel(ModelBase):
     def __init__(self, params, from_pth = None,resume_training=False, device=None):
         assert (params['network'] == 'unet')
         super().__init__(params,resume_training,device=device)
-
+        self.network_type = 'unet'
         self.verbose=params['verbose']
         self.conv3d = params['conv3d']
         self.init_feature_kernel = params['init_feature_kernel']

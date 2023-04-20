@@ -16,6 +16,7 @@ class Pix2PixModel(ModelBase):
         assert (params['network'] == 'pix2pix')
         super().__init__(params,resume_training,device=device)
 
+        self.network_type = 'pix2pix'
         self.verbose=params['verbose']
         self.conv3d = params['conv3d']
         self.init_feature_kernel = params['init_feature_kernel']
