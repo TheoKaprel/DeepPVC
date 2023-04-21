@@ -62,7 +62,8 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
         max = torch.amax(dataset_or_img[:, 0:1, :, :, :],dim=(1, 2, 3,4),keepdim=True)
         norm = [min, max]
     elif data_normalisation == 'img_mean':
-        mean = torch.mean(dataset_or_img[:, 0:1, :, :, :].float(), dim=(1, 2, 3,4))[:,None,None,None,None]
+        # mean = torch.mean(dataset_or_img[:, 0:1, :, :, :].float(), dim=(1, 2, 3,4))[:,None,None,None,None]
+        mean = torch.mean(dataset_or_img[:, 0:1, :, :, :], dim=(1, 2, 3,4), keepdim=True)
         norm = [mean]
     else:
         print(f"ERROR in data_normalisation : {data_normalisation}")
