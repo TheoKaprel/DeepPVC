@@ -85,7 +85,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
         if debug:
             t_loading,timer_loading1=0,time.time()
-            t_preopt,t_opt=0,0
+            t_preopt,t_opt,t_test=0,0,0
 
         t0_epoch = time.time()
         # Optimisation loop

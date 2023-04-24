@@ -108,7 +108,7 @@ class Model_Loss(nn.Module):
 
 class Pix2PixLosses(Model_Loss):
     def __init__(self, losses_params):
-        super(Model_Loss, self).__init__()
+        super().__init__(losses_params=losses_params)
         self.adv_loss = get_nn_loss(loss_name=losses_params['adv_loss'])
 
         if losses_params['gradient_penalty']:
