@@ -9,7 +9,7 @@
   "dtype": "float16",
   "merged": true,
   "with_noise": true,
-  "with_rec_fp": true,
+  "with_rec_fp": false,
   "max_nb_data": -1,
   "training_batchsize":16,
   "test_batchsize":8,

@@ -72,7 +72,8 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.filetype in ['mha', 'mhd']:
             return itk.array_from_image(itk.imread(filename))
         elif self.filetype=='npy':
-            return np.load(filename)
+            # return np.load(filename)
+            return np.load(filename,mmap_mode='r+')
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
