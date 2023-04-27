@@ -72,8 +72,7 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.filetype in ['mha', 'mhd']:
             return itk.array_from_image(itk.imread(filename))
         elif self.filetype=='npy':
-            # return np.load(filename)
-            return np.load(filename,mmap_mode='r+')
+            return np.load(filename)
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -198,8 +197,8 @@ class CustomPVEProjectionsDataset(Dataset):
             x_inputs_temp, x_target = (temp[0, :, :, :], temp[2, 0:1, :, :])
             if self.with_rec_fp:
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
-                rec_fp = self.read(rec_fp_filename)
-                rec_fp_tensor = torch.Tensor(rec_fp[proj_i:proj_i+1,:,:])
+                rec_fp = np.load(rec_fp_filename,mmap_mode='r')[proj_i:proj_i+1,:,:].copy()
+                rec_fp_tensor = torch.Tensor(rec_fp)
                 x_inputs = torch.concat((x_inputs_temp, rec_fp_tensor),dim=0)
                 return (x_inputs, x_target)
             else:
