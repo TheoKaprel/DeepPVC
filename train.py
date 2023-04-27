@@ -90,20 +90,23 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch = time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
-        for step,batch in enumerate(train_dataloader):
+        for step,(batch_inputs,batch_targets) in enumerate(train_dataloader):
             if debug:
                 print("(begin) step {}   /   gpu {}".format(step,rank))
                 timer_loading2=time.time()
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
 
-            batch = batch.to(device, non_blocking=False)
+            batch_inputs = batch_inputs.to(device, non_blocking=False)
+            batch_targets = batch_targets.to(device, non_blocking=False)
 
-            norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
-            batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            print(norm)
+            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
 
-            DeepPVEModel.input_data(batch)
+            DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
 
             if debug:
                 t_preopt+=time.time()-timer_preopt1
@@ -114,20 +117,20 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             if debug:
                 t_opt += time.time() - timer_opt1
                 if step==0 and epoch==1:
-                    print(f'batch shape : {batch.shape}')
-                    print(f'batch type : {batch.dtype}')
+                    print(f'batch_inputs shape : {batch_inputs.shape}')
+                    print(f'batch_tagets shape : {batch_targets.shape}')
+                    print(f'batch type : {batch_inputs.dtype}')
                     with torch.no_grad():
-                        # with autocast():
-                        debug_output = DeepPVEModel.forward(batch=batch)
-
+                        debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'output shape : {debug_output.shape}')
                         print(f'output dtype : {debug_output.dtype}')
-                        # fig,ax = plt.subplots(1,4)
-                        # for i in range(3):
-                        #     ax[i].imshow(batch[0,i,0,:,:].detach().cpu().numpy())
-                        #     ax[i].set_title(f'{i}')
-                        # ax[3].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
-                        # ax[3].set_title('output')
+                        # fig,ax = plt.subplots(1,3)
+                        # ax[0].imshow(batch_inputs[0,0,:,:].detach().cpu().numpy())
+                        # ax[0].set_title('input')
+                        # ax[1].imshow(batch_targets[0,0,:,:].detach().cpu().numpy())
+                        # ax[1].set_title('target')
+                        # ax[2].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
+                        # ax[2].set_title('output')
                         # plt.show()
 
                 timer_loading1 = time.time()

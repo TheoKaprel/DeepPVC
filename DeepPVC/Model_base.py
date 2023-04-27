@@ -34,7 +34,7 @@ class ModelBase(torch.nn.Module):
         self.zeros = torch.tensor([0.0],device=self.device,requires_grad=False)
 
     @abstractmethod
-    def input_data(self, batch):
+    def input_data(self, batch_inputs, batch_targets):
         pass
 
     def format_params(self):

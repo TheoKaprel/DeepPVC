@@ -87,9 +87,9 @@ class UNetModel(ModelBase):
         self.losses = losses.UNetLosses(self.losses_params)
 
 
-    def input_data(self, batch):
-        self.truePVE = batch[:, 0, :, :, :]
-        self.truePVfree = batch[:, -1, 0:1, :, :]
+    def input_data(self,  batch_inputs, batch_targets):
+        self.truePVE = batch_inputs
+        self.truePVfree = batch_targets
 
 
     def forward_unet(self):

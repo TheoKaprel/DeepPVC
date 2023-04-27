@@ -187,11 +187,12 @@ class CustomPVEProjectionsDataset(Dataset):
         proj_i = item_id // self.nb_src
         channels_id_i = self.get_channels_id_i(proj_i=proj_i)
         if self.store_dataset:
-            return self.cpu_dataset[src_i,:,channels_id_i,:,:].float()
+            return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,0:1,:,:].float())
         else:
             sinogram = self.get_sinogram(self.list_files[src_i])
             sinogram_input_channels = sinogram[:,channels_id_i,:,:]
-            return torch.Tensor(self.np_transforms(sinogram_input_channels))
+            temp = torch.Tensor(self.np_transforms(sinogram_input_channels))
+            return (temp[0,:,:,:], temp[2,0:1,:,:])
 
 
 def load_data(params):
