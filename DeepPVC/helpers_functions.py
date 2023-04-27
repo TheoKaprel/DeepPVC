@@ -24,8 +24,6 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                 norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
                 normed_batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
                                                            norm=norm_batch,params=model.params,to_torch=False)
-                normed_batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,
-                                                           norm=norm_batch,params=model.params,to_torch=False)
 
                 fakePVfree = model.forward(normed_batch_inputs)
                 fakePVfree_denormed = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,

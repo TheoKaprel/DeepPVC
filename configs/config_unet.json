@@ -2,7 +2,7 @@
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/intevo_test_dataset_JZ_recfp"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/intevo_test_dataset_JZ_recfp"],
   "jean_zay": false,
-  "store_dataset": false,
+  "store_dataset": true,
   "split_dataset": false,
   "num_workers": 4,
   "datatype": "npy",
@@ -20,7 +20,7 @@
 
   "network": "unet",
 
-  "n_epochs":5,
+  "n_epochs":15,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 2],
   "input_channels":6,
