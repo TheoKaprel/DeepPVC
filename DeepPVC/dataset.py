@@ -16,12 +16,14 @@ class CustomPVEProjectionsDataset(Dataset):
         self.merged = params["merged"] if (merged is None) else merged
         self.with_adj_angles = params["with_adj_angles"]
         self.noisy = (params['with_noise'])
+        self.with_rec_fp = params['with_rec_fp']
         self.input_channels = params['input_channels']
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
         self.store_dataset = params['store_dataset']
 
         self.list_files = []
+
         for path in self.dataset_path:
             if self.merged:
                 if self.noisy:
@@ -192,7 +194,15 @@ class CustomPVEProjectionsDataset(Dataset):
             sinogram = self.get_sinogram(self.list_files[src_i])
             sinogram_input_channels = sinogram[:,channels_id_i,:,:]
             temp = torch.Tensor(self.np_transforms(sinogram_input_channels))
-            return (temp[0,:,:,:], temp[2,0:1,:,:])
+            x_inputs_temp, x_target = (temp[0, :, :, :], temp[2, 0:1, :, :])
+            if self.with_rec_fp:
+                rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
+                rec_fp = self.read(rec_fp_filename)
+                rec_fp_tensor = torch.Tensor(rec_fp[proj_i:proj_i+1,:,:])
+                x_inputs = torch.concat((x_inputs_temp, rec_fp_tensor),dim=0)
+                return (x_inputs, x_target)
+            else:
+                return (x_inputs_temp,x_target)
 
 
 def load_data(params):
