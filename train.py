@@ -144,7 +144,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 exit(0)
 
 
-        if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
+        if ((DeepPVEModel.current_epoch % test_every_n_epoch == 0) and ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay']))):
             if debug:
                 timer_test=time.time()
 

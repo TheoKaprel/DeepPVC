@@ -47,7 +47,8 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
         MNRMSE = torch.mean(list_NRMSE) / model.params['nb_gpu']
         if model.params['jean_zay']: dist.all_reduce(MNRMSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
-        MNMAE = torch.mean(list_NMAE)  / model.params['nb_gpu']
-        if model.params['jean_zay']: dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
+        # MNMAE = torch.mean(list_NMAE)  / model.params['nb_gpu']
+        # if model.params['jean_zay']: dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
+        MNMAE = torch.mean(list_NMAE)
 
     return MNRMSE, MNMAE

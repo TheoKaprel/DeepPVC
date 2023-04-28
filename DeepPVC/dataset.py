@@ -228,8 +228,8 @@ def load_data(params):
     test_dataloader = DataLoader(dataset=test_dataset,
                                   batch_size=test_batchsize,
                                   shuffle=False,
-                                  num_workers=0,
-                                  pin_memory=False,
+                                  num_workers=4,
+                                  pin_memory=True,
                                   sampler=None)
 
     nb_training_data = len(train_dataloader.dataset)
