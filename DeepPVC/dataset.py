@@ -192,17 +192,16 @@ class CustomPVEProjectionsDataset(Dataset):
             return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,0:1,:,:].float())
         else:
             sinogram = self.get_sinogram(self.list_files[src_i])
-            sinogram_input_channels = sinogram[:,channels_id_i,:,:]
-            temp = torch.Tensor(self.np_transforms(sinogram_input_channels))
-            x_inputs_temp, x_target = (temp[0, :, :, :], temp[2, 0:1, :, :])
+            sinogram_input_channels = self.np_transforms(sinogram[:,channels_id_i,:,:])
             if self.with_rec_fp:
+                x_temp_np_inputs,x_temp_np_targets = sinogram_input_channels[0,:,:,:], sinogram_input_channels[2,0:1,:,:]
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
                 rec_fp = np.load(rec_fp_filename,mmap_mode='r')[proj_i:proj_i+1,:,:].copy()
-                rec_fp_tensor = torch.Tensor(rec_fp)
-                x_inputs = torch.concat((x_inputs_temp, rec_fp_tensor),dim=0)
-                return (x_inputs, x_target)
+                x_inputs = np.concatenate((x_temp_np_inputs, rec_fp),axis=0)
+                return (x_inputs, x_temp_np_targets)
             else:
-                return (x_inputs_temp,x_target)
+                temp = torch.Tensor(self.np_transforms(sinogram_input_channels))
+                return (temp[0, :, :, :], temp[2, 0:1, :, :])
 
 
 def load_data(params):
