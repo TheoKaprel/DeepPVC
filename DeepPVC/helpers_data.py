@@ -167,9 +167,24 @@ def load_from_filename(filename,params):
     nb_channels=params['input_channels']
     with_adj_angles=params['with_adj_angles']
 
-    input_img = np.zeros((nb_projs,1, nb_channels,img.shape[2], img.shape[3]))
+
+    # channels_id construction
+    nb_of_equidistributed_angles = nb_channels - 2 if with_adj_angles else nb_channels
+    step = int(nb_projs / (nb_of_equidistributed_angles))
+    channels_id = np.array([0])
+    if with_adj_angles:
+        adjacent_channels_id = np.array([(-1) % nb_projs, (1) % nb_projs])
+        channels_id = np.concatenate((channels_id, adjacent_channels_id))
+    equiditributed_channels_id = np.array(
+        [(k * step) % nb_projs for k in range(1, nb_of_equidistributed_angles)])
+    channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(
+        equiditributed_channels_id) > 0 else channels_id
+
+
+    input_img = np.zeros((nb_projs, nb_channels,img.shape[2], img.shape[3]))
     for proj_i in range(nb_projs):
-        input_img[proj_i,:,:,:,:] = load_img_channels(img_array=img, nb_channels=nb_channels,proj_i=proj_i,with_adj_angles=with_adj_angles)
+        channels_id_proj_i = (channels_id+proj_i)%120
+        input_img[proj_i,:,:,:] = img[:,channels_id_proj_i,:,:]
     return input_img
 
 

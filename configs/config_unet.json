@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/intevo_test_dataset_JZ_recfp"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/PVE_data/datasets/intevo_test_dataset_JZ_recfp"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset"],
   "jean_zay": false,
   "store_dataset": false,
   "split_dataset": false,

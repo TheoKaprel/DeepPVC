@@ -39,11 +39,10 @@ def apply(pth, input, output_filename):
 
         input_with_channels = torch.tensor(helpers_data.load_image(filename=input, is_ref=False, type=None, params=params),
                                     device=device).float()
-        print(input_with_channels.shape)
-        input_with_channels=input_with_channels[:120,:,:,:,:]
-        print(input_with_channels.shape)
+        print(f'input shape : {input_with_channels.shape}')
 
         norm_input = helpers_data.compute_norm_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation)
+        print(f'norm shape : {norm_input[0].shape}')
         normed_input = helpers_data.normalize_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation,
                                                      norm=norm_input, params=model.params, to_torch=False)
 
@@ -52,7 +51,10 @@ def apply(pth, input, output_filename):
                                                           data_normalisation=data_normalisation,
                                                           norm=norm_input, params=model.params, to_numpy=False)
 
+        print(f'network output shape : {denormed_output_i.shape}')
         output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
+
+        print(f'final output shape : {output_array.shape}')
 
         if input[-3:] in ["mhd", "mha"]:
             input_image = itk.imread(input)
