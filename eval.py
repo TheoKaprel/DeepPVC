@@ -152,7 +152,6 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
 
-        # print(test_dataset.numpy_cpu_dataset.dtype)
 
         test_dataloader = DataLoader(dataset=test_dataset,batch_size=32,shuffle=False)
 
@@ -161,14 +160,15 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             random_data_index = [random.randint(0, N_data - 1) for _ in range(n)]
             for id in random_data_index:
                 dict_data[id] = {}
-                dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,0,:,:].cpu().numpy()
+                dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0,:,:].cpu().numpy()
                 if ref:
-                    dict_data[id]['PVE'] = test_dataloader.dataset[id][1, 0, :, :].cpu().numpy()
-                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][2, 0, :, :].cpu().numpy()
+                    print('noPVE shape : ')
+                    print(test_dataloader.dataset[id][1].shape)
+                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].cpu().numpy()
 
 
         for index in random_data_index:
-            input_i = test_dataloader.dataset[index][0, :, :, :][None,None, :, :, :]
+            input_i = test_dataloader.dataset[index][0][None,:,:,:]
             with torch.no_grad():
                 norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
                 normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
@@ -182,10 +182,6 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
 
 
                 dict_data[index][pth_ref] = [denormed_output_i[0, 0, :, :].float().cpu().numpy()]
-
-                if verbose>2:
-                    denoisedPVE = model.denoisedPVE
-                    dict_data[index][pth_ref].append(denoisedPVE[0,0,:,:].cpu().numpy())
 
 
     if verbose>1:
@@ -214,7 +210,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         axs[0,0].imshow(dict_data_id['PVE_noisy'], vmin = vmin, vmax = vmax)
         axs[0,0].set_title('PVE_noisy')
         if ref:
-            axs[0,1].imshow(dict_data_id['PVE'], vmin = vmin, vmax = vmax)
+            # axs[0,1].imshow(dict_data_id['PVE'], vmin = vmin, vmax = vmax)
             axs[0,1].set_title('PVE')
             axs[0,2].imshow(dict_data_id['noPVE'], vmin = vmin, vmax = vmax)
             axs[0,2].set_title('noPVE')

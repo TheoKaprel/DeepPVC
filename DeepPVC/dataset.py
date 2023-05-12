@@ -189,7 +189,7 @@ class CustomPVEProjectionsDataset(Dataset):
         proj_i = item_id // self.nb_src
         channels_id_i = self.get_channels_id_i(proj_i=proj_i)
         if self.store_dataset:
-            return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,0:1,:,:].float())
+            return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,proj_i:proj_i+1,:,:].float())
         else:
             sinogram = self.get_sinogram(self.list_files[src_i])
             sinogram_input_channels = self.np_transforms(sinogram[:,channels_id_i,:,:])
