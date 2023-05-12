@@ -91,6 +91,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         DeepPVEModel.switch_train()
         for step,(batch_inputs,batch_targets) in enumerate(train_dataloader):
             if debug:
+                t_step_begin = time.time()
                 print("(begin) step {}   /   gpu {}".format(step,rank))
                 timer_loading2=time.time()
                 t_loading+=timer_loading2-timer_loading1
@@ -132,7 +133,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         # plt.show()
 
                 timer_loading1 = time.time()
-                print("(end) step {}   /   gpu {}".format(step,rank))
+                t_step_end = time.time()
+                print("(end) step {}   /   gpu {} ({})".format(step,rank, t_step_begin-t_step_end))
 
 
             if (params['jean_zay']) and (time.time() - t0 >= 0.90*TIME_LIMIT_s): # sauvegarde d'urgence
