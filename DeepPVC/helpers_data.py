@@ -1,6 +1,7 @@
 import itk
 import torch
 import numpy as np
+from torch.utils.data import Dataset,DataLoader
 
 
 def compute_norm(dataset, data_normalisation):
@@ -185,7 +186,7 @@ def load_from_filename(filename,params):
     for proj_i in range(nb_projs):
         channels_id_proj_i = (channels_id+proj_i)%120
         input_img[proj_i,:,:,:] = img[:,channels_id_proj_i,:,:]
-    return input_img
+    return torch.Tensor(input_img)
 
 
 def load_PVE_PVfree(ref, type,params):
@@ -200,6 +201,6 @@ def load_PVE_PVfree(ref, type,params):
     if noisy:
         proj_PVE_noisy_filename = f'{ref}_PVE_noisy.{type}'
         imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,params)
-        return np.concatenate((imgPVE_noisy, imgPVE, imgPVfree), axis=1) # (nb_projs,3,nb_channels,Npix,Npix)
+        return torch.utils.data.TensorDataset(imgPVE_noisy, imgPVfree[:,0:1,:,:])
     else:
-        return np.concatenate((imgPVE, imgPVfree), axis=1) # (nb_projs,2,nb_channels,Npix,Npix)
+        return torch.utils.data.TensorDataset(imgPVE, imgPVfree[:,0:1,:,:])

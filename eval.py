@@ -143,7 +143,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
 
 
         if input:
-            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params),device=device).float()
+            test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params)
         elif dataset_path:
             params['store_dataset']=True
             params['max_nb_data']=-1
@@ -154,21 +154,22 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
 
 
         test_dataloader = DataLoader(dataset=test_dataset,batch_size=32,shuffle=False)
-
         if pth_id==0:
             N_data = len(test_dataloader.dataset)
             random_data_index = [random.randint(0, N_data - 1) for _ in range(n)]
             for id in random_data_index:
                 dict_data[id] = {}
-                dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0,:,:].cpu().numpy()
                 if ref:
-                    print('noPVE shape : ')
-                    print(test_dataloader.dataset[id][1].shape)
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :].cpu().numpy()
                     dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].cpu().numpy()
-
+                else:
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:].cpu().numpy()
 
         for index in random_data_index:
-            input_i = test_dataloader.dataset[index][0][None,:,:,:]
+            if ref:
+                input_i = test_dataloader.dataset[index][0][None,:,:,:]
+            else:
+                input_i = test_dataloader.dataset[index][None,:,:,:]
             with torch.no_grad():
                 norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
                 normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
