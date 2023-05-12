@@ -219,7 +219,7 @@ def load_data(params):
                                   batch_size=training_batch_size_per_gpu,
                                   shuffle=shuffle,
                                   num_workers=params['num_workers'],
-                                  pin_memory=True,
+                                  pin_memory=False,
                                   sampler=train_sampler)
 
     test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], test=True)
