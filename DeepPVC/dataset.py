@@ -228,7 +228,7 @@ def load_data(params):
     test_dataloader = DataLoader(dataset=test_dataset,
                                   batch_size=test_batchsize,
                                   shuffle=False,
-                                  num_workers=4,
+                                  num_workers=params['num_workers'],
                                   pin_memory=True,
                                   sampler=None)
 
