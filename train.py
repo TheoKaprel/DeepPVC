@@ -154,12 +154,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             DeepPVEModel.switch_eval()
 
-            MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
+            RMSE, MAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
                                                                 do_NMAE=(params['validation_norm']=="L1"))
             if params['validation_norm']=="L1":
-                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNMAE.item()])
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MAE])
             elif params['validation_norm']=="L2":
-                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MNRMSE.item()])
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, RMSE])
 
             if verbose_main_process:
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
