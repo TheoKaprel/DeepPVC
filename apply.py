@@ -42,7 +42,8 @@ def apply(pth, input, output_filename):
         print(f'input shape : {input_with_channels.shape}')
 
         norm_input = helpers_data.compute_norm_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation)
-        print(f'norm shape : {norm_input[0].shape}')
+        if data_normalisation!='none':
+            print(f'norm shape : {norm_input[0].shape}')
         normed_input = helpers_data.normalize_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation,
                                                      norm=norm_input, params=model.params, to_torch=False)
 

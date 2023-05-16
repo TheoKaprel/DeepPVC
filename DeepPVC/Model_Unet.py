@@ -3,7 +3,7 @@ import time
 import torch
 from torch import optim
 
-from . import networks, losses,helpers_data_parallelism,networks_diff
+from . import networks, losses,helpers_data_parallelism,networks_diff,plots
 from torch.cuda.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
@@ -233,4 +233,4 @@ class UNetModel(ModelBase):
         # helpers_params.make_and_print_params_info_table([self.params])
 
     def plot_losses(self, save, wait, title):
-        print('not implemented sorry.')
+        plots.plot_losses_UNet(unet_losses=self.unet_losses, test_mse=[],save=save, wait=wait, title=title)
