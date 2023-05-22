@@ -6,8 +6,9 @@ from textwrap import fill
 not_updatable_paramter_list_when_resume_training = ['input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
-required = ['dataset_path', 'test_dataset_path','with_noise', 'data_normalisation', 'network', 'n_epochs', 'learning_rate',
-            'input_channels','use_dropout','optimizer', 'device', 'lr_policy']
+required = ['dataset_path', 'test_dataset_path','with_noise','input_eq_angles',
+            'data_normalisation', 'network', 'n_epochs', 'learning_rate','use_dropout',
+            'optimizer', 'device', 'lr_policy']
 
 automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
              'output_pth', 'start_pth', 'nb_training_data', 'nb_testing_data', 'norm']
@@ -60,6 +61,12 @@ def update_params_user_option(params, user_params, is_resume):
 
 def check_params(params, fatal_on_unknown=False):
 
+
+    if 'input_channels' in params:
+        params['input_eq_angles'] = params['input_channels']-2 if params['with_adj_angles'] else params['input_channels']
+
+
+
     for req in required:
         if (req not in params or req in [[], ""]):
             print(f'ERROR: the parameters "{req}" is required in json param file')
@@ -87,7 +94,7 @@ def check_params(params, fatal_on_unknown=False):
     assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc'])
 
 
-    int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_channels','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']
+    int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_eq_angles','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']
     for int_param in int_param_list:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
@@ -284,7 +291,7 @@ def make_and_print_params_info_table(lparams):
         else:
             train_table.add_row([param['ref'], param['n_epochs'], param['data_normalisation'], param['generator_activation'], param['generator_norm'], param['norm'], param['training_duration']])
 
-        model_table.add_row([param['ref'], param['learning_rate'], param['input_channels'], param['hidden_channels_gen'], param['hidden_channels_disc'],param['nb_ed_layers'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
+        model_table.add_row([param['ref'], param['learning_rate'], param['input_eq_angles'], param['hidden_channels_gen'], param['hidden_channels_disc'],param['nb_ed_layers'], param['generator_update'], param['discriminator_update'], param['optimizer'], param['device'], param['adv_loss'], param['recon_loss'], param['lambda_recon']])
 
 
     print(data_table)

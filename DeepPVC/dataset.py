@@ -17,7 +17,7 @@ class CustomPVEProjectionsDataset(Dataset):
         self.with_adj_angles = params["with_adj_angles"]
         self.noisy = (params['with_noise'])
         self.with_rec_fp = params['with_rec_fp']
-        self.input_channels = params['input_channels']
+        self.input_eq_angles = params['input_eq_angles']
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
         self.store_dataset = params['store_dataset']
@@ -129,14 +129,13 @@ class CustomPVEProjectionsDataset(Dataset):
 
     def build_channels_id(self):
         # rotating channels id
-        nb_of_equidistributed_angles = self.input_channels - 2 if self.with_adj_angles else self.input_channels
-        step = int(self.nb_projs_per_img / (nb_of_equidistributed_angles))
+        step = int(self.nb_projs_per_img / (self.input_eq_angles))
         self.channels_id = np.array([0])
         if self.with_adj_angles:
             adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
             self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
 
-        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, nb_of_equidistributed_angles)])
+        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
         self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
             equiditributed_channels_id) > 0 else self.channels_id
 
@@ -195,8 +194,11 @@ class CustomPVEProjectionsDataset(Dataset):
             sinogram_input_channels = self.np_transforms(sinogram[:,channels_id_i,:,:])
             if self.with_rec_fp:
                 x_temp_np_inputs,x_temp_np_targets = sinogram_input_channels[0,:,:,:], sinogram_input_channels[2,0:1,:,:]
-                rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
-                rec_fp = np.load(rec_fp_filename,mmap_mode='r')[proj_i:proj_i+1,:,:].copy()
+                if self.merged:
+                    rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
+                else:
+                    rec_fp_filename = self.list_files[src_i].replace('_PVE', '_rec_fp')
+                rec_fp = self.read(rec_fp_filename)[proj_i:proj_i+1,:,:]
                 x_inputs = np.concatenate((x_temp_np_inputs, rec_fp),axis=0)
                 return (x_inputs, x_temp_np_targets)
             else:

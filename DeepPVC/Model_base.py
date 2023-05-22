@@ -19,7 +19,10 @@ class ModelBase(torch.nn.Module):
 
         self.n_epochs = params['n_epochs']
         self.learning_rate = params['learning_rate']
-        self.input_channels = params['input_channels']+1 if params['with_rec_fp'] else params['input_channels']
+
+        self.input_channels = params['input_eq_angles']
+        self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
+        self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
         self.use_dropout = params['use_dropout']
         self.leaky_relu = params['leaky_relu']

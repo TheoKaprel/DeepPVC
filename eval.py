@@ -5,7 +5,7 @@ import numpy as np
 import click
 import random
 
-from DeepPVC import helpers_data, helpers, Model_instance,dataset, helpers_functions
+from DeepPVC import helpers_data, helpers, Model_instance,dataset, helpers_functions,helpers_params
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -123,6 +123,9 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
+
+        helpers_params.check_params(params=params)
+
         params['jean_zay']=False
         data_normalisation = params['data_normalisation']
         pth_ref = params['ref']
