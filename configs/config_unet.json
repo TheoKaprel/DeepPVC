@@ -10,7 +10,7 @@
   "merged": false,
   "with_noise": true,
   "with_rec_fp": true,
-  "max_nb_data": -1,
+  "max_nb_data": 240,
   "training_batchsize":32,
   "test_batchsize":32,
   "data_augmentation": [],
