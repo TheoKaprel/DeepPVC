@@ -1,4 +1,5 @@
-﻿import torch
+﻿import matplotlib.pyplot as plt
+import torch
 import time
 import json as js
 import os
@@ -112,6 +113,14 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             if debug:
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
+
+                # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy()
+                # fig,ax = plt.subplots(1,plot_example.shape[0])
+                # for i in range(plot_example.shape[0]):
+                #     ax[i].imshow(plot_example[i,:,:])
+                #     ax[i].set_title(f'{i}')
+                # plt.show()
+
 
             DeepPVEModel.optimize_parameters()
 

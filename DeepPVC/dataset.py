@@ -69,11 +69,11 @@ class CustomPVEProjectionsDataset(Dataset):
 
     def read(self,filename, projs=None):
         if self.filetype in ['mha', 'mhd']:
-            return itk.array_from_image(itk.imread(filename)).astype(dtype=self.img_type) if projs is None else\
-                itk.array_from_image(itk.imread(filename))[projs,:,:].astype(dtype=self.img_type)
+            return itk.array_from_image(itk.imread(filename)) if projs is None else\
+                itk.array_from_image(itk.imread(filename))[projs,:,:]
         elif self.filetype=='npy':
-            return np.load(filename).astype(dtype=self.img_type) if projs is None else\
-                np.load(filename)[projs,:,:].astype(dtype=self.img_type)
+            return np.load(filename,mmap_mode='r')if projs is None else\
+                np.load(filename,mmap_mode='r')[projs,:,:]
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -190,8 +190,7 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.store_dataset:
             return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,proj_i:proj_i+1,:,:].float())
         else:
-            sinogram = self.get_sinogram(self.list_files[src_i])
-            sinogram_input_channels = self.np_transforms(sinogram[:,channels_id_i,:,:])
+            sinogram_input_channels = self.np_transforms(self.get_sinogram(self.list_files[src_i])[:,channels_id_i,:,:])
             if self.with_rec_fp:
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
                 rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
