@@ -118,13 +118,14 @@ class UNetModel(ModelBase):
     def optimize_parameters(self):
         # Unet Update
         self.set_requires_grad(self.UNet, requires_grad=True)
-        self.unet_optimizer.zero_grad()
+        self.unet_optimizer.zero_grad(set_to_none=True)
         with autocast(enabled=self.amp):
             self.forward_unet()
             self.losses_unet()
-            self.backward_unet()
-            if self.amp:
-                self.scaler.update()
+            
+        self.backward_unet()
+        if self.amp:
+            self.scaler.update()
 
         self.mean_unet_loss+=self.unet_loss.item()
         self.current_iteration+=1
