@@ -72,8 +72,8 @@ class CustomPVEProjectionsDataset(Dataset):
             return itk.array_from_image(itk.imread(filename)) if projs is None else\
                 itk.array_from_image(itk.imread(filename))[projs,:,:]
         elif self.filetype=='npy':
-            return np.load(filename,mmap_mode='r')if projs is None else\
-                np.load(filename,mmap_mode='r')[projs,:,:]
+            return np.load(filename)if projs is None else\
+                np.load(filename)[projs,:,:]
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -195,9 +195,9 @@ class CustomPVEProjectionsDataset(Dataset):
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
                 rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
                 x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
-                return (torch.Tensor(x_inputs), torch.Tensor(sinogram_input_channels[2,0:1,:,:]))
+                return (torch.from_numpy(x_inputs), torch.from_numpy(sinogram_input_channels[2,0:1,:,:]))
             else:
-                temp = torch.Tensor(self.np_transforms(sinogram_input_channels))
+                temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
                 return (temp[0, :, :, :], temp[2, 0:1, :, :])
 
 
