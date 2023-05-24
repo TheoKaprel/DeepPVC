@@ -34,12 +34,11 @@ class CustomPVEProjectionsDataset(Dataset):
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
 
         self.list_files=sorted(self.list_files)
-
+        self.img_type = self.get_dtype(params['dtype'])
 
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
-        self.img_type = self.get_dtype(params['dtype'])
 
         self.max_nb_data=params['max_nb_data']
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
@@ -68,11 +67,13 @@ class CustomPVEProjectionsDataset(Dataset):
             else len(self.list_files) * self.nb_projs_per_img
 
 
-    def read(self,filename):
+    def read(self,filename, projs=None):
         if self.filetype in ['mha', 'mhd']:
-            return itk.array_from_image(itk.imread(filename))
+            return itk.array_from_image(itk.imread(filename)).astype(dtype=self.img_type) if projs is None else\
+                itk.array_from_image(itk.imread(filename))[projs,:,:].astype(dtype=self.img_type)
         elif self.filetype=='npy':
-            return np.load(filename)
+            return np.load(filename).astype(dtype=self.img_type) if projs is None else\
+                np.load(filename)[projs,:,:].astype(dtype=self.img_type)
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -160,8 +161,7 @@ class CustomPVEProjectionsDataset(Dataset):
             return np.stack((sinogram_PVE,sinogram_PVfree),axis=0)
 
     def get_sinogram_merged(self, filename):
-        projs_merged = self.read(filename=filename)
-        return projs_merged[self.merged_type_id,:,:]
+        return self.read(filename=filename, projs=self.merged_type_id)
 
     def init_transforms(self):
         self.transforms = []
@@ -193,11 +193,8 @@ class CustomPVEProjectionsDataset(Dataset):
             sinogram = self.get_sinogram(self.list_files[src_i])
             sinogram_input_channels = self.np_transforms(sinogram[:,channels_id_i,:,:])
             if self.with_rec_fp:
-                if self.merged:
-                    rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp')
-                else:
-                    rec_fp_filename = self.list_files[src_i].replace('_PVE', '_rec_fp')
-                rec_fp = self.read(rec_fp_filename)[proj_i:proj_i+1,:,:]
+                rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
+                rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
                 x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
                 return (torch.Tensor(x_inputs), torch.Tensor(sinogram_input_channels[2,0:1,:,:]))
             else:

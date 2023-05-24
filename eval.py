@@ -148,7 +148,7 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         if input:
             test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params)
         elif dataset_path:
-            params['store_dataset']=True
+            # params['store_dataset']=True
             params['max_nb_data']=-1
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],filetype=type,merged=merged,test=True)
         else:
@@ -177,8 +177,8 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
                 norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
                 normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
                                                            norm=norm_input_i, params=model.params, to_torch=False)
-
-
+                print('input shape :')
+                print(normed_input_i.shape)
 
                 normed_output_i = model.forward(normed_input_i)
                 denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,data_normalisation=data_normalisation,
