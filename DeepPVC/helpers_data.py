@@ -133,25 +133,6 @@ def denormalize_eval(dataset_or_img, data_normalisation, norm, params, to_numpy)
     return output
 
 
-def load_img_channels(img_array,nb_channels,proj_i, with_adj_angles=False):
-    nb_projs=img_array.shape[1]
-
-    nb_of_equidistributed_angles = nb_channels-2 if with_adj_angles else nb_channels
-    step = int(nb_projs/(nb_of_equidistributed_angles))
-
-
-    channels_id = np.array([proj_i])
-    if with_adj_angles:
-        adjacent_channels_id = np.array([(proj_i-1) % nb_projs,(proj_i+1) % nb_projs])
-        channels_id = np.concatenate((channels_id,adjacent_channels_id))
-
-    equiditributed_channels_id = np.array([(proj_i + k*step) % nb_projs for k in range(1,nb_of_equidistributed_angles)])
-    channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(equiditributed_channels_id)>0 else channels_id
-
-    return img_array[:,channels_id,:,:]# (3,nb_channels,Npix,Npix)
-
-
-
 def load_image(filename, is_ref, type,params):
     if is_ref:
         return load_PVE_PVfree(ref = filename,type=type,params=params)

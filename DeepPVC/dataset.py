@@ -147,17 +147,17 @@ class CustomPVEProjectionsDataset(Dataset):
         return self.get_sinogram_merged(filename=filename) if self.merged else self.get_sinogram_not_merged(filename_PVE=filename)
 
     def get_sinogram_not_merged(self, filename_PVE):
-        sinogram_PVE = self.read(filename=filename_PVE)[None,:,:,:]
+        sinogram_PVE = self.read(filename=filename_PVE)
 
         filename_PVf = f'{filename_PVE[:-8]}_PVfree.{self.filetype}'
-        sinogram_PVfree = self.read(filename=filename_PVf)[None,:,:,:]
+        sinogram_PVfree = self.read(filename=filename_PVf)
 
         if self.noisy:
             filename_noisy = f'{filename_PVE[:-8]}_PVE_noisy.{self.filetype}'
-            sinogram_noisy = self.read(filename=filename_noisy)[None,:,:,:]
-            return np.concatenate((sinogram_noisy,sinogram_PVE,sinogram_PVfree), axis=0)
+            sinogram_noisy = self.read(filename=filename_noisy)
+            return np.stack((sinogram_noisy,sinogram_PVE,sinogram_PVfree), axis=0)
         else:
-            return np.concatenate((sinogram_PVE,sinogram_PVfree),axis=0)
+            return np.stack((sinogram_PVE,sinogram_PVfree),axis=0)
 
     def get_sinogram_merged(self, filename):
         projs_merged = self.read(filename=filename)
