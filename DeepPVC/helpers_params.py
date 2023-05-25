@@ -88,7 +88,7 @@ def check_params(params, fatal_on_unknown=False):
         assert(type(path)==str)
 
     assert (params['data_normalisation'] in ["global_standard","img_standard","global_0_1","img_0_1","img_mean","none"])
-    assert (params["datatype"] in ["mhd", "mha", "npy"])
+    assert (params["datatype"] in ["mhd", "mha", "npy", "pt"])
     assert (type(params['with_noise'])==bool)
 
     assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc'])

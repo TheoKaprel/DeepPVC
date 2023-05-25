@@ -74,6 +74,8 @@ class CustomPVEProjectionsDataset(Dataset):
         elif self.filetype=='npy':
             return np.load(filename)if projs is None else\
                 np.load(filename)[projs,:,:]
+        elif self.filetype=='pt':
+            return torch.load(filename) if projs is None else torch.load(filename)[projs,:,:]
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -197,7 +199,8 @@ class CustomPVEProjectionsDataset(Dataset):
                 x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
                 return (torch.from_numpy(x_inputs), torch.from_numpy(sinogram_input_channels[2,0:1,:,:]))
             else:
-                temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
+                # temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
+                temp = self.np_transforms(sinogram_input_channels)
                 return (temp[0, :, :, :], temp[2, 0:1, :, :])
 
 
