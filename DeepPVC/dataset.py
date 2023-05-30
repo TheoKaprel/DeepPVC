@@ -197,7 +197,7 @@ class CustomPVEProjectionsDataset(Dataset):
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
                 rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
                 x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
-                return (torch.from_numpy(x_inputs), torch.from_numpy(sinogram_input_channels[2,0:1,:,:]))
+                return (x_inputs, sinogram_input_channels[2,0:1,:,:])
             else:
                 # temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
                 temp = self.np_transforms(sinogram_input_channels)

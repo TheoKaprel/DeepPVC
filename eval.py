@@ -66,7 +66,7 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
             test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type,params=params),
                                         device=device).float()
         elif dataset_path:
-            params['store_dataset']=True
+            # params['store_dataset']=True
             params['max_nb_data']=-1
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],
                                                                test=True,filetype=type,merged=merged)
@@ -76,17 +76,16 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
 
         test_dataloader = DataLoader(dataset=test_dataset,batch_size=32,shuffle=False)
         with torch.no_grad():
-            # (MNRMSE,std_NRMSE), (MNMAE,std_NMAE) = helpers_functions.validation_errors(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
-            MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader=test_dataloader,model=model,do_NMAE=True, do_NRMSE=True)
-            MNRMSE,MNMAE=MNRMSE.item(),MNMAE.item()
-            print(f'Mean NRMSE : '+ "{:.3e}".format(MNRMSE))
-            print(f'Mean MNMAE : '+ "{:.3e}".format(MNMAE))
+            RMSE, MAE = helpers_functions.validation_errors(test_dataloader=test_dataloader,
+                                                                model=model,do_NMAE=True, do_NRMSE=True)
+            print(f'Mean RMSE : '+ "{:.3e}".format(RMSE))
+            print(f'Mean MAE : '+ "{:.3e}".format(MAE))
 
-            dict_mse[pth_ref] = MNRMSE
-            dict_mae[pth_ref] = MNMAE
+            dict_mse[pth_ref] = RMSE
+            dict_mae[pth_ref] = MAE
 
-            model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNRMSE', error_val=MNRMSE)
-            model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNMAE', error_val=MNMAE)
+            # model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNRMSE', error_val=RMSE)
+            # model.params = add_or_modify_error(dataset_path=dataset_path, params=model.params, error_ref='MNMAE', error_val=MAE)
 
             if verbose > 0:
                 model.show_infos()
@@ -150,7 +149,8 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
         elif dataset_path:
             # params['store_dataset']=True
             params['max_nb_data']=-1
-            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],filetype=type,merged=merged,test=True)
+            test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],
+                                                               filetype=type,merged=merged,test=True)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
@@ -163,16 +163,15 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             for id in random_data_index:
                 dict_data[id] = {}
                 if ref:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :].cpu().numpy()
-                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].cpu().numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :]
+                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:]
                 else:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:].cpu().numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:]
 
         for index in random_data_index:
-            if ref:
-                input_i = test_dataloader.dataset[index][0][None,:,:,:]
-            else:
-                input_i = test_dataloader.dataset[index][None,:,:,:]
+
+            input_i = torch.from_numpy(test_dataloader.dataset[index][0][None,:,:,:]).to(device=device) if ref else torch.from_numpy(test_dataloader.dataset[index][None,:,:,:]).to(device=device)
+
             with torch.no_grad():
                 norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
                 normed_input_i = helpers_data.normalize_eval(dataset_or_img=input_i, data_normalisation=data_normalisation,
