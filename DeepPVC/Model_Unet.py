@@ -35,7 +35,6 @@ class UNetModel(ModelBase):
             if self.verbose>1:
                 print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
-
             self.init_optimization()
             self.init_losses()
 

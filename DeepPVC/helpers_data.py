@@ -1,7 +1,7 @@
 import itk
 import torch
 import numpy as np
-from torch.utils.data import Dataset,DataLoader
+from torch.utils.data import Dataset,DataLoader, TensorDataset
 
 
 def compute_norm(dataset, data_normalisation):
@@ -146,12 +146,12 @@ def load_from_filename(filename,params):
     else:
         img = itk.array_from_image(itk.imread(filename))[None,:,:,:]
     nb_projs=img.shape[1]
-    nb_channels=params['input_channels']
+    input_eq_angles=params['input_eq_angles']
     with_adj_angles=params['with_adj_angles']
 
 
     # channels_id construction
-    nb_of_equidistributed_angles = nb_channels - 2 if with_adj_angles else nb_channels
+    nb_of_equidistributed_angles = input_eq_angles
     step = int(nb_projs / (nb_of_equidistributed_angles))
     channels_id = np.array([0])
     if with_adj_angles:
@@ -162,6 +162,7 @@ def load_from_filename(filename,params):
     channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(
         equiditributed_channels_id) > 0 else channels_id
 
+    nb_channels = input_eq_angles+2 if with_adj_angles else input_eq_angles
 
     input_img = np.zeros((nb_projs, nb_channels,img.shape[2], img.shape[3]))
     for proj_i in range(nb_projs):
@@ -181,7 +182,14 @@ def load_PVE_PVfree(ref, type,params):
 
     if noisy:
         proj_PVE_noisy_filename = f'{ref}_PVE_noisy.{type}'
-        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,params)
-        return torch.utils.data.TensorDataset(imgPVE_noisy, imgPVfree[:,0:1,:,:])
+        imgPVE_noisy = load_from_filename(proj_PVE_noisy_filename,params) # (120,6,256,256)
+        with_rec_fp=params['with_rec_fp']
+        if with_rec_fp:
+            proj_rec_fp_filename = f'{ref}_rec_fp.{type}'
+            img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(proj_rec_fp_filename))[:,None,:,:]) # (120,1,256,256)
+            img_input = torch.cat((imgPVE_noisy,img_rec_fp),dim=1) # (120,7,256,256)
+            return TensorDataset(img_input, imgPVfree[:, 0:1, :, :])
+        else:
+            return TensorDataset(imgPVE_noisy, imgPVfree[:,0:1,:,:])
     else:
-        return torch.utils.data.TensorDataset(imgPVE, imgPVfree[:,0:1,:,:])
+        return TensorDataset(imgPVE, imgPVfree[:,0:1,:,:])

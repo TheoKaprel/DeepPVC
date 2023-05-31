@@ -13,12 +13,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--pth') # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
+@click.option('--input_rec_fp')
 @click.option('--output', '-o', help = 'Output filename (mhd)')
-def apply_click(pth,input, output):
-    apply(pth, input, output_filename=output)
+def apply_click(pth,input,input_rec_fp, output):
+    apply(pth, input,input_rec_fp, output_filename=output)
 
 
-def apply(pth, input, output_filename):
+def apply(pth, input,input_rec_fp, output_filename):
     print(f'Apply the pth {pth} to the set of projections contained in {input}')
 
     device = helpers.get_auto_device("cpu")
@@ -35,16 +36,19 @@ def apply(pth, input, output_filename):
     model.switch_eval()
     model.show_infos()
 
+    with_rec_fp = params['with_rec_fp']
     with torch.no_grad():
 
-        input_with_channels = torch.tensor(helpers_data.load_image(filename=input, is_ref=False, type=None, params=params),
-                                    device=device).float()
-        print(f'input shape : {input_with_channels.shape}')
+        input_with_angles = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
+        if with_rec_fp:
+            img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[:,None,:,:]) # (120,1,256,256)
+            projs_input = torch.cat((input_with_angles,img_rec_fp),dim=1) # (120,7,256,256)
+        print(f'input shape : {projs_input.shape}')
 
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation)
+        norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
         if data_normalisation!='none':
             print(f'norm shape : {norm_input[0].shape}')
-        normed_input = helpers_data.normalize_eval(dataset_or_img=input_with_channels, data_normalisation=data_normalisation,
+        normed_input = helpers_data.normalize_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation,
                                                      norm=norm_input, params=model.params, to_torch=False)
 
         normed_output_i = model.forward(normed_input.to(device))
@@ -63,7 +67,7 @@ def apply(pth, input, output_filename):
             vOffset = np.array(input_image.GetOrigin())
         else:
             vSpacing=np.array([4.41806,4.41806,1])
-            vOffset=np.array([-280.5468,-280.54681,-59.5])
+            # vOffset=np.array([-280.5468,-280.54681,-59.5])
 
         output_image = itk.image_from_array(output_array)
         output_image.SetSpacing(vSpacing)

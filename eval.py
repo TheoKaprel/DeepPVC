@@ -43,7 +43,7 @@ def add_or_modify_error(dataset_path, params, error_ref, error_val):
     return params
 
 
-def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
+def eval_error(lpth, input,dataset_path,ftype,merged,ref, verbose,param_comp):
     device = helpers.get_auto_device("cuda")
 
     dict_mse = {}
@@ -63,13 +63,12 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
         model.switch_eval()
 
         if input:
-            test_dataset = torch.tensor(helpers_data.load_image(filename=input,is_ref=ref,type = type,params=params),
-                                        device=device).float()
+            test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type = ftype,params=params)
         elif dataset_path:
             # params['store_dataset']=True
             params['max_nb_data']=-1
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],
-                                                               test=True,filetype=type,merged=merged)
+                                                               test=True,filetype=ftype,merged=merged)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
@@ -110,7 +109,7 @@ def eval_error(lpth, input,dataset_path,type,merged,ref, verbose,param_comp):
 
 
 
-def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_comp):
+def eval_plot(lpth, input, n, dataset_path, ftype,merged, ref, verbose, param_comp):
     device = helpers.get_auto_device("cpu")
 
     random_data_index = []
@@ -145,12 +144,12 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
 
 
         if input:
-            test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type=type, params=params)
+            test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type=ftype, params=params)
         elif dataset_path:
             # params['store_dataset']=True
             params['max_nb_data']=-1
             test_dataset = dataset.CustomPVEProjectionsDataset(params=params, paths=[dataset_path],
-                                                               filetype=type,merged=merged,test=True)
+                                                               filetype=ftype,merged=merged,test=True)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
@@ -163,14 +162,16 @@ def eval_plot(lpth, input, n, dataset_path, type,merged, ref, verbose, param_com
             for id in random_data_index:
                 dict_data[id] = {}
                 if ref:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :]
-                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:]
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :].numpy()
+                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].numpy()
                 else:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:]
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:].numpy()
 
         for index in random_data_index:
 
-            input_i = torch.from_numpy(test_dataloader.dataset[index][0][None,:,:,:]).to(device=device) if ref else torch.from_numpy(test_dataloader.dataset[index][None,:,:,:]).to(device=device)
+            input_i = test_dataloader.dataset[index][0][None,:,:,:] if ref else test_dataloader.dataset[index][None,:,:,:]
+            input_i = torch.from_numpy(input_i) if type(input_i)==np.ndarray else input_i
+            input_i = input_i.to(device=device)
 
             with torch.no_grad():
                 norm_input_i = helpers_data.compute_norm_eval(dataset_or_img=input_i, data_normalisation=data_normalisation)
