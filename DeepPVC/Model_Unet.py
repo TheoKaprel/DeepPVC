@@ -27,6 +27,8 @@ class UNetModel(ModelBase):
 
         self.layer_norm = params['layer_norm']
         self.residual_layer=params['residual_layer']
+        self.ResUnet = params['resunet']
+
         self.attention=False if 'attention' not in params else params['attention']
 
         self.init_model()
@@ -35,7 +37,6 @@ class UNetModel(ModelBase):
             if self.verbose>1:
                 print('normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
-
             self.init_optimization()
             self.init_losses()
 
@@ -62,7 +63,7 @@ class UNetModel(ModelBase):
         else:
             self.UNet = networks.UNet(input_channel=self.input_channels, ngc = self.hidden_channels_unet,conv3d=self.conv3d,init_feature_kernel=self.init_feature_kernel, nb_ed_layers=self.nb_ed_layers,
                                                 output_channel= 1, generator_activation = self.unet_activation,use_dropout=self.use_dropout, leaky_relu = self.leaky_relu,
-                                                norm = self.layer_norm, residual_layer=self.residual_layer, blocks = self.ed_blocks).to(device=self.device)
+                                                norm = self.layer_norm, residual_layer=self.residual_layer, blocks = self.ed_blocks, ResUnet=self.ResUnet).to(device=self.device)
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
@@ -118,13 +119,14 @@ class UNetModel(ModelBase):
     def optimize_parameters(self):
         # Unet Update
         self.set_requires_grad(self.UNet, requires_grad=True)
-        self.unet_optimizer.zero_grad()
+        self.unet_optimizer.zero_grad(set_to_none=True)
         with autocast(enabled=self.amp):
             self.forward_unet()
             self.losses_unet()
-            self.backward_unet()
-            if self.amp:
-                self.scaler.update()
+            
+        self.backward_unet()
+        if self.amp:
+            self.scaler.update()
 
         self.mean_unet_loss+=self.unet_loss.item()
         self.current_iteration+=1

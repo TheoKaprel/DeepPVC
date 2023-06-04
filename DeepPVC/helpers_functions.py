@@ -33,16 +33,8 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                     MAE_batch = torch.mean(torch.abs(fakePVfree_denormed - batch_targets))
                     list_MAE.append(MAE_batch.item())
 
-
-
     if do_NRMSE:
-        # MNRMSE = torch.mean(list_NRMSE) / model.params['nb_gpu']
-        # if model.params['jean_zay']: dist.all_reduce(MNRMSE, op=dist.ReduceOp.SUM)
         RMSE = np.sqrt(np.mean(list_MSE))
     if do_NMAE:
-        # MNMAE = torch.mean(list_NMAE)  / model.params['nb_gpu']
-        # if model.params['jean_zay']: dist.all_reduce(MNMAE, op=dist.ReduceOp.SUM)
-        # MNMAE = torch.mean(list_NMAE)
         MAE = np.mean(list_MAE)
-
     return RMSE, MAE
