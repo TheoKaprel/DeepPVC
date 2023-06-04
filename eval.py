@@ -162,10 +162,10 @@ def eval_plot(lpth, input, n, dataset_path, ftype,merged, ref, verbose, param_co
             for id in random_data_index:
                 dict_data[id] = {}
                 if ref:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :].numpy()
-                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :] if type(test_dataloader.dataset[id][0])==np.ndarray else test_dataloader.dataset[id][0][0, :, :].numpy()
+                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:] if type(test_dataloader.dataset[id][1])==np.ndarray else test_dataloader.dataset[id][1][0, :, :].numpy()
                 else:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:].numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:] if type(test_dataloader.dataset[id])==np.ndarray else test_dataloader.dataset[id][0,:,:].numpy()
 
         for index in random_data_index:
 

@@ -43,6 +43,8 @@ def apply(pth, input,input_rec_fp, output_filename):
         if with_rec_fp:
             img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[:,None,:,:]) # (120,1,256,256)
             projs_input = torch.cat((input_with_angles,img_rec_fp),dim=1) # (120,7,256,256)
+        else:
+            projs_input = input_with_angles
         print(f'input shape : {projs_input.shape}')
 
         norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
