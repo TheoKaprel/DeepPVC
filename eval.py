@@ -162,15 +162,15 @@ def eval_plot(lpth, input, n, dataset_path, ftype,merged, ref, verbose, param_co
             for id in random_data_index:
                 dict_data[id] = {}
                 if ref:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :] if type(test_dataloader.dataset[id][0])==np.ndarray else test_dataloader.dataset[id][0][0, :, :].numpy()
-                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:] if type(test_dataloader.dataset[id][1])==np.ndarray else test_dataloader.dataset[id][1][0, :, :].numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0][0, :, :].astype(np.float) if type(test_dataloader.dataset[id][0])==np.ndarray else test_dataloader.dataset[id][0][0, :, :].numpy()
+                    dict_data[id]['noPVE'] = test_dataloader.dataset[id][1][0,:,:].astype(np.float) if type(test_dataloader.dataset[id][1])==np.ndarray else test_dataloader.dataset[id][1][0, :, :].numpy()
                 else:
-                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:] if type(test_dataloader.dataset[id])==np.ndarray else test_dataloader.dataset[id][0,:,:].numpy()
+                    dict_data[id]['PVE_noisy'] = test_dataloader.dataset[id][0,:,:].astype(np.float) if type(test_dataloader.dataset[id])==np.ndarray else test_dataloader.dataset[id][0,:,:].numpy()
 
         for index in random_data_index:
 
             input_i = test_dataloader.dataset[index][0][None,:,:,:] if ref else test_dataloader.dataset[index][None,:,:,:]
-            input_i = torch.from_numpy(input_i) if type(input_i)==np.ndarray else input_i
+            input_i = torch.Tensor(input_i) if type(input_i)==np.ndarray else input_i
             input_i = input_i.to(device=device)
 
             with torch.no_grad():
