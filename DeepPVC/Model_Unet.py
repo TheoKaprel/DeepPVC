@@ -199,6 +199,8 @@ class UNetModel(ModelBase):
         self.current_epoch = checkpoint['epoch']
 
         if self.resume_training:
+            self.learning_rate = checkpoint['unet_opt']['param_groups'][0]['lr']
+
             self.init_optimization()
             self.init_losses()
             self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])

@@ -10,7 +10,7 @@
   "merged": true,
   "with_noise": true,
   "with_rec_fp": false,
-  "max_nb_data": -1,
+  "max_nb_data": 360,
   "training_batchsize":32,
   "test_batchsize":32,
   "data_augmentation": [],
@@ -22,7 +22,7 @@
 
   "n_epochs":5,
   "learning_rate":0.0001,
-  "lr_policy": ["multiplicative",0.5, 99],
+  "lr_policy": ["multiplicative",0.5, 4],
   "input_eq_angles": 4,
   "with_adj_angles": true,
   "conv3d": false,
