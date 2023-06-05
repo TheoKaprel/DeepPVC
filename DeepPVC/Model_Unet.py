@@ -202,6 +202,8 @@ class UNetModel(ModelBase):
             self.init_optimization()
             self.init_losses()
             self.unet_optimizer.load_state_dict(checkpoint['unet_opt'])
+            for g in self.unet_optimizer.param_groups:
+                g['lr']=self.scheduler_unet.get_last_lr()
             self.start_epoch=self.current_epoch
 
     def switch_eval(self):

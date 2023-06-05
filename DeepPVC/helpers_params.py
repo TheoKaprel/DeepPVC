@@ -65,6 +65,8 @@ def check_params(params, fatal_on_unknown=False):
     if 'input_channels' in params:
         params['input_eq_angles'] = params['input_channels']-2 if params['with_adj_angles'] else params['input_channels']
 
+    if 'resunet' not in params:
+        params['resunet'] = False
 
 
     for req in required:
