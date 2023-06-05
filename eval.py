@@ -53,6 +53,7 @@ def eval_error(lpth, input,dataset_path,ftype,merged,ref, verbose,param_comp):
         pth_file = torch.load(pth, map_location=device)
 
         params = pth_file['params']
+        helpers_params.check_params(params=params)
         pth_ref=params['ref']
         legend=param_comp if (param_comp is not None) else pth_ref
         params['jean_zay']=False
