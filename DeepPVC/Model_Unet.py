@@ -112,8 +112,8 @@ class UNetModel(ModelBase):
             self.truePVE = batch
         elif batch.dim()==5:
             self.truePVE = batch[:, 0,:, :, :]
-
-        return self.UNet(self.truePVE)
+        with autocast(enabled=self.amp):
+            return self.UNet(self.truePVE)
 
 
     def optimize_parameters(self):
