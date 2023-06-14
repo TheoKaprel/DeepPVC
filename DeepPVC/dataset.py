@@ -25,6 +25,7 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.verbose = params['verbose']
         self.list_transforms = params['data_augmentation']
         self.max_nb_data = params['max_nb_data']
+        self.test = test
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -56,9 +57,10 @@ class BaseCustomPVEProjectionsDataset(Dataset):
     def init_transforms(self):
         self.transforms = []
         for trsfm in self.list_transforms:
-            if trsfm=='noise':
+            if (trsfm=='noise' and self.test==False):
                 self.transforms.append(self.apply_noise)
-
+        if self.verbose>=0:
+            print(f'transforms : {self.transforms}')
     def apply_noise(self, input_sinogram):
         input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
         input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
@@ -67,7 +69,7 @@ class BaseCustomPVEProjectionsDataset(Dataset):
 
     def np_transforms(self, x):
         for trnsfm in self.transforms:
-            x = trnsfm(x)
+            x= trnsfm(x)
         return x
 
 class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
@@ -191,16 +193,16 @@ class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
         if self.store_dataset:
             return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,proj_i:proj_i+1,:,:].float())
         else:
-            sinogram_input_channels = self.np_transforms(self.get_sinogram(self.list_files[src_i])[:,channels_id_i,:,:])
+            sinogram_input_channels = self.get_sinogram(self.list_files[src_i])[:,channels_id_i,:,:]
+            # /!\ np_transforms are applied before an eventual rec_fp channel concatenation ...
+            sinogram_input_channels = self.np_transforms(sinogram_input_channels)
+            temp_input,temp_target = sinogram_input_channels[0, :, :, :], sinogram_input_channels[2, 0:1, :, :]
             if self.with_rec_fp:
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
                 rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
-                x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
-                return (x_inputs, sinogram_input_channels[2,0:1,:,:])
-            else:
-                # temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
-                temp = self.np_transforms(sinogram_input_channels)
-                return (temp[0, :, :, :], temp[2, 0:1, :, :])
+                temp_input = np.concatenate((temp_input, rec_fp),axis=0)
+            return temp_input,temp_target
+
 
 
 class CustomPVEProjectionDataset_h5(BaseCustomPVEProjectionsDataset):
