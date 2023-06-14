@@ -246,6 +246,9 @@ class CustomPVEProjectionDataset_h5(BaseCustomPVEProjectionsDataset):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
             data_PVE_noisy,data_PVfree = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+            if self.with_rec_fp:
+                rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
             return data_PVE_noisy,data_PVfree
 
 def load_data(params):
