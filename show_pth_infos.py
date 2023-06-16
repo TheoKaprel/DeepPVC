@@ -9,11 +9,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--pth', 'lpth', multiple = True)
 @click.option('--losses', is_flag = True, default = False)
-def show_click(lpth, losses):
-    show_pth(lpth, losses)
+@click.option('--legend')
+def show_click(lpth, losses, legend):
+    show_pth(lpth, losses, legend)
 
 
-def show_pth(lpth, losses):
+def show_pth(lpth, losses, legend):
     lparams = []
     device = helpers.get_auto_device("cpu")
 
@@ -40,13 +41,23 @@ def show_pth(lpth, losses):
             dict_test[ref]=model.test_error
 
     if losses:
+        if legend is None:
+            legend = list(dict_test.keys())
+        else:
+            legend = legend.split(",")
+
         fig_test,ax_test=plt.subplots()
-        cm = plt.get_cmap('gist_rainbow')
-        NUM_COLORS=len(dict_test.items())
+        # cm = plt.get_cmap('gist_rainbow')
+        # NUM_COLORS=len(dict_test.items())
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet']
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
-            ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i], label=ref_i, color=cm(1.*i/NUM_COLORS))
-        ax_test.legend()
+            ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
+                         color=colors[i], linewidth = 2)
+        ax_test.legend(fontsize = 18)
+        ax_test.set_title('Test loss', fontsize = 18)
+        ax_test.set_xlabel("Epochs", fontsize = 18)
+        ax_test.set_ylabel("Test Loss (L1)", fontsize = 18)
         plt.show()
 
     # helpers_params.make_and_print_params_info_table(lparams)

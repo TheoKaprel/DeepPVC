@@ -3,6 +3,7 @@ import torch
 import time
 import json as js
 import os
+import numpy as np
 import click
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
@@ -114,7 +115,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
 
-                # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy()
+                # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy().astype(np.float32)
                 # fig,ax = plt.subplots(1,plot_example.shape[0])
                 # for i in range(plot_example.shape[0]):
                 #     ax[i].imshow(plot_example[i,:,:])

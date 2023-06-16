@@ -22,7 +22,7 @@
 
   "n_epochs":30,
   "learning_rate":0.0001,
-  "lr_policy": ["multiplicative",0.5,10],
+  "lr_policy": ["multiplicative",0.5,20],
   "input_eq_angles":4,
   "with_adj_angles": true,
   "conv3d": false,
@@ -31,6 +31,7 @@
   "leaky_relu": 0.02,
   "ed_blocks": "conv-norm-relu-conv-relu-norm",
   "residual_layer": true,
+  "resunet":false,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 9999,

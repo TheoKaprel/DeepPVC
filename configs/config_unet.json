@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/pt_dataset"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/pt_dataset"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/validation_dataset.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/validation_dataset.h5"],
   "jean_zay": false,
   "store_dataset": false,
   "split_dataset": false,
@@ -9,12 +9,16 @@
   "datatype": "npy",
 =======
   "num_workers": 10,
+<<<<<<< HEAD
   "datatype": "pt",
 >>>>>>> 6b0a84e4912f3428e7a94b59acb4121ab5230797
+=======
+  "datatype": "h5",
+>>>>>>> f447fbb8bc82ba7d60b776bb0bdee93e4c16b9d5
   "dtype": "float16",
-  "merged": true,
+  "merged": false,
   "with_noise": true,
-  "with_rec_fp": false,
+  "with_rec_fp": true,
   "max_nb_data": 360,
   "training_batchsize":32,
   "test_batchsize":32,

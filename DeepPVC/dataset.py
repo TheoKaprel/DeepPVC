@@ -3,14 +3,14 @@ import torch
 import numpy as np
 import glob
 import time
+import h5py
 from torch.utils.data import Dataset,DataLoader
 
 
 from . import helpers_data_parallelism, helpers
 
-class CustomPVEProjectionsDataset(Dataset):
+class BaseCustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,filetype=None,merged=None,test=False):
-
         self.dataset_path = paths
         self.filetype = params["datatype"] if (filetype is None) else filetype
         self.merged = params["merged"] if (merged is None) else merged
@@ -21,9 +21,62 @@ class CustomPVEProjectionsDataset(Dataset):
         self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
         self.store_dataset = params['store_dataset']
+        self.img_type = self.get_dtype(params['dtype'])
+        self.verbose = params['verbose']
+        self.list_transforms = params['data_augmentation']
+        self.max_nb_data = params['max_nb_data']
+        self.test = test
+
+    def get_dtype(self,opt_dtype):
+        if opt_dtype == 'float64':
+            return np.float64
+        elif opt_dtype == 'float32':
+            return np.float32
+        elif opt_dtype == 'float16':
+            return np.float16
+        elif opt_dtype == 'uint16':
+            return np.uint16
+        elif opt_dtype == 'uint64':
+            return np.uint
+
+    def build_channels_id(self):
+        # rotating channels id
+        step = int(self.nb_projs_per_img / (self.input_eq_angles))
+        self.channels_id = np.array([0])
+        if self.with_adj_angles:
+            adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
+            self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
+
+        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
+        self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
+            equiditributed_channels_id) > 0 else self.channels_id
+
+    def get_channels_id_i(self, proj_i):
+        return (self.channels_id+proj_i)%120
+
+    def init_transforms(self):
+        self.transforms = []
+        for trsfm in self.list_transforms:
+            if (trsfm=='noise' and self.test==False):
+                self.transforms.append(self.apply_noise)
+        if self.verbose>=0:
+            print(f'transforms : {self.transforms}')
+    def apply_noise(self, input_sinogram):
+        input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
+        input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
+        return input_sinogram
+
+
+    def np_transforms(self, x):
+        for trnsfm in self.transforms:
+            x= trnsfm(x)
+        return x
+
+class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
+    def __init__(self, params, paths,filetype=None,merged=None,test=False):
+        super().__init__(params, paths,filetype=filetype,merged=merged,test=test)
 
         self.list_files = []
-
         for path in self.dataset_path:
             if self.merged:
                 if self.noisy:
@@ -32,30 +85,23 @@ class CustomPVEProjectionsDataset(Dataset):
                     self.list_files.extend(glob.glob(f'{path}/?????_PVE_PVfree.{self.filetype}'))
             else:
                 self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
-
         self.list_files=sorted(self.list_files)
-        self.img_type = self.get_dtype(params['dtype'])
-
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
 
-        self.max_nb_data=params['max_nb_data']
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
 
         if ('split_dataset' in params and params['split_dataset'] and not test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
             self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
-        self.verbose=params['verbose']
+
         if self.verbose>1:
             print(f'First : {self.list_files[0]}')
-
         self.nb_src = len(self.list_files)
 
-        self.list_transforms = params['data_augmentation']
         self.init_transforms()
-
         self.build_channels_id()
         self.build_merged_type_id()
 
@@ -76,18 +122,6 @@ class CustomPVEProjectionsDataset(Dataset):
                 np.load(filename)[projs,:,:]
         elif self.filetype=='pt':
             return torch.load(filename) if projs is None else torch.load(filename)[projs,:,:]
-
-    def get_dtype(self,opt_dtype):
-        if opt_dtype == 'float64':
-            return np.float64
-        elif opt_dtype == 'float32':
-            return np.float32
-        elif opt_dtype == 'float16':
-            return np.float16
-        elif opt_dtype == 'uint16':
-            return np.uint16
-        elif opt_dtype == 'uint64':
-            return np.uint
 
 
     def build_numpy_dataset(self):
@@ -130,22 +164,6 @@ class CustomPVEProjectionsDataset(Dataset):
             d2 = np.arange(cut1, total_nb_of_projs)
             self.merged_type_id = np.concatenate((d1[None, :], d2[None, :]), axis=0)
 
-    def build_channels_id(self):
-        # rotating channels id
-        step = int(self.nb_projs_per_img / (self.input_eq_angles))
-        self.channels_id = np.array([0])
-        if self.with_adj_angles:
-            adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
-            self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
-
-        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
-        self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
-            equiditributed_channels_id) > 0 else self.channels_id
-
-
-    def get_channels_id_i(self, proj_i):
-        return (self.channels_id+proj_i)%120
-
     def get_sinogram(self,filename):
         return self.get_sinogram_merged(filename=filename) if self.merged else self.get_sinogram_not_merged(filename_PVE=filename)
 
@@ -165,23 +183,6 @@ class CustomPVEProjectionsDataset(Dataset):
     def get_sinogram_merged(self, filename):
         return self.read(filename=filename, projs=self.merged_type_id)
 
-    def init_transforms(self):
-        self.transforms = []
-        for trsfm in self.list_transforms:
-            if trsfm=='noise':
-                self.transforms.append(self.apply_noise)
-
-    def apply_noise(self, input_sinogram):
-        input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
-        input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
-        return input_sinogram
-
-
-    def np_transforms(self, x):
-        for trnsfm in self.transforms:
-            x = trnsfm(x)
-        return x
-
     def __len__(self):
         return self.len_dataset
 
@@ -192,22 +193,73 @@ class CustomPVEProjectionsDataset(Dataset):
         if self.store_dataset:
             return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,proj_i:proj_i+1,:,:].float())
         else:
-            sinogram_input_channels = self.np_transforms(self.get_sinogram(self.list_files[src_i])[:,channels_id_i,:,:])
+            sinogram_input_channels = self.get_sinogram(self.list_files[src_i])[:,channels_id_i,:,:]
+            # /!\ np_transforms are applied before an eventual rec_fp channel concatenation ...
+            sinogram_input_channels = self.np_transforms(sinogram_input_channels)
+            temp_input,temp_target = sinogram_input_channels[0, :, :, :], sinogram_input_channels[2, 0:1, :, :]
             if self.with_rec_fp:
                 rec_fp_filename = self.list_files[src_i].replace('_noisy_PVE_PVfree', '_rec_fp') if self.merged else self.list_files[src_i].replace('_PVE', '_rec_fp')
                 rec_fp = self.read(rec_fp_filename, projs=np.array([proj_i]))
-                x_inputs = np.concatenate((sinogram_input_channels[0,:,:,:], rec_fp),axis=0)
-                return (x_inputs, sinogram_input_channels[2,0:1,:,:])
-            else:
-                # temp = torch.from_numpy(self.np_transforms(sinogram_input_channels))
-                temp = self.np_transforms(sinogram_input_channels)
-                return (temp[0, :, :, :], temp[2, 0:1, :, :])
+                temp_input = np.concatenate((temp_input, rec_fp),axis=0)
+            return temp_input,temp_target
 
+
+
+class CustomPVEProjectionDataset_h5(BaseCustomPVEProjectionsDataset):
+    def __init__(self, params, paths,filetype=None,merged=None,test=False):
+        super().__init__(params=params, paths=paths,filetype=filetype,merged=merged,test=test)
+        self.datasetfn = self.dataset_path[0]
+        self.dataseth5 = h5py.File(self.datasetfn, 'r')
+        self.keys = sorted(list(self.dataseth5.keys()))
+
+        first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
+        self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
+
+        self.build_channels_id()
+
+        if (self.max_nb_data>0 and len(self.keys)*self.nb_projs_per_img>self.max_nb_data):
+            self.keys=self.keys[:int(self.max_nb_data/self.nb_projs_per_img)]
+
+        if ('split_dataset' in params and params['split_dataset'] and not test):
+            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
+            self.keys = list(np.array_split(self.keys,self.number_gpu)[self.gpu_id])
+
+        if self.verbose>1:
+            print(f'First : {self.keys[0]}')
+        self.nb_src = len(self.keys)
+
+        self.init_transforms()
+        self.build_channels_id()
+
+        self.len_dataset = self.nb_src * self.nb_projs_per_img
+
+    def __len__(self):
+        return self.len_dataset
+
+
+    def __getitem__(self, item):
+        src_i = item % self.nb_src
+        proj_i = item // self.nb_src
+        channels = self.get_channels_id_i(proj_i=proj_i)
+        id = np.argsort(channels)
+        invid = np.argsort(id)
+        with h5py.File(self.datasetfn, 'r') as f:
+            data = f[self.keys[src_i]]
+            data_PVE_noisy,data_PVfree = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+            if self.with_rec_fp:
+                rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
+            return data_PVE_noisy,data_PVfree
 
 def load_data(params):
     jean_zay=params['jean_zay']
+    datatype = params["datatype"]
 
-    train_dataset = CustomPVEProjectionsDataset(params=params, paths=params['dataset_path'],test=False)
+    if datatype in ['mhd', 'mha', 'npy', 'pt']:
+        train_dataset = CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=params['dataset_path'],test=False)
+    elif datatype=='h5':
+        train_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['dataset_path'],test=False)
+
     training_batchsize = params['training_batchsize']
     split_dataset = params['split_dataset']
     train_sampler, shuffle, training_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
@@ -221,8 +273,11 @@ def load_data(params):
                                   num_workers=params['num_workers'],
                                   pin_memory=True,
                                   sampler=train_sampler)
+    if datatype in ['mhd', 'mha', 'npy', 'pt']:
+        test_dataset = CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=params['test_dataset_path'], test=True)
+    elif datatype=='h5':
+        test_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['test_dataset_path'],test=False)
 
-    test_dataset = CustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'], test=True)
     test_batchsize = params['test_batchsize']
 
     test_dataloader = DataLoader(dataset=test_dataset,
