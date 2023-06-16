@@ -276,7 +276,7 @@ def load_data(params):
     if datatype in ['mhd', 'mha', 'npy', 'pt']:
         test_dataset = CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=params['test_dataset_path'], test=True)
     elif datatype=='h5':
-        test_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['test_dataset_path'],test=False)
+        test_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['test_dataset_path'],test=True)
 
     test_batchsize = params['test_batchsize']
 
