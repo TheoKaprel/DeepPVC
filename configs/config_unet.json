@@ -45,6 +45,6 @@
   "nb_ed_layers": 3,
   "hidden_channels_unet":32,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
+  "recon_loss":["SmoothL1"],
   "lambda_recon":[1]
 }
