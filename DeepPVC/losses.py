@@ -16,6 +16,8 @@ def get_nn_loss(loss_name):
         return Wasserstein_loss()
     elif loss_name=="Sum":
         return Sum_loss()
+    elif loss_name=="SmoothL1":
+        return nn.SmoothL1Loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
