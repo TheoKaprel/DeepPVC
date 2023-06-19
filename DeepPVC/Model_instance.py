@@ -1,8 +1,9 @@
 
 
 from .Model_Pix2Pix import Pix2PixModel
-from .Model_temp_others import UNet_Denoiser_PVC, GAN_Denoiser_PVC
-from.Model_Unet import UNetModel
+from .Model_temp_others import GAN_Denoiser_PVC
+from .Model_Unet import UNetModel
+from .Model_Unet_Denoiser_PVC import UNet_Denoiser_PVC
 
 class ModelInstance():
     def __new__(cls, params, from_pth = None, resume_training=False, device = None):
