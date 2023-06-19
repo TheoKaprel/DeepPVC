@@ -26,6 +26,79 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.list_transforms = params['data_augmentation']
         self.max_nb_data = params['max_nb_data']
         self.test = test
+        self.params = params
+
+
+        if self.filetype in ['mhd', 'mha', 'npy', 'pt']:
+            self.init_mhd_mha_npy()
+            self._getitem = self.get_item_mhd_mha_npy
+        elif self.filetype=='h5':
+            self.init_h5()
+            self._getitem = self.get_item_h5
+
+    def init_mhd_mha_npy(self):
+        self.list_files = []
+        for path in self.dataset_path:
+            if self.merged:
+                if self.noisy:
+                    self.list_files.extend(glob.glob(f'{path}/?????_noisy_PVE_PVfree.{self.filetype}'))
+                else:
+                    self.list_files.extend(glob.glob(f'{path}/?????_PVE_PVfree.{self.filetype}'))
+            else:
+                self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
+        self.list_files=sorted(self.list_files)
+        first_img = self.read(filename=self.list_files[0])
+        self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
+        self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
+
+        if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
+            self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
+
+        if ('split_dataset' in self.params and self.params['split_dataset'] and not self.test):
+            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=self.params['jean_zay'])
+            self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
+
+        if self.verbose>1:
+            print(f'First : {self.list_files[0]}')
+        self.nb_src = len(self.list_files)
+
+        self.init_transforms()
+        self.build_channels_id()
+        self.build_merged_type_id()
+
+        if self.store_dataset:
+            self.build_numpy_dataset()
+            del self.list_files
+
+        self.len_dataset = self.cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
+            else len(self.list_files) * self.nb_projs_per_img
+
+    def init_h5(self):
+        self.datasetfn = self.dataset_path[0]
+        self.dataseth5 = h5py.File(self.datasetfn, 'r')
+        self.keys = sorted(list(self.dataseth5.keys()))
+
+        first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
+        self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
+
+        self.build_channels_id()
+
+        if (self.max_nb_data>0 and len(self.keys)*self.nb_projs_per_img>self.max_nb_data):
+            self.keys=self.keys[:int(self.max_nb_data/self.nb_projs_per_img)]
+
+        if ('split_dataset' in  self.params and  self.params['split_dataset'] and not  self.test):
+            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay= self.params['jean_zay'])
+            self.keys = list(np.array_split(self.keys,self.number_gpu)[self.gpu_id])
+
+        if self.verbose>1:
+            print(f'First : {self.keys[0]}')
+        self.nb_src = len(self.keys)
+
+        self.init_transforms()
+        self.build_channels_id()
+
+        self.len_dataset = self.nb_src * self.nb_projs_per_img
+
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -61,57 +134,16 @@ class BaseCustomPVEProjectionsDataset(Dataset):
                 self.transforms.append(self.apply_noise)
         if self.verbose>=0:
             print(f'transforms : {self.transforms}')
+
     def apply_noise(self, input_sinogram):
         input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
         input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
         return input_sinogram
 
-
     def np_transforms(self, x):
         for trnsfm in self.transforms:
             x= trnsfm(x)
         return x
-
-class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
-    def __init__(self, params, paths,filetype=None,merged=None,test=False):
-        super().__init__(params, paths,filetype=filetype,merged=merged,test=test)
-
-        self.list_files = []
-        for path in self.dataset_path:
-            if self.merged:
-                if self.noisy:
-                    self.list_files.extend(glob.glob(f'{path}/?????_noisy_PVE_PVfree.{self.filetype}'))
-                else:
-                    self.list_files.extend(glob.glob(f'{path}/?????_PVE_PVfree.{self.filetype}'))
-            else:
-                self.list_files.extend(glob.glob(f'{path}/?????_PVE.{self.filetype}'))
-        self.list_files=sorted(self.list_files)
-        first_img = self.read(filename=self.list_files[0])
-        self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
-        self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
-
-        if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
-            self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
-
-        if ('split_dataset' in params and params['split_dataset'] and not test):
-            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
-            self.list_files = list(np.array_split(self.list_files,self.number_gpu)[self.gpu_id])
-
-        if self.verbose>1:
-            print(f'First : {self.list_files[0]}')
-        self.nb_src = len(self.list_files)
-
-        self.init_transforms()
-        self.build_channels_id()
-        self.build_merged_type_id()
-
-        if self.store_dataset:
-            self.build_numpy_dataset()
-            del self.list_files
-
-        self.len_dataset = self.cpu_dataset.shape[0] * self.nb_projs_per_img if self.store_dataset\
-            else len(self.list_files) * self.nb_projs_per_img
-
 
     def read(self,filename, projs=None):
         if self.filetype in ['mha', 'mhd']:
@@ -122,7 +154,6 @@ class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
                 np.load(filename)[projs,:,:]
         elif self.filetype=='pt':
             return torch.load(filename) if projs is None else torch.load(filename)[projs,:,:]
-
 
     def build_numpy_dataset(self):
         if self.verbose>0:
@@ -186,9 +217,9 @@ class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
     def __len__(self):
         return self.len_dataset
 
-    def __getitem__(self, item_id):
-        src_i = item_id % self.nb_src
-        proj_i = item_id // self.nb_src
+    def get_item_mhd_mha_npy(self, item):
+        src_i = item % self.nb_src
+        proj_i = item // self.nb_src
         channels_id_i = self.get_channels_id_i(proj_i=proj_i)
         if self.store_dataset:
             return (self.cpu_dataset[src_i,0,channels_id_i,:,:].float(),self.cpu_dataset[src_i,2,proj_i:proj_i+1,:,:].float())
@@ -203,41 +234,7 @@ class CustomPVEProjectionsDataset_mhd_mha_npy(BaseCustomPVEProjectionsDataset):
                 temp_input = np.concatenate((temp_input, rec_fp),axis=0)
             return temp_input,temp_target
 
-
-
-class CustomPVEProjectionDataset_h5(BaseCustomPVEProjectionsDataset):
-    def __init__(self, params, paths,filetype=None,merged=None,test=False):
-        super().__init__(params=params, paths=paths,filetype=filetype,merged=merged,test=test)
-        self.datasetfn = self.dataset_path[0]
-        self.dataseth5 = h5py.File(self.datasetfn, 'r')
-        self.keys = sorted(list(self.dataseth5.keys()))
-
-        first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
-        self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
-
-        self.build_channels_id()
-
-        if (self.max_nb_data>0 and len(self.keys)*self.nb_projs_per_img>self.max_nb_data):
-            self.keys=self.keys[:int(self.max_nb_data/self.nb_projs_per_img)]
-
-        if ('split_dataset' in params and params['split_dataset'] and not test):
-            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=params['jean_zay'])
-            self.keys = list(np.array_split(self.keys,self.number_gpu)[self.gpu_id])
-
-        if self.verbose>1:
-            print(f'First : {self.keys[0]}')
-        self.nb_src = len(self.keys)
-
-        self.init_transforms()
-        self.build_channels_id()
-
-        self.len_dataset = self.nb_src * self.nb_projs_per_img
-
-    def __len__(self):
-        return self.len_dataset
-
-
-    def __getitem__(self, item):
+    def get_item_h5(self, item):
         src_i = item % self.nb_src
         proj_i = item // self.nb_src
         channels = self.get_channels_id_i(proj_i=proj_i)
@@ -251,14 +248,13 @@ class CustomPVEProjectionDataset_h5(BaseCustomPVEProjectionsDataset):
                 data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
             return data_PVE_noisy,data_PVfree
 
+    def __getitem__(self, item):
+        return self._getitem(item)
+
 def load_data(params):
     jean_zay=params['jean_zay']
-    datatype = params["datatype"]
 
-    if datatype in ['mhd', 'mha', 'npy', 'pt']:
-        train_dataset = CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=params['dataset_path'],test=False)
-    elif datatype=='h5':
-        train_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['dataset_path'],test=False)
+    train_dataset = BaseCustomPVEProjectionsDataset(params=params, paths=params['dataset_path'],test=False)
 
     training_batchsize = params['training_batchsize']
     split_dataset = params['split_dataset']
@@ -273,11 +269,8 @@ def load_data(params):
                                   num_workers=params['num_workers'],
                                   pin_memory=True,
                                   sampler=train_sampler)
-    if datatype in ['mhd', 'mha', 'npy', 'pt']:
-        test_dataset = CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=params['test_dataset_path'], test=True)
-    elif datatype=='h5':
-        test_dataset = CustomPVEProjectionDataset_h5(params=params, paths=params['test_dataset_path'],test=True)
 
+    test_dataset = BaseCustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'],test=True)
     test_batchsize = params['test_batchsize']
 
     test_dataloader = DataLoader(dataset=test_dataset,
