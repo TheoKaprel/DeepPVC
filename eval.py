@@ -68,10 +68,7 @@ def eval_error(lpth, input,dataset_path,ftype,merged,ref, verbose,param_comp):
         elif dataset_path:
             # params['store_dataset']=True
             params['max_nb_data']=-1
-            if ftype in ['mhd', 'mha', 'npy', 'pt']:
-                test_dataset = dataset.CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
-            elif ftype == 'h5':
-                test_dataset = dataset.CustomPVEProjectionDataset_h5(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
+            test_dataset = dataset.BaseCustomPVEProjectionsDataset(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
@@ -150,12 +147,8 @@ def eval_plot(lpth, input, n, dataset_path, ftype,merged, ref, verbose, param_co
             test_dataset = helpers_data.load_image(filename=input,is_ref=ref,type=ftype, params=params)
         elif dataset_path:
             params['max_nb_data']=-1
-            if ftype in ['mhd', 'mha', 'npy', 'pt']:
-                test_dataset = dataset.CustomPVEProjectionsDataset_mhd_mha_npy(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
-            elif ftype == 'h5':
-                test_dataset = dataset.CustomPVEProjectionDataset_h5(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
-
-
+            test_dataset = dataset.BaseCustomPVEProjectionsDataset(params=params, paths=[dataset_path],filetype=ftype,merged=merged,test=True)
+            
         else:
             print('ERROR : no input nor dataset specified. You need to specify EITHER a --input /path/to/input OR a number -n 10 of image to select randomly in the dataset')
             exit(0)
