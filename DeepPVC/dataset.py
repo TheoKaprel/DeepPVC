@@ -28,6 +28,10 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.test = test
         self.params = params
 
+        if params['network'] == 'unet_denoiser_pvc':
+            self.double_model = True
+        else:
+            self.double_model = False
 
         if self.filetype in ['mhd', 'mha', 'npy', 'pt']:
             self.init_mhd_mha_npy()
@@ -246,6 +250,13 @@ class BaseCustomPVEProjectionsDataset(Dataset):
             if self.with_rec_fp:
                 rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
                 data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
+
+            if self.double_model:
+                data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
+                if self.with_rec_fp:
+                    data_PVE = np.concatenate((data_PVE,rec_fp), axis=0)
+                data_PVE_noisy = np.stack((data_PVE_noisy,data_PVE))
+            
             return data_PVE_noisy,data_PVfree
 
     def __getitem__(self, item):

@@ -1,11 +1,11 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_2/validation_dataset_2.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_2/validation_dataset_2.h5"],
   "jean_zay": false,
   "store_dataset": false,
   "split_dataset": false,
   "num_workers": 10,
-  "datatype": "npy",
+  "datatype": "h5",
   "dtype": "float16",
   "merged": true,
   "with_noise": true,
@@ -14,7 +14,7 @@
   "training_batchsize":32,
   "test_batchsize":32,
   "data_augmentation": [],
-  "data_normalisation": "img_mean",
+  "data_normalisation": "none",
   "amp": true,
   "verbose": 2,
 
