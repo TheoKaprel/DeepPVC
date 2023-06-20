@@ -275,7 +275,7 @@ class UNet_Denoiser_PVC(ModelBase):
         print(self.UNet_denoiser)
         print('*' * 20 + "PVC" + '*'*20)
         print(self.UNet_pvc)
-        if hasattr(self, "losses"):
+        if hasattr(self, "losses_denoiser"):
             print('Losses : ')
             print(self.losses_params)
             print('Denoiser loss : ')
