@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/validation_dataset.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/validation_dataset.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
   "jean_zay": false,
   "store_dataset": false,
   "split_dataset": false,
@@ -10,13 +10,17 @@
 =======
   "num_workers": 10,
 <<<<<<< HEAD
+<<<<<<< HEAD
   "datatype": "pt",
 >>>>>>> 6b0a84e4912f3428e7a94b59acb4121ab5230797
 =======
   "datatype": "h5",
 >>>>>>> f447fbb8bc82ba7d60b776bb0bdee93e4c16b9d5
+=======
+  "datatype": "npy",
+>>>>>>> d874f7545f4cc4e09ab672268345e1c3b0585275
   "dtype": "float16",
-  "merged": false,
+  "merged": true,
   "with_noise": true,
   "with_rec_fp": true,
   "max_nb_data": 360,
@@ -54,6 +58,6 @@
   "nb_ed_layers": 3,
   "hidden_channels_unet":32,
   "unet_activation": "relu",
-  "recon_loss":["SmoothL1"],
+  "recon_loss":["L1"],
   "lambda_recon":[1]
 }

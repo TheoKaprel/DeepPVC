@@ -18,7 +18,7 @@
   "amp": true,
   "verbose": 2,
 
-  "network": "unet",
+  "network": "unet_denoiser_pvc",
 
   "n_epochs":100,
   "learning_rate":0.0001,

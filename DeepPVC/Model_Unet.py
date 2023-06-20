@@ -110,8 +110,6 @@ class UNetModel(ModelBase):
     def forward(self, batch):
         if  batch.dim()==4:
             self.truePVE = batch
-        elif batch.dim()==5:
-            self.truePVE = batch[:, 0,:, :, :]
         with autocast(enabled=self.amp):
             return self.UNet(self.truePVE)
 

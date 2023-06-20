@@ -120,7 +120,7 @@ def check_params(params, fatal_on_unknown=False):
     elif params['network']=='unet':
         check_params_unet(params=params, fatal_on_unknown=fatal_on_unknown)
     elif params['network']=='unet_denoiser_pvc':
-        check_params_unet_denoiser_pvc(params=params,fatal_on_unknown=fatal_on_unknown)
+        check_params_unet(params=params,fatal_on_unknown=fatal_on_unknown)
 
 
 
