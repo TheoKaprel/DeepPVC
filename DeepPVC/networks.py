@@ -16,19 +16,29 @@ class DownSamplingBlock(nn.Module):
             self.res_conv = nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
 
         down_done = False
+        fist_conv_done = False
         for elmt in splited_block:
-            if (elmt=="conv" and down_done==False):
-                sequenceDownBlock.append(nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding))
-                down_done=True
-            elif (elmt=="conv" and down_done):
-                sequenceDownBlock.append(nn.Conv2d(output_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+            if ((elmt=='downconv') or (elmt=="conv" and down_done==False and ('pool' not in splited_block))):
+                sequenceDownBlock.append(nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding=padding))
+                down_done,fist_conv_done = True,True
+            elif (elmt=="conv"):
+                if fist_conv_done:
+                    sequenceDownBlock.append(nn.Conv2d(output_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+                else:
+                    sequenceDownBlock.append(nn.Conv2d(input_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+                    fist_conv_done=True
             elif elmt=="relu":
                 sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val, True))
+            elif elmt=='pool':
+                sequenceDownBlock.append(nn.MaxPool2d((2,2)))
+                down_done = True
             elif elmt=="norm":
                 if norm == "batch_norm":
                     sequenceDownBlock.append(nn.BatchNorm2d(output_nc, track_running_stats=False))
                 elif norm == "inst_norm":
                     sequenceDownBlock.append(nn.InstanceNorm2d(output_nc))
+
+        assert(down_done==True)
 
         self.sequenceDownBlock = nn.Sequential(*sequenceDownBlock)
 
