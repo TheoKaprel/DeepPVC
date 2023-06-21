@@ -251,7 +251,7 @@ class BaseCustomPVEProjectionsDataset(Dataset):
                 rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
                 data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
 
-            if self.double_model:
+            if (self.double_model and not self.test):
                 data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
                 if self.with_rec_fp:
                     data_PVE = np.concatenate((data_PVE,rec_fp), axis=0)
