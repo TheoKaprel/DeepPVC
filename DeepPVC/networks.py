@@ -362,3 +362,46 @@ class AttentionUNet(nn.Module):
         y = self.activation(y)
         # ----------------------------------------------------------
         return(y)
+
+
+# Define the Residual Block
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out += residual
+        out = self.relu(out)
+        return out
+
+
+# Define the Deconvolution Network
+class ResCNN(nn.Module):
+    def __init__(self, in_channels, out_channels, ngc=64):
+        super(ResCNN, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, ngc, kernel_size=(7,7), stride=(1,1), padding=3)
+        self.relu = nn.ReLU(inplace=True)
+
+        self.residual_blocks = nn.Sequential(
+            ResidualBlock(ngc, ngc),
+            ResidualBlock(ngc, ngc),
+            ResidualBlock(ngc, ngc)
+        )
+
+        self.final_layer = nn.Conv2d(ngc, out_channels, kernel_size=(7,7), stride=(1,1), padding=3)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.relu(x)
+
+        x = self.residual_blocks(x)
+
+        x = self.final_layer(x)
+        return x
