@@ -395,7 +395,7 @@ class ResCNN(nn.Module):
             ResidualBlock(ngc, ngc)
         )
 
-        self.final_layer = nn.Conv2d(ngc, out_channels, kernel_size=(7,7), stride=(1,1), padding=3)
+        self.final_layer = nn.Conv2d(ngc, out_channels, kernel_size=(1,1), stride=(1,1), padding=0)
 
     def forward(self, x):
         x = self.conv1(x)

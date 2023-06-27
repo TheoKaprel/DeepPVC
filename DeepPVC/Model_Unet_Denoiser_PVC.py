@@ -200,23 +200,23 @@ class UNet_Denoiser_PVC(ModelBase):
         self.params['current_epoch'] = self.current_epoch
         jean_zay = self.params['jean_zay']
 
-        if not output_path:
+        if output_path is None:
             if self.output_folder:
                 output_path = os.path.join(self.output_folder, self.output_pth)
             else:
                 raise ValueError("Error: no output_folder specified")
-        if jean_zay:
-            torch.save({'saving_date': time.asctime(),
-                        'epoch': self.current_epoch,
-                        'unet_denoiser': self.UNet_denoiser.module.state_dict() if jean_zay else self.UNet_denoiser.state_dict(),
-                        'unet_pvc': self.UNet_pvc.module.state_dict() if jean_zay else self.UNet_pvc.state_dict(),
-                        'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
-                        'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
-                        'unet_denoiser_losses': self.unet_denoiser_losses,
-                        'unet_pvc_losses': self.unet_pvc_losses,
-                        'test_error': self.test_error,
-                        'params': self.params
-                        }, output_path)
+
+        torch.save({'saving_date': time.asctime(),
+                    'epoch': self.current_epoch,
+                    'unet_denoiser': self.UNet_denoiser.module.state_dict() if jean_zay else self.UNet_denoiser.state_dict(),
+                    'unet_pvc': self.UNet_pvc.module.state_dict() if jean_zay else self.UNet_pvc.state_dict(),
+                    'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
+                    'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
+                    'unet_denoiser_losses': self.unet_denoiser_losses,
+                    'unet_pvc_losses': self.unet_pvc_losses,
+                    'test_error': self.test_error,
+                    'params': self.params
+                    }, output_path)
         if self.verbose > 0:
             print(f'Model saved at : {output_path}')
 
