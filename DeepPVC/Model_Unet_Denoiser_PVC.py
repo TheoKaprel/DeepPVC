@@ -30,6 +30,8 @@ class UNet_Denoiser_PVC(ModelBase):
         self.residual_layer = params['residual_layer']
         self.ResUnet = params['resunet']
 
+        self.DCNN = params['DCNN'] if 'DCNN' in params else False
+
         self.attention = False if 'attention' not in params else params['attention']
 
         self.init_model()
@@ -63,6 +65,10 @@ class UNet_Denoiser_PVC(ModelBase):
             self.UNet = networks_diff.AttentionResUnet(init_dim=self.hidden_channels_unet, out_dim=1,
                                                        channels=self.input_channels, dim_mults=(1, 2, 4, 8)).to(
                 device=self.device)
+
+        elif self.DCNN:
+            self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels).to(device=self.device)
+            self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1).to(device=self.device)
         else:
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
@@ -194,23 +200,23 @@ class UNet_Denoiser_PVC(ModelBase):
         self.params['current_epoch'] = self.current_epoch
         jean_zay = self.params['jean_zay']
 
-        if not output_path:
+        if output_path is None:
             if self.output_folder:
                 output_path = os.path.join(self.output_folder, self.output_pth)
             else:
                 raise ValueError("Error: no output_folder specified")
-        if jean_zay:
-            torch.save({'saving_date': time.asctime(),
-                        'epoch': self.current_epoch,
-                        'unet_denoiser': self.UNet_denoiser.module.state_dict() if jean_zay else self.UNet_denoiser.state_dict(),
-                        'unet_pvc': self.UNet_pvc.module.state_dict() if jean_zay else self.UNet_pvc.state_dict(),
-                        'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
-                        'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
-                        'unet_denoiser_losses': self.unet_denoiser_losses,
-                        'unet_pvc_losses': self.unet_pvc_losses,
-                        'test_error': self.test_error,
-                        'params': self.params
-                        }, output_path)
+
+        torch.save({'saving_date': time.asctime(),
+                    'epoch': self.current_epoch,
+                    'unet_denoiser': self.UNet_denoiser.module.state_dict() if jean_zay else self.UNet_denoiser.state_dict(),
+                    'unet_pvc': self.UNet_pvc.module.state_dict() if jean_zay else self.UNet_pvc.state_dict(),
+                    'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
+                    'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
+                    'unet_denoiser_losses': self.unet_denoiser_losses,
+                    'unet_pvc_losses': self.unet_pvc_losses,
+                    'test_error': self.test_error,
+                    'params': self.params
+                    }, output_path)
         if self.verbose > 0:
             print(f'Model saved at : {output_path}')
 

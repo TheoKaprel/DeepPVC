@@ -41,6 +41,7 @@
   "validation_norm": "L1",
   "comment": "",
 
+  "DCNN": true,
   "init_feature_kernel": 5,
   "nb_ed_layers": 3,
   "hidden_channels_unet":16,
