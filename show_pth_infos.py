@@ -19,6 +19,7 @@ def show_pth(lpth, losses, legend):
     device = helpers.get_auto_device("cpu")
 
     dict_test={}
+    dict_val={}
 
     for pth in lpth:
         nn = torch.load(pth,map_location=device)
@@ -39,6 +40,8 @@ def show_pth(lpth, losses, legend):
         if losses:
             model.plot_losses(save=False, wait=True, title=pth)
             dict_test[ref]=model.test_error
+            dict_val[ref]=model.val_error_MSE
+            print(model.val_error_MSE)
 
     if losses:
         if legend is None:
@@ -54,6 +57,9 @@ def show_pth(lpth, losses, legend):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
                          color=colors[i], linewidth = 2)
+        for i,(ref_i,val_i) in enumerate(dict_val.items()):
+            ax_test.plot([e[0] for e in  val_i],[e[1] for e in  val_i],label=f'{legend[i]} (val)',
+                         color=colors[i], linewidth = 1, linestyle="dashed")
         ax_test.legend(fontsize = 18)
         ax_test.set_title('Test loss', fontsize = 18)
         ax_test.set_xlabel("Epochs", fontsize = 18)

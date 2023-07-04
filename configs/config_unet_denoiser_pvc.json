@@ -1,6 +1,7 @@
 {
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_2/validation_dataset_2.h5"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_2/validation_dataset_2.h5"],
+  "validation_ref_type": ["/export/home/tkaprelian/Desktop/PVE/datasets/IEC/IEC_air_10bg_intevo_280sid/iec_1mm_c_rot_air_proj256","mhd"],
   "jean_zay": false,
   "store_dataset": false,
   "split_dataset": false,
@@ -20,7 +21,7 @@
 
   "network": "unet_denoiser_pvc",
 
-  "n_epochs":5,
+  "n_epochs":30,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 4],
   "input_eq_angles": 4,
@@ -41,7 +42,7 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "DCNN": true,
+  "DCNN": false,
   "init_feature_kernel": 5,
   "nb_ed_layers": 3,
   "hidden_channels_unet":16,

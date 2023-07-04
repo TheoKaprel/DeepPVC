@@ -5,6 +5,7 @@ import json as js
 import os
 import numpy as np
 import click
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 
@@ -69,7 +70,20 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if rank==0:
         DeepPVEModel.show_infos()
 
+        if "validation_ref_type" in params:
+            do_validation= True
+            validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
+                                                   is_ref=True,type = params["validation_ref_type"][1],
+                                                   params=params)
+            validation_dataloader = DataLoader(dataset=validation_dataset,batch_size=32,shuffle=False)
+        else:
+            do_validation=False
+
+
+
     device = DeepPVEModel.device
+
+
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
@@ -172,6 +186,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MAE])
             elif params['validation_norm']=="L2":
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, RMSE])
+
+            if do_validation:
+                RMSE_val,MAE_val = helpers_functions.validation_errors(validation_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=True)
+                print(RMSE_val,MAE_val)
+                DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
+                DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
 
             if verbose_main_process:
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
