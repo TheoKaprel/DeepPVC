@@ -215,6 +215,7 @@ class UNet_Denoiser_PVC(ModelBase):
                     'unet_denoiser_losses': self.unet_denoiser_losses,
                     'unet_pvc_losses': self.unet_pvc_losses,
                     'test_error': self.test_error,
+                    'val_mse':self.val_error_MSE,
                     'params': self.params
                     }, output_path)
         if self.verbose > 0:
@@ -240,6 +241,7 @@ class UNet_Denoiser_PVC(ModelBase):
             self.UNet_pvc.load_state_dict(checkpoint['unet_pvc'])
         self.unet_denoiser_losses,self.unet_pvc_losses = checkpoint['unet_denoiser_losses'],checkpoint['unet_pvc_losses']
         self.test_error = checkpoint['test_error']
+        self.val_error_MSE = checkpoint['val_mse']
         self.current_epoch = checkpoint['epoch']
 
         if self.resume_training:

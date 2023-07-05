@@ -33,6 +33,8 @@ class ModelBase(torch.nn.Module):
 
         self.resume_training = resume_training
 
+        self.val_error_MSE,self.val_error_MAE=[],[]
+
         self.ones = torch.tensor([1.0],device=self.device,requires_grad=False)
         self.zeros = torch.tensor([0.0],device=self.device,requires_grad=False)
 
