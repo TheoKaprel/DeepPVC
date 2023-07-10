@@ -67,8 +67,8 @@ class UNet_Denoiser_PVC(ModelBase):
                 device=self.device)
 
         elif self.DCNN:
-            self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels).to(device=self.device)
-            self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1).to(device=self.device)
+            self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc=self.hidden_channels_unet).to(device=self.device)
+            self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1,ngc=self.hidden_channels_unet).to(device=self.device)
         else:
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
