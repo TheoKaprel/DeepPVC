@@ -60,30 +60,16 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     save_every_n_epoch,show_every_n_epoch,test_every_n_epoch = params['save_every_n_epoch'],params['show_every_n_epoch'],params['test_every_n_epoch']
 
-    train_dataloader, test_dataloader, params = dataset.load_data(params)
+    train_dataloader, test_dataloader, validation_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
 
     if resume_pth is not None:
         DeepPVEModel.load_model(pth_path=resume_pth)
 
-    if rank==0:
-        DeepPVEModel.show_infos()
-
-        if "validation_ref_type" in params:
-            do_validation= True
-            validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
-                                                   is_ref=True,type = params["validation_ref_type"][1],
-                                                   params=params)
-            validation_dataloader = DataLoader(dataset=validation_dataset,batch_size=32,shuffle=False)
-        else:
-            do_validation=False
-
-
-
     device = DeepPVEModel.device
 
-
+    min_val_mse=np.infty
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
@@ -187,11 +173,18 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             elif params['validation_norm']=="L2":
                 DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, RMSE])
 
-            if do_validation:
+            if (validation_dataloader is not None) and rank==0:
                 RMSE_val,MAE_val = helpers_functions.validation_errors(validation_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=True)
                 print(RMSE_val,MAE_val)
                 DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
                 DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
+
+                if RMSE_val<min_val_mse:
+                    min_val_mse=RMSE_val
+                    DeepPVEModel.params['training_duration'] = round(time.time() - t0)
+                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth",
+                                                                                                                         f"_early_stopping.pth"))
+                    DeepPVEModel.save_model(output_path=emergency_output_filename)
 
             if verbose_main_process:
                 print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')

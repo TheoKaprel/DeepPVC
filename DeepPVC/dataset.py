@@ -7,7 +7,7 @@ import h5py
 from torch.utils.data import Dataset,DataLoader
 
 
-from . import helpers_data_parallelism, helpers
+from . import helpers_data_parallelism, helpers,helpers_data
 
 class BaseCustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,filetype=None,merged=None,test=False):
@@ -269,13 +269,12 @@ def load_data(params):
 
     training_batchsize = params['training_batchsize']
     split_dataset = params['split_dataset']
-    train_sampler, shuffle, training_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
-                                                                                                            batch_size=training_batchsize,
+    train_sampler, shuffle, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
                                                                                                             jean_zay=jean_zay,
                                                                                                             split_dataset=split_dataset)
 
     train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_size=training_batch_size_per_gpu,
+                                  batch_size=training_batchsize,
                                   shuffle=shuffle,
                                   num_workers=params['num_workers'],
                                   pin_memory=True,
@@ -291,6 +290,14 @@ def load_data(params):
                                   pin_memory=True,
                                   sampler=None)
 
+    if "validation_ref_type" in params:
+        validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
+                                                     is_ref=True, type=params["validation_ref_type"][1],
+                                                     params=params)
+        validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=32, shuffle=False)
+    else:
+        validation_dataloader = None
+
     nb_training_data = len(train_dataloader.dataset)
     nb_testing_data = len(test_dataloader.dataset)
     if params['verbose']>0:
@@ -303,4 +310,4 @@ def load_data(params):
     params['test_mini_batchsize'] = test_batchsize
     params['norm'] = 'none'
 
-    return train_dataloader, test_dataloader,params
+    return train_dataloader, test_dataloader,validation_dataloader,params

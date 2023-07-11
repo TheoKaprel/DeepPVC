@@ -24,6 +24,7 @@
   "n_epochs":30,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 50],
+  "early_stopping": true,
   "input_eq_angles": 4,
   "with_adj_angles": true,
   "conv3d": false,
