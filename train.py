@@ -67,6 +67,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if resume_pth is not None:
         DeepPVEModel.load_model(pth_path=resume_pth)
 
+    if rank == 0:
+        DeepPVEModel.show_infos()
+
     device = DeepPVEModel.device
 
     min_val_mse=np.infty
