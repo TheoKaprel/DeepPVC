@@ -179,7 +179,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
                 DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
 
-                if RMSE_val<min_val_mse:
+                if (RMSE_val<min_val_mse and params['early_stopping']):
                     min_val_mse=RMSE_val
                     DeepPVEModel.params['training_duration'] = round(time.time() - t0)
                     emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth",
