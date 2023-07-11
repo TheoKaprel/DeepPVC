@@ -216,6 +216,7 @@ class UNet_Denoiser_PVC(ModelBase):
                     'unet_pvc_losses': self.unet_pvc_losses,
                     'test_error': self.test_error,
                     'val_mse':self.val_error_MSE,
+                    'val_mae': self.val_error_MAE,
                     'params': self.params
                     }, output_path)
         if self.verbose > 0:
@@ -243,6 +244,7 @@ class UNet_Denoiser_PVC(ModelBase):
         self.test_error = checkpoint['test_error']
 
         self.val_error_MSE = checkpoint['val_mse'] if 'val_mse' in checkpoint else []
+        self.val_error_MAE = checkpoint['val_mae'] if 'val_mae' in checkpoint else []
         self.current_epoch = checkpoint['epoch']
 
         if self.resume_training:

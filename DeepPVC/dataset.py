@@ -7,7 +7,7 @@ import h5py
 from torch.utils.data import Dataset,DataLoader
 
 
-from . import helpers_data_parallelism, helpers
+from . import helpers_data_parallelism, helpers,helpers_data
 
 class BaseCustomPVEProjectionsDataset(Dataset):
     def __init__(self, params, paths,filetype=None,merged=None,test=False):
@@ -291,6 +291,14 @@ def load_data(params):
                                   pin_memory=True,
                                   sampler=None)
 
+    if "validation_ref_type" in params:
+        validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
+                                                     is_ref=True, type=params["validation_ref_type"][1],
+                                                     params=params)
+        validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=32, shuffle=False)
+    else:
+        validation_dataloader = None
+
     nb_training_data = len(train_dataloader.dataset)
     nb_testing_data = len(test_dataloader.dataset)
     if params['verbose']>0:
@@ -303,4 +311,4 @@ def load_data(params):
     params['test_mini_batchsize'] = test_batchsize
     params['norm'] = 'none'
 
-    return train_dataloader, test_dataloader,params
+    return train_dataloader, test_dataloader,validation_dataloader,params
