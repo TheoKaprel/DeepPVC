@@ -306,7 +306,7 @@ def load_data(params):
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
     params['nb_gpu'] = number_gpu
-    params['training_mini_batchsize'] = training_batch_size_per_gpu
+    params['training_mini_batchsize'] = training_batchsize
     params['test_mini_batchsize'] = test_batchsize
     params['norm'] = 'none'
 
