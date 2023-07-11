@@ -269,13 +269,12 @@ def load_data(params):
 
     training_batchsize = params['training_batchsize']
     split_dataset = params['split_dataset']
-    train_sampler, shuffle, training_batch_size_per_gpu, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
-                                                                                                            batch_size=training_batchsize,
+    train_sampler, shuffle, pin_memory,number_gpu = helpers_data_parallelism.get_dataloader_params(dataset=train_dataset,
                                                                                                             jean_zay=jean_zay,
                                                                                                             split_dataset=split_dataset)
 
     train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_size=training_batch_size_per_gpu,
+                                  batch_size=training_batchsize,
                                   shuffle=shuffle,
                                   num_workers=params['num_workers'],
                                   pin_memory=True,

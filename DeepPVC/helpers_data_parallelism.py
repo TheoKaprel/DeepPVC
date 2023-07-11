@@ -20,10 +20,9 @@ def init_data_parallelism(model):
         model.UNet_denoiser = DistributedDataParallel(model.UNet_denoiser, device_ids=[idr_torch.local_rank])
         model.UNet_pvc = DistributedDataParallel(model.UNet_pvc, device_ids=[idr_torch.local_rank])
 
-def get_dataloader_params(dataset,batch_size,jean_zay,split_dataset):
+def get_dataloader_params(dataset,jean_zay,split_dataset):
     if jean_zay:
         import idr_torch
-        batch_size_per_gpu = batch_size // idr_torch.size
         pin_memory = False
         number_gpu = idr_torch.size
         if split_dataset:
@@ -38,9 +37,9 @@ def get_dataloader_params(dataset,batch_size,jean_zay,split_dataset):
 
     else:
         number_gpu = torch.cuda.device_count()
-        sampler,shuffle,batch_size_per_gpu,pin_memory= None, True,batch_size,False
+        sampler,shuffle,pin_memory= None, True,False
 
-    return sampler,shuffle,batch_size_per_gpu,pin_memory,number_gpu
+    return sampler,shuffle,pin_memory,number_gpu
 
 
 def get_gpu_id_nb_gpu(jean_zay):
