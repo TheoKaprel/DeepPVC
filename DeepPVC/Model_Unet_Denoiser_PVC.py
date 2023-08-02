@@ -284,8 +284,13 @@ class UNet_Denoiser_PVC(ModelBase):
         print(f'list of errors on test data :{self.test_error} ')
         print('*' * 20 + "DENOISER" + '*'*20)
         print(self.UNet_denoiser)
+        nb_params = sum(p.numel() for p in self.UNet_denoiser.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
+
         print('*' * 20 + "PVC" + '*'*20)
         print(self.UNet_pvc)
+        nb_params = sum(p.numel() for p in self.UNet_pvc.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
         if hasattr(self, "losses_denoiser"):
             print('Losses : ')
             print(self.losses_params)

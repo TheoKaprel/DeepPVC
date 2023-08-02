@@ -21,7 +21,7 @@
 
   "network": "unet_denoiser_pvc",
 
-  "n_epochs":30,
+  "n_epochs":10,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 50],
   "early_stopping": true,
@@ -31,9 +31,9 @@
   "layer_norm": "inst_norm",
   "use_dropout": true,
   "leaky_relu": 0.02,
-  "ed_blocks": "conv-norm-relu-conv-relu-norm",
+  "ed_blocks": ["downconv-norm-relu-conv-relu-norm", "convT-norm-relu-conv-relu-norm"],
   "residual_layer": true,
-  "resunet": false,
+  "resunet": true,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
