@@ -15,11 +15,17 @@ class DownSamplingBlock(nn.Module):
         if self.res_unit:
             self.res_conv = nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
 
+        first_conv = False
         for elmt in splited_block:
             if (elmt=='downconv'):
                 sequenceDownBlock.append(nn.Conv2d(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding=padding))
+                first_conv = True
             elif (elmt=="conv"):
-                sequenceDownBlock.append(nn.Conv2d(output_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+                if first_conv:
+                    sequenceDownBlock.append(nn.Conv2d(output_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+                else:
+                    sequenceDownBlock.append(nn.Conv2d(input_nc, output_nc, kernel_size=(3,3), stride=(1,1), padding=1))
+                    first_conv = True
             elif elmt=="relu":
                 sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val, True))
             elif elmt=='pool':
