@@ -7,7 +7,7 @@ not_updatable_paramter_list_when_resume_training = ['input_channels', 'hidden_ch
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
 required = ['dataset_path', 'test_dataset_path','with_noise','input_eq_angles',
-            'data_normalisation', 'network', 'n_epochs', 'learning_rate','use_dropout',
+            'data_normalisation', 'network', 'n_epochs', 'learning_rate',
             'optimizer', 'device', 'lr_policy']
 
 automated = ['training_start_time', 'start_epoch', 'current_epoch', 'training_endtime', 'ref', 'output_folder',
@@ -21,12 +21,12 @@ default_params_values = [["datatype", "mhd"], ['training_batchsize', 5],
 default_params = [param for param, value in default_params_values]
 
 required_pix2pix = ["nb_ed_layers", "hidden_channels_gen", "hidden_channels_disc",
-                    "generator_activation", "layer_norm",
+                    "generator_activation", "layer_norm",'use_dropout',
                     "adv_loss", "recon_loss", "lambda_recon", "generator_update", "discriminator_update"]
 
-required_unet = ["nb_ed_layers", "hidden_channels_unet", "unet_activation", "layer_norm", "recon_loss"]
+required_unet = ['use_dropout',"nb_ed_layers", "hidden_channels_unet", "unet_activation", "layer_norm", "recon_loss"]
 
-required_unet_denoiser_pvc = ["nb_ed_layers_denoiser","hidden_channels_unet_denoiser","unet_denoiser_activation","recon_loss_denoiser","unet_denoiser_norm",
+required_unet_denoiser_pvc = ['use_dropout',"nb_ed_layers_denoiser","hidden_channels_unet_denoiser","unet_denoiser_activation","recon_loss_denoiser","unet_denoiser_norm",
                               "nb_ed_layers_pvc","hidden_channels_unet_pvc","unet_pvc_activation","recon_loss_pvc","unet_pvc_norm",
                               "denoiser_update","pvc_update"]
 
@@ -93,7 +93,7 @@ def check_params(params, fatal_on_unknown=False):
     assert (params["datatype"] in ["mhd", "mha", "npy", "pt", "h5"])
     assert (type(params['with_noise'])==bool)
 
-    assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc'])
+    assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc', 'diffusion'])
 
 
     int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_eq_angles','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']
@@ -101,7 +101,7 @@ def check_params(params, fatal_on_unknown=False):
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
 
-    assert(type(params['use_dropout'])==bool)
+
 
     assert((type(params['learning_rate']) in [int, float]))
     assert(params['learning_rate']>0)
@@ -135,6 +135,8 @@ def check_params_pix2pix(params, fatal_on_unknown):
     for int_param in int_param_list:
         assert(type(params[int_param])==int)
         assert(params[int_param]>0)
+
+    assert (type(params['use_dropout']) == bool)
 
     assert(params['generator_activation'] in activation_functions)
     assert(params['layer_norm'] in pre_layer_normalisations)
@@ -180,6 +182,8 @@ def check_params_unet(params, fatal_on_unknown):
     else:
         assert(params['recon_loss'] in losses)
 
+    assert (type(params['use_dropout']) == bool)
+
     for p in params:
         if p not in (required+required_unet+automated+default_params+ballek):
             if fatal_on_unknown:
@@ -187,6 +191,7 @@ def check_params_unet(params, fatal_on_unknown):
                 exit(0)
             else:
                 print(f'WARNING Unknown key named "{p}" in the params')
+
 
 
 def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
@@ -202,6 +207,8 @@ def check_params_unet_denoiser_pvc(params, fatal_on_unknown):
 
     assert(params["unet_denoiser_activation"] in activation_functions)
     assert(params["unet_pvc_activation"] in activation_functions)
+
+    assert (type(params['use_dropout']) == bool)
 
     if type(params['recon_loss_denoiser'])==list:
         for l in params['recon_loss_denoiser']:

@@ -19,6 +19,8 @@ def init_data_parallelism(model):
     elif model.network_type=='unet_denoiser_pvc':
         model.UNet_denoiser = DistributedDataParallel(model.UNet_denoiser, device_ids=[idr_torch.local_rank])
         model.UNet_pvc = DistributedDataParallel(model.UNet_pvc, device_ids=[idr_torch.local_rank])
+    elif model.network_type=='diffusion':
+        model.Diffusion_Unet = DistributedDataParallel(model.Diffusion_Unet, device_ids=[idr_torch.local_rank])
 
 def get_dataloader_params(dataset,jean_zay,split_dataset):
     if jean_zay:

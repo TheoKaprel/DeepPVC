@@ -24,8 +24,8 @@ class ModelBase(torch.nn.Module):
         self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
         self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
-        self.use_dropout = params['use_dropout']
-        self.leaky_relu = params['leaky_relu']
+        self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
+        self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None
         self.optimizer = params['optimizer']
 
         self.output_folder = self.params['output_folder']
