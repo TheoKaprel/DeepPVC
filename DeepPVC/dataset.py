@@ -294,7 +294,7 @@ def load_data(params):
         validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
                                                      is_ref=True, type=params["validation_ref_type"][1],
                                                      params=params)
-        validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=32, shuffle=False)
+        validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=test_batchsize, shuffle=False)
     else:
         validation_dataloader = None
 
