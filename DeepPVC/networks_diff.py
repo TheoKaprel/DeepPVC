@@ -10,12 +10,6 @@ import math
 def exists(x):
     return x is not None
 
-def default(val, d):
-    if exists(val):
-        return val
-    return d() if isfunction(d) else d
-
-
 class Residual(nn.Module):
     def __init__(self, fn):
         super().__init__()
@@ -28,7 +22,7 @@ class Residual(nn.Module):
 def Upsample(dim, dim_out=None):
     return nn.Sequential(
         nn.Upsample(scale_factor=2, mode="nearest"),
-        nn.Conv2d(dim, default(dim_out, dim), 3, padding=1),
+        nn.Conv2d(dim, dim_out, 3, padding=1),
     )
 
 
@@ -36,22 +30,20 @@ def Downsample(dim, dim_out=None):
     # No More Strided Convolutions or Pooling
     return nn.Sequential(
         Rearrange("b c (h p1) (w p2) -> b (c p1 p2) h w", p1=2, p2=2),
-        nn.Conv2d(dim * 4, default(dim_out, dim), 1),
+        nn.Conv2d(dim * 4, dim_out, 1),
     )
 
 class SinusoidalPositionEmbeddings(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, device):
         super().__init__()
         self.dim = dim
+        half_dim = self.dim // 2
+        self.embeddings = math.log(10000) / (half_dim - 1)
+        self.embeddings = torch.exp(torch.arange(half_dim, device=device) * -self.embeddings)
 
     def forward(self, time):
-        device = time.device
-        half_dim = self.dim // 2
-        embeddings = math.log(10000) / (half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
-        embeddings = time[:, None] * embeddings[None, :]
-        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
-        return embeddings
+        embedded_time = time[:, None] * self.embeddings[None, :]
+        return torch.cat((embedded_time.sin(), embedded_time.cos()), dim=-1)
 
 class WeightStandardizedConv2d(nn.Conv2d):
     """
@@ -190,34 +182,31 @@ class PreNorm(nn.Module):
 class Diffusion_Unet(nn.Module):
     def __init__(
         self,
-        dim,
         init_dim=None,
         out_dim=None,
         dim_mults=(1, 2, 4, 8),
-        input_channels=1,
-        self_condition=False,
+        img_channels=1,
         resnet_block_groups=4,
+        device=None
     ):
         super().__init__()
 
         # determine dimensions
-        self.self_condition = self_condition
-        input_channels = input_channels + out_dim if self_condition else out_dim
+        input_channels = img_channels + out_dim
 
-        init_dim = default(init_dim, dim)
         self.init_conv = nn.Conv2d(input_channels, init_dim, 1, padding=0) # changed to 1 and 0 from 7,3
 
-        dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
+        dims = [init_dim, *map(lambda m: init_dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
 
         block_klass = partial(ResnetBlock, groups=resnet_block_groups)
 
         # time embeddings
-        time_dim = dim * 4
+        time_dim = init_dim * 4
 
         self.time_mlp = nn.Sequential(
-            SinusoidalPositionEmbeddings(dim),
-            nn.Linear(dim, time_dim),
+            SinusoidalPositionEmbeddings(init_dim,device),
+            nn.Linear(init_dim, time_dim),
             nn.GELU(),
             nn.Linear(time_dim, time_dim),
         )
@@ -266,13 +255,11 @@ class Diffusion_Unet(nn.Module):
 
         self.out_dim = out_dim
 
-        self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
-        self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
+        self.final_res_block = block_klass(init_dim * 2, init_dim, time_emb_dim=time_dim)
+        self.final_conv = nn.Conv2d(init_dim, self.out_dim, 1)
 
     def forward(self, x, time, x_self_cond=None):
-        if self.self_condition:
-            x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
-            x = torch.cat((x_self_cond, x), dim=1)
+        x = torch.cat((x_self_cond, x), dim=1)
 
         x = self.init_conv(x)
         r = x.clone()

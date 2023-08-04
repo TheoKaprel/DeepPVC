@@ -6,7 +6,7 @@ import time
 import torch
 from torch import optim
 
-from . import losses, helpers_data_parallelism, networks_diff, plots,functions_diffusion
+from . import helpers_data_parallelism, networks_diff, plots,functions_diffusion,networks
 from torch.cuda.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
@@ -52,9 +52,9 @@ class Diffusion_UNet(ModelBase):
     def init_model(self):
         if self.verbose > 0:
             print(f'models device is supposed to be : {self.device}')
-        self.Diffusion_Unet = networks_diff.Diffusion_Unet(init_dim=self.hidden_channels_unet,dim = self.hidden_channels_unet,
-                                                             out_dim=1,dim_mults=self.dim_mults,self_condition=True,
-                                                             input_channels=self.input_channels,
+        self.Diffusion_Unet = networks_diff.Diffusion_Unet(init_dim=self.hidden_channels_unet,
+                                                             out_dim=1,dim_mults=self.dim_mults,
+                                                             img_channels=self.input_channels,device=self.device,
                                                              resnet_block_groups=2).to(device=self.device)
 
         # self.Diffusion_Unet = networks_diff.SimpleUnet(init_dim=self.hidden_channels_unet,

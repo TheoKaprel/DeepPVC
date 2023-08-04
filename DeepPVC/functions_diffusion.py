@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# from https://huggingface.co/blog/annotated-diffusion
+
 from inspect import isfunction
 import torch
 from tqdm.auto import tqdm
@@ -146,7 +148,6 @@ def p_sample_loop(model, cond,shape):
 
     for i in tqdm(reversed(range(0, timesteps)), desc='sampling loop time step', total=timesteps):
         img = p_sample(model, img,cond, torch.full((b,), i, device=device, dtype=torch.long), i)
-        # imgs.append(img.cpu().numpy())
         imgs.append(img)
     return imgs
 
