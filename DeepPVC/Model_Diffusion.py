@@ -79,8 +79,13 @@ class Diffusion_UNet(ModelBase):
             self.scheduler_diffusion = optim.lr_scheduler.MultiplicativeLR(self.diffusion_optimizer, lbda)
 
     def input_data(self, batch_inputs, batch_targets):
-        self.truePVE_noisy = batch_inputs
-        self.truePVfree = batch_targets
+        # self.truePVE_noisy = batch_inputs
+        # self.truePVfree = batch_targets
+
+        # [-1,1] scale
+        self.truePVE_noisy = 2*(batch_inputs - batch_inputs.min())/(batch_inputs.max() - batch_inputs.min()) - 1
+        self.truePVfree = 2*(batch_targets - batch_targets.min())/(batch_targets.max() - batch_targets.min()) - 1
+
         self.batch_size = self.truePVE_noisy.shape[0]
 
     def forward(self, batch):
@@ -88,6 +93,8 @@ class Diffusion_UNet(ModelBase):
             truePVEnoisy = batch
         elif batch.dim() == 5:
             truePVEnoisy = batch[:,0,:,:,:]
+
+        truePVEnoisy = 2 * (truePVEnoisy - truePVEnoisy.min()) / (truePVEnoisy.max() - truePVEnoisy.min()) - 1
 
         output = torch.zeros((truePVEnoisy.shape[0], 1, truePVEnoisy.shape[2], truePVEnoisy.shape[3]))
         for i in range(truePVEnoisy.shape[0]):
