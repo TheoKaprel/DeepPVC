@@ -15,14 +15,15 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--input', '-i')
 @click.option('--input_rec_fp')
 @click.option('--output', '-o', help = 'Output filename (mhd)')
-def apply_click(pth,input,input_rec_fp, output):
-    apply(pth, input,input_rec_fp, output_filename=output)
+@click.option("--device", default = "cpu")
+def apply_click(pth,input,input_rec_fp, output, device):
+    apply(pth, input,input_rec_fp, output_filename=output, device=device)
 
 
-def apply(pth, input,input_rec_fp, output_filename):
+def apply(pth, input,input_rec_fp, output_filename, device):
     print(f'Apply the pth {pth} to the set of projections contained in {input}')
 
-    device = helpers.get_auto_device("cuda")
+    device = helpers.get_auto_device(device_mode=device)
     pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
     helpers_params.check_params(params)
@@ -32,7 +33,7 @@ def apply(pth, input,input_rec_fp, output_filename):
 
     model = Model_instance.ModelInstance(params=params, from_pth=pth,resume_training=False,device=device)
     model.load_model(pth_path=pth)
-    model.switch_device("cuda")
+    model.switch_device(device)
     model.switch_eval()
     model.show_infos()
 

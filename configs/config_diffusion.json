@@ -37,7 +37,7 @@
 
   "init_feature_kernel": 5,
   "nb_ed_layers": 3,
-  "hidden_channels_unet":16,
+  "hidden_channels_unet":32,
   "timesteps": 400,
   "recon_loss":["L1"],
   "lambda_recon":[1]
