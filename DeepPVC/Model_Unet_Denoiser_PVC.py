@@ -65,8 +65,8 @@ class UNet_Denoiser_PVC(ModelBase):
             # self.UNet = networks_diff.AttentionResUnet(init_dim=self.hidden_channels_unet, out_dim=1,
             #                                            channels=self.input_channels, dim_mults=(1, 2, 4, 8)).to(
             #     device=self.device)
-            self.UNet_denoiser = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(self.device)
-            self.UNet_pvc = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=1,t=2).to(self.device)
+            self.UNet_denoiser = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(device=self.device)
+            self.UNet_pvc = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=1,t=2).to(device=self.device)
         elif self.DCNN:
             self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc=self.hidden_channels_unet).to(device=self.device)
             self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1,ngc=self.hidden_channels_unet).to(device=self.device)
