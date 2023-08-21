@@ -120,6 +120,24 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
 
+                if step==0:
+                    print(f'(gpu {rank}) batch_inputs shape : {batch_inputs.shape}')
+                    print(f'(gpu {rank}) batch_tagets shape : {batch_targets.shape}')
+                    print(f'(gpu {rank}) batch type : {batch_inputs.dtype}')
+                    with torch.no_grad():
+                        debug_output = DeepPVEModel.forward(batch=batch_inputs)
+                        print(f'(gpu {rank}) output shape : {debug_output.shape}')
+                        print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
+                        # fig,ax = plt.subplots(1,3)
+                        # ax[0].imshow(batch_inputs[0,0,:,:].detach().cpu().numpy())
+                        # ax[0].set_title('input')
+                        # ax[1].imshow(batch_targets[0,0,:,:].detach().cpu().numpy())
+                        # ax[1].set_title('target')
+                        # ax[2].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
+                        # ax[2].set_title('output')
+                        # plt.show()
+
+
                 # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy().astype(np.float32)
                 # fig,ax = plt.subplots(1,plot_example.shape[0])
                 # for i in range(plot_example.shape[0]):
@@ -132,22 +150,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             if debug:
                 t_opt += time.time() - timer_opt1
-                if step==0 and epoch==1:
-                    print(f'batch_inputs shape : {batch_inputs.shape}')
-                    print(f'batch_tagets shape : {batch_targets.shape}')
-                    print(f'batch type : {batch_inputs.dtype}')
-                    with torch.no_grad():
-                        debug_output = DeepPVEModel.forward(batch=batch_inputs)
-                        print(f'output shape : {debug_output.shape}')
-                        print(f'output dtype : {debug_output.dtype}')
-                        # fig,ax = plt.subplots(1,3)
-                        # ax[0].imshow(batch_inputs[0,0,:,:].detach().cpu().numpy())
-                        # ax[0].set_title('input')
-                        # ax[1].imshow(batch_targets[0,0,:,:].detach().cpu().numpy())
-                        # ax[1].set_title('target')
-                        # ax[2].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
-                        # ax[2].set_title('output')
-                        # plt.show()
 
                 timer_loading1 = time.time()
                 t_step_end = time.time()
