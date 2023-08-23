@@ -32,7 +32,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                     MSE += MSE_batch.item()*batch_inputs.size(0)/nb_testing_data
                 if do_NMAE:
                     MAE_batch = torch.mean(torch.abs(fakePVfree_denormed - batch_targets))
-                    MAE += MAE_batch
+                    MAE += MAE_batch.item()*batch_inputs.size(0)/nb_testing_data
 
     if do_NRMSE:
         dist.all_reduce(MSE, op=dist.ReduceOp.SUM)

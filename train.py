@@ -192,7 +192,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     DeepPVEModel.save_model(output_path=emergency_output_filename)
 
             if verbose_main_process:
-                print(f'Current mean validation error =  {DeepPVEModel.test_error[-1][1]}')
+                print(f'Current mean test error =  {DeepPVEModel.test_error[-1][1]}')
             if debug:
                 t_test=time.time() - timer_test
 
