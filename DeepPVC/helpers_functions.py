@@ -8,8 +8,9 @@ import torch.distributed as dist
 def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     data_normalisation = model.params['data_normalisation']
     device = model.device
-    list_MSE,list_MAE = [],[]
-    RMSE, MAE = 0,0
+    nb_testing_data = len(test_dataloader.dataset)
+    MSE = torch.Tensor([0.]).to(device)
+    MAE = torch.Tensor([0.]).to(device)
 
     with torch.no_grad():
         with autocast():
@@ -28,13 +29,13 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
 
                 if do_NRMSE:
                     MSE_batch = torch.mean((fakePVfree_denormed-batch_targets)**2)
-                    list_MSE.append(MSE_batch.item())
+                    MSE += MSE_batch.item()*batch_inputs.size(0)/nb_testing_data
                 if do_NMAE:
                     MAE_batch = torch.mean(torch.abs(fakePVfree_denormed - batch_targets))
-                    list_MAE.append(MAE_batch.item())
+                    MAE += MAE_batch
 
     if do_NRMSE:
-        RMSE = np.sqrt(np.mean(list_MSE))
+        dist.all_reduce(MSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
-        MAE = np.mean(list_MAE)
-    return RMSE, MAE
+        dist.all_reduce(MAE, op=dist.ReduceOp.SUM)
+    return MSE, MAE
