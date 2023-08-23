@@ -416,7 +416,8 @@ class vanillaCNN(nn.Module):
                                       stride=(1,1),
                                       padding = 1))
         sequence.append(nn.ReLU())
-        sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+        # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+        sequence.append(nn.InstanceNorm2d(ngc))
         sequence.append(nn.Dropout(0.3))
 
         # Inner layers
@@ -426,7 +427,8 @@ class vanillaCNN(nn.Module):
                                       kernel_size=(3,3),
                                       stride=(1,1),
                                       padding = 1))
-            sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+            # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+            sequence.append(nn.InstanceNorm2d(ngc))
 
         # Last Layer
         sequence.append(nn.Conv2d(ngc,
