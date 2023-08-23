@@ -156,31 +156,31 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 print("(end) step {}   /   gpu {} ({})".format(step,rank, t_step_end-t_step_begin))
 
 
-            if (params['jean_zay']) and (time.time() - t0 >= 0.90*TIME_LIMIT_s): # sauvegarde d'urgence
-                if (idr_torch.rank == 0):
-                    print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
-                    DeepPVEModel.params['training_duration'] = round(time.time() - t0)
-                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
-                    DeepPVEModel.save_model(output_path=emergency_output_filename)
-                exit(0)
+            if (params['jean_zay']) and (time.time() - t0 >= 0.90*TIME_LIMIT_s) and (idr_torch.rank == 0): # sauvegarde d'urgence
+                print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
+                DeepPVEModel.params['training_duration'] = round(time.time() - t0)
+                emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
+                DeepPVEModel.save_model(output_path=emergency_output_filename)
+            exit(0)
 
 
-        if ((DeepPVEModel.current_epoch % test_every_n_epoch == 0) and ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay']))):
+        if (DeepPVEModel.current_epoch % test_every_n_epoch == 0):
             if debug:
                 timer_test=time.time()
 
             DeepPVEModel.switch_eval()
 
-            RMSE, MAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
+            MSE, MAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel, do_NRMSE=(params['validation_norm']=="L2"),
                                                                 do_NMAE=(params['validation_norm']=="L1"))
             if params['validation_norm']=="L1":
-                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MAE])
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, MAE.item()])
             elif params['validation_norm']=="L2":
-                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, RMSE])
+                DeepPVEModel.test_error.append([DeepPVEModel.current_epoch, torch.sqrt(MSE).item()])
 
-            if (validation_dataloader is not None) and rank==0:
-                RMSE_val,MAE_val = helpers_functions.validation_errors(validation_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=True)
-                print(RMSE_val,MAE_val)
+            if (validation_dataloader is not None):
+                MSE_val,MAE_val = helpers_functions.validation_errors(validation_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=True)
+                RMSE_val,MAE_val = torch.sqrt(MSE_val).item(),MAE_val.item()
+                print(f'valRMSE : {RMSE_val},  val MAE : {MAE_val}')
                 DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
                 DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
 
@@ -196,15 +196,13 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             if debug:
                 t_test=time.time() - timer_test
 
-        if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs):
-            if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
-                current_time = round(time.time() - t0)
-                DeepPVEModel.params['training_duration'] = current_time
-                temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
-                DeepPVEModel.save_model(output_path=temp_output_filename)
+        if (DeepPVEModel.current_epoch % save_every_n_epoch==0 and DeepPVEModel.current_epoch!=DeepPVEModel.n_epochs and rank==0):
+            current_time = round(time.time() - t0)
+            DeepPVEModel.params['training_duration'] = current_time
+            temp_output_filename = os.path.join(DeepPVEModel.output_folder,DeepPVEModel.output_pth[:-4]+f'_{DeepPVEModel.current_epoch}'+'.pth')
+            DeepPVEModel.save_model(output_path=temp_output_filename)
 
-        if params['jean_zay']:
-            dist.barrier()
+
 
         DeepPVEModel.update_epoch()
 

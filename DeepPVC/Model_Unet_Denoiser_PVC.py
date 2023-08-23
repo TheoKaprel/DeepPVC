@@ -151,12 +151,8 @@ class UNet_Denoiser_PVC(ModelBase):
         elif batch.dim() == 5:
             truePVEnoisy = batch[:,0,:,:,:]
         with autocast(enabled=self.amp):
-            if self.params['jean_zay']:
-                fakePVE = self.UNet_denoiser.module(truePVEnoisy)
-                return self.UNet_pvc.module(fakePVE)
-            else:
-                fakePVE = self.UNet_denoiser(truePVEnoisy)
-                return self.UNet_pvc(fakePVE)
+            fakePVE = self.UNet_denoiser(truePVEnoisy)
+            return self.UNet_pvc(fakePVE)
 
 
     def optimize_parameters(self):

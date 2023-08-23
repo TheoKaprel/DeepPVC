@@ -283,18 +283,45 @@ def load_data(params):
     test_dataset = BaseCustomPVEProjectionsDataset(params=params, paths=params['test_dataset_path'],test=True)
     test_batchsize = params['test_batchsize']
 
+    if params['jean_zay']:
+        import idr_torch
+        test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset,
+                                                                  num_replicas=idr_torch.size,
+                                                                  rank=idr_torch.rank,
+                                                                  shuffle=False)
+        test_batchsize = test_batchsize//idr_torch.size
+    else:
+        test_sampler = None
+
     test_dataloader = DataLoader(dataset=test_dataset,
                                   batch_size=test_batchsize,
                                   shuffle=False,
-                                  num_workers=params['num_workers'],
+                                  num_workers=4,
                                   pin_memory=True,
-                                  sampler=None)
+                                  sampler=test_sampler)
 
     if "validation_ref_type" in params:
         validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
                                                      is_ref=True, type=params["validation_ref_type"][1],
                                                      params=params)
-        validation_dataloader = DataLoader(dataset=validation_dataset, batch_size=test_batchsize, shuffle=False)
+
+        if params['jean_zay']:
+            import idr_torch
+            val_sampler = torch.utils.data.distributed.DistributedSampler(validation_dataset,
+                                                                           num_replicas=idr_torch.size,
+                                                                           rank=idr_torch.rank,
+                                                                           shuffle=False)
+            val_batchsize = test_batchsize // idr_torch.size
+        else:
+            val_sampler = None
+            val_batchsize = test_batchsize
+
+        validation_dataloader = DataLoader(dataset=validation_dataset,
+                                           batch_size=val_batchsize,
+                                           shuffle=False,
+                                           num_workers=4,
+                                           pin_memory=True,
+                                           sampler=val_sampler)
     else:
         validation_dataloader = None
 
