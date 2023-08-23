@@ -35,7 +35,9 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                     MAE += MAE_batch.item()*batch_inputs.size(0)/nb_testing_data
 
     if do_NRMSE:
-        dist.all_reduce(MSE, op=dist.ReduceOp.SUM)
+        if model.params['jean_zay']:
+            dist.all_reduce(MSE, op=dist.ReduceOp.SUM)
     if do_NMAE:
-        dist.all_reduce(MAE, op=dist.ReduceOp.SUM)
+        if model.params['jean_zay']:
+            dist.all_reduce(MAE, op=dist.ReduceOp.SUM)
     return MSE, MAE
