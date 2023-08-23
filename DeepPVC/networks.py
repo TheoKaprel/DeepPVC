@@ -401,3 +401,45 @@ class ResCNN(nn.Module):
 
         x = self.final_layer(x)
         return x
+
+
+class vanillaCNN(nn.Module):
+    def __init__(self, in_channels, out_channels, ngc=64, nb_ed_layers=7):
+        super(vanillaCNN, self).__init__()
+
+        sequence = []
+
+        # First Layer
+        sequence.append(nn.Conv2d(in_channels,
+                                      ngc,
+                                      kernel_size=(3,3),
+                                      stride=(1,1),
+                                      padding = 1))
+        sequence.append(nn.ReLU())
+        # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+        sequence.append(nn.InstanceNorm2d(ngc))
+        sequence.append(nn.Dropout(0.3))
+
+        # Inner layers
+        for k in range(nb_ed_layers - 2):
+            sequence.append(nn.Conv2d(ngc,
+                                      ngc,
+                                      kernel_size=(3,3),
+                                      stride=(1,1),
+                                      padding = 1))
+            # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
+            sequence.append(nn.InstanceNorm2d(ngc))
+
+        # Last Layer
+        sequence.append(nn.Conv2d(ngc,
+                                  out_channels,
+                                  kernel_size=(3,3),
+                                  stride=(1,1),
+                                  padding = 1))
+        sequence.append(nn.ReLU())
+
+        self.sequence_CNN = nn.Sequential(*sequence)
+
+
+    def forward(self,x):
+        return self.sequence_CNN(x)
