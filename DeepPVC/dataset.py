@@ -289,7 +289,6 @@ def load_data(params):
                                                                   num_replicas=idr_torch.size,
                                                                   rank=idr_torch.rank,
                                                                   shuffle=False)
-        test_batchsize = test_batchsize//idr_torch.size
     else:
         test_sampler = None
 
@@ -311,10 +310,10 @@ def load_data(params):
                                                                            num_replicas=idr_torch.size,
                                                                            rank=idr_torch.rank,
                                                                            shuffle=False)
-            val_batchsize = test_batchsize // idr_torch.size
         else:
             val_sampler = None
-            val_batchsize = test_batchsize
+
+        val_batchsize = 30
 
         validation_dataloader = DataLoader(dataset=validation_dataset,
                                            batch_size=val_batchsize,
