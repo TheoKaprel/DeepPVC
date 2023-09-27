@@ -156,7 +156,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 print("(end) step {}   /   gpu {} ({})".format(step,rank, t_step_end-t_step_begin))
 
 
-            if ((params['jean_zay']) and (time.time() - t0 >= 0.90*TIME_LIMIT_s) and (idr_torch.rank == 0)): # sauvegarde d'urgence
+            if ((params['jean_zay']) and (time.time() - t0 >= 0.97*TIME_LIMIT_s) and (idr_torch.rank == 0)): # sauvegarde d'urgence
                 print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
                 DeepPVEModel.params['training_duration'] = round(time.time() - t0)
                 emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
