@@ -5,7 +5,6 @@ import json as js
 import os
 import numpy as np
 import click
-from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 
@@ -128,14 +127,16 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
-                        # fig,ax = plt.subplots(1,3)
-                        # ax[0].imshow(batch_inputs[0,0,:,:].detach().cpu().numpy())
-                        # ax[0].set_title('input')
-                        # ax[1].imshow(batch_targets[0,0,:,:].detach().cpu().numpy())
-                        # ax[1].set_title('target')
-                        # ax[2].imshow(debug_output[0,0,:,:].detach().cpu().numpy())
-                        # ax[2].set_title('output')
-                        # plt.show()
+                        fig,ax = plt.subplots(batch_inputs.shape[2],3)
+                        for kk in range(batch_inputs.shape[2]):
+                            ax[kk,0].imshow(batch_inputs[0,0,kk,:,:].float().detach().cpu().numpy())
+                            ax[kk,0].set_title(f'input {kk}')
+
+                        ax[0,1].imshow(batch_targets[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,1].set_title('target')
+                        ax[0,2].imshow(debug_output[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,2].set_title('output')
+                        plt.show()
 
 
                 # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy().astype(np.float32)

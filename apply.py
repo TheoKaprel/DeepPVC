@@ -46,7 +46,14 @@ def apply(pth, input,input_rec_fp, output_filename, device):
             projs_input = torch.cat((input_with_angles,img_rec_fp),dim=1) # (120,7,256,256)
         else:
             projs_input = input_with_angles
+
+        # sino
+        # (120,1,256,256)
+        projs_input = projs_input.permute((2,1,0,3))
+        # (256,1,120,256)
+        # end sino
         print(f'input shape : {projs_input.shape}')
+
 
         norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
         if data_normalisation!='none':
@@ -60,8 +67,11 @@ def apply(pth, input,input_rec_fp, output_filename, device):
                                                           norm=norm_input, params=model.params, to_numpy=False)
 
         print(f'network output shape : {denormed_output_i.shape}')
-        output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
 
+        # output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
+        # sino
+        output_array = denormed_output_i.cpu().numpy()[:,0,:,:].transpose((1,0,2))
+        # end sino
         print(f'final output shape : {output_array.shape}')
 
         if input[-3:] in ["mhd", "mha"]:

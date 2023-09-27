@@ -149,6 +149,7 @@ def load_from_filename(filename,params):
     input_eq_angles=params['input_eq_angles']
     with_adj_angles=params['with_adj_angles']
 
+    nb_channels = input_eq_angles + 2 if with_adj_angles else input_eq_angles
 
     # channels_id construction
     nb_of_equidistributed_angles = input_eq_angles
@@ -162,7 +163,6 @@ def load_from_filename(filename,params):
     channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(
         equiditributed_channels_id) > 0 else channels_id
 
-    nb_channels = input_eq_angles+2 if with_adj_angles else input_eq_angles
 
     input_img = np.zeros((nb_projs, nb_channels,img.shape[2], img.shape[3]))
     for proj_i in range(nb_projs):

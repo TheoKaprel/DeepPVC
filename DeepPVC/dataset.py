@@ -28,6 +28,12 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.test = test
         self.params = params
 
+        if "sino" in self.params:
+            self.sino=True
+            self.nb_sino = self.params['sino']
+        else:
+            self.sino=False
+
         if params['network'] == 'unet_denoiser_pvc':
             self.double_model = True
         else:
@@ -54,6 +60,11 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         first_img = self.read(filename=self.list_files[0])
         self.nb_pix_x,self.nb_pix_y = first_img.shape[1],first_img.shape[2]
         self.nb_projs_per_img = first_img.shape[0] if not self.merged else (int(first_img.shape[0]/3) if self.noisy else int(first_img.shape[0]/2))
+        # #sino
+        # if self.params['sino']:
+        #     self.nb_sino=self.params['sino']
+        #     self.nb_projs_per_img = self.nb_pix_x
+        # #end sino
 
         if (self.max_nb_data>0 and len(self.list_files)*self.nb_projs_per_img>self.max_nb_data):
             self.list_files=self.list_files[:int(self.max_nb_data/self.nb_projs_per_img)]
@@ -84,6 +95,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
 
         first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
         self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
+        if self.sino:
+            self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[1], first_data.shape[0],first_data.shape[2]
 
         self.build_channels_id()
 
@@ -122,6 +135,11 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.channels_id = np.array([0])
         if self.with_adj_angles:
             adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
+            #sino
+            if self.sino:
+                adjacent_channels_id = np.array([(-k) % self.nb_projs_per_img for k in range(1,self.nb_sino//2+1)]+
+                                                [(k) % self.nb_projs_per_img for k in range(1,self.nb_sino//2+1)])
+            # end sino
             self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
 
         equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
@@ -129,7 +147,7 @@ class BaseCustomPVEProjectionsDataset(Dataset):
             equiditributed_channels_id) > 0 else self.channels_id
 
     def get_channels_id_i(self, proj_i):
-        return (self.channels_id+proj_i)%120
+        return (self.channels_id+proj_i)%self.nb_projs_per_img
 
     def init_transforms(self):
         self.transforms = []
@@ -246,13 +264,29 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         invid = np.argsort(id)
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
-            data_PVE_noisy,data_PVfree = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+
+            if not self.sino:
+                data_PVE_noisy,data_PVfree = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+            else:
+            #sino
+                data_PVE_noisy, data_PVfree = np.array(data['PVE_noisy'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=np.float32).transpose((1,0,2))
+            # end sino
             if self.with_rec_fp:
-                rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                if not self.sino:
+                    rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                else:
+                #sino
+                    rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = np.float32).transpose((1,0,2))
+                #end sino
                 data_PVE_noisy = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
 
             if (self.double_model and not self.test):
-                data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
+                if not self.sino:
+                    data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
+                else:
+                # sino
+                   data_PVE = np.array(data['PVE'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid]
+                # end sino
                 if self.with_rec_fp:
                     data_PVE = np.concatenate((data_PVE,rec_fp), axis=0)
                 data_PVE_noisy = np.stack((data_PVE_noisy,data_PVE))
