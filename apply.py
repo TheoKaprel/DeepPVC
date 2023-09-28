@@ -47,11 +47,12 @@ def apply(pth, input,input_rec_fp, output_filename, device):
         else:
             projs_input = input_with_angles
 
-        # sino
-        # (120,1,256,256)
-        projs_input = projs_input.permute((2,1,0,3))
-        # (256,1,120,256)
-        # end sino
+        if 'sino' in params:
+            # sino
+            # (120,1,256,256)
+            projs_input = projs_input.permute((2,1,0,3))
+            # (256,1,120,256)
+            # end sino
         print(f'input shape : {projs_input.shape}')
 
 
@@ -68,10 +69,12 @@ def apply(pth, input,input_rec_fp, output_filename, device):
 
         print(f'network output shape : {denormed_output_i.shape}')
 
-        # output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
-        # sino
-        output_array = denormed_output_i.cpu().numpy()[:,0,:,:].transpose((1,0,2))
-        # end sino
+        if 'sino' not in params:
+            output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
+        else:
+            # sino
+            output_array = denormed_output_i.cpu().numpy()[:,0,:,:].transpose((1,0,2))
+            # end sino
         print(f'final output shape : {output_array.shape}')
 
         if input[-3:] in ["mhd", "mha"]:

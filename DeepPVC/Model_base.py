@@ -25,7 +25,7 @@ class ModelBase(torch.nn.Module):
         self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
         #sino
-        if params['sino']:
+        if ('sino' in params):
             self.input_channels = params['sino']+1
             self.input_channels = self.input_channels + 1 if params['with_rec_fp'] else self.input_channels
         #end sino

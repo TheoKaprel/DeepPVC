@@ -32,7 +32,7 @@
   "layer_norm": "inst_norm",
   "use_dropout": true,
   "leaky_relu": 0.02,
-  "ed_blocks": ["conv-norm-relu-conv-relu-norm-pool", "convT-norm-relu-conv-relu-norm"],
+  "ed_blocks": ["conv-norm-relu-conv-relu-norm-pool", "convT-norm-relu-conv-relu-norm-conv"],
   "residual_layer": true,
   "resunet": true,
   "attention": false,
@@ -46,7 +46,7 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 3,
+  "nb_ed_layers": 4,
   "hidden_channels_unet":32,
   "unet_activation": "relu",
   "recon_loss":["L1"],
