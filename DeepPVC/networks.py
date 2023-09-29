@@ -29,7 +29,7 @@ class DownSamplingBlock(nn.Module):
             elif elmt=="relu":
                 sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val, True))
             elif elmt=='pool':
-                sequenceDownBlock.append(nn.MaxPool2d((2,2)))
+                sequenceDownBlock.append(nn.MaxPool2d(kernel_size=kernel_size,stride=stride, padding=padding))
             elif elmt=="norm":
                 if norm == "batch_norm":
                     sequenceDownBlock.append(nn.BatchNorm2d(output_nc, track_running_stats=False))
@@ -41,6 +41,8 @@ class DownSamplingBlock(nn.Module):
 
     def forward(self, x):
         if self.res_unit:
+            # print(self.res_conv(x).shape)
+            # print(self.sequenceDownBlock(x).shape)
             return self.res_conv(x)+self.sequenceDownBlock(x)
         else:
             return self.sequenceDownBlock(x)
