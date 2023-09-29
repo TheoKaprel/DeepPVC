@@ -39,20 +39,34 @@ def apply(pth, input,input_rec_fp, output_filename, device):
 
     with_rec_fp = params['with_rec_fp']
     with torch.no_grad():
-
-        input_with_angles = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
-        if with_rec_fp:
-            img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[:,None,:,:]) # (120,1,256,256)
-            projs_input = torch.cat((input_with_angles,img_rec_fp),dim=1) # (120,7,256,256)
-        else:
-            projs_input = input_with_angles
-
         if 'sino' in params:
             # sino
-            # (120,1,256,256)
-            projs_input = projs_input.permute((2,1,0,3))
-            # (256,1,120,256)
+            projs_input_ = itk.array_from_image(itk.imread(input)) #(120,256,256)
+            nb_sino = params['sino']
+            projs_input_t = projs_input_.transpose((1,0,2)) # (256,120,256)
+            nb_projs_per_img = projs_input_t.shape[0]
+            adjacent_channels_id = np.array([0]+[(-k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)] +
+                                            [(k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)])
+
+            projs_input = np.zeros((nb_projs_per_img,nb_sino+1, projs_input_t.shape[-2], projs_input_t.shape[-1]))
+            for proj_i in range(nb_projs_per_img):
+                proj_channels = (adjacent_channels_id+proj_i)%nb_projs_per_img
+                projs_input[proj_i] = projs_input_t[proj_channels,:,:]
+            # (256, 7,120,256)
+            if with_rec_fp:
+                projs_rec_fp = itk.array_from_image(itk.imread(input_rec_fp)).transpose((1,0,2))[:,None,:,:] # (256,1,120,256)
+                projs_input = np.concatenate((projs_input,projs_rec_fp),axis=1)
+
+            projs_input = torch.Tensor(projs_input)
             # end sino
+        else:
+            projs_input = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
+            if with_rec_fp:
+                img_rec_fp = torch.Tensor(
+                    itk.array_from_image(itk.imread(input_rec_fp))[:, None, :, :])  # (120,1,256,256)
+                projs_input = torch.cat((projs_input, img_rec_fp), dim=1)  # (120,7,256,256)
+
+
         print(f'input shape : {projs_input.shape}')
 
 
