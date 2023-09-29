@@ -97,6 +97,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
         if self.sino:
             self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[1], first_data.shape[0],first_data.shape[2]
+            self.zero_padding_for_sino = np.zeros((2, self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32) if (self.double_model and not self.test) else np.zeros((self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32)
+            self.zero_padding_for_sino_pvfree = np.zeros((1,4, self.nb_pix_y),dtype=np.float32)
 
         self.build_channels_id()
 
@@ -290,7 +292,11 @@ class BaseCustomPVEProjectionsDataset(Dataset):
                 if self.with_rec_fp:
                     data_PVE = np.concatenate((data_PVE,rec_fp), axis=0)
                 data_PVE_noisy = np.stack((data_PVE_noisy,data_PVE))
-            
+
+            if self.sino:
+                data_PVE_noisy = np.concatenate((self.zero_padding_for_sino, data_PVE_noisy, self.zero_padding_for_sino), axis=2 if (self.double_model and not self.test) else 1)
+                data_PVfree = np.concatenate((self.zero_padding_for_sino_pvfree, data_PVfree, self.zero_padding_for_sino_pvfree), axis=1)
+
             return data_PVE_noisy,data_PVfree
 
     def __getitem__(self, item):
