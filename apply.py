@@ -39,7 +39,7 @@ def apply(pth, input,input_rec_fp, output_filename, device):
 
     with_rec_fp = params['with_rec_fp']
     with torch.no_grad():
-        if 'sino' in params:
+        if ('sino' in params and not params['full_sino']):
             # sino
             projs_input_ = itk.array_from_image(itk.imread(input)) #(120,256,256)
             nb_sino = params['sino']
@@ -57,8 +57,17 @@ def apply(pth, input,input_rec_fp, output_filename, device):
                 projs_rec_fp = itk.array_from_image(itk.imread(input_rec_fp)).transpose((1,0,2))[:,None,:,:] # (256,1,120,256)
                 projs_input = np.concatenate((projs_input,projs_rec_fp),axis=1)
 
+            zeros_padding = np.zeros((projs_input.shape[0], projs_input.shape[1], 4, projs_input.shape[3]))
+            projs_input = np.concatenate((zeros_padding,projs_input,zeros_padding), axis=2)
+
             projs_input = torch.Tensor(projs_input)
             # end sino
+
+        elif params['full_sino']:
+            projs_input = itk.array_from_image(itk.imread(input)).transpose((1,0,2))[None,:,:,:]
+            pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
+            projs_input = pad(torch.Tensor(projs_input))
+
         else:
             projs_input = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
             if with_rec_fp:
@@ -86,9 +95,12 @@ def apply(pth, input,input_rec_fp, output_filename, device):
         if 'sino' not in params:
             output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
         else:
-            # sino
-            output_array = denormed_output_i.cpu().numpy()[:,0,:,:].transpose((1,0,2))
-            # end sino
+            if params['full_sino']:
+                output_array = denormed_output_i.cpu().numpy()[0,:,:,:].transpose((1,0,2))
+            else:
+                # sino
+                output_array = denormed_output_i.cpu().numpy()[:,0,4:124,:].transpose((1,0,2))
+                # end sino
         print(f'final output shape : {output_array.shape}')
 
         if input[-3:] in ["mhd", "mha"]:

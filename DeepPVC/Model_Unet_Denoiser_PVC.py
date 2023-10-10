@@ -73,6 +73,8 @@ class UNet_Denoiser_PVC(ModelBase):
             self.UNet_denoiser = networks.vanillaCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc = self.hidden_channels_unet,nb_ed_layers=self.nb_ed_layers).to(device=self.device)
             self.UNet_pvc = networks.vanillaCNN(in_channels=self.input_channels,out_channels=1,ngc = self.hidden_channels_unet,nb_ed_layers=self.nb_ed_layers).to(device=self.device)
         else:
+
+
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
@@ -83,7 +85,7 @@ class UNet_Denoiser_PVC(ModelBase):
             self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
-                                      output_channel=1, generator_activation=self.unet_activation,
+                                      output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet).to(device=self.device)
