@@ -115,7 +115,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
 
         self.init_transforms()
         self.build_channels_id()
-
+        
+        self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
         self.len_dataset = self.nb_src * self.nb_projs_per_img if not self.params['full_sino'] else self.nb_src
 
 
@@ -312,9 +313,9 @@ class BaseCustomPVEProjectionsDataset(Dataset):
 
                 if self.sino:
                     data_PVE_noisy,data_PVfree = data_PVE_noisy.transpose((0, 2, 1, 3)), data_PVfree.transpose((1,0,2)) # (2, 256, 120, 256), # (256, 120, 256)
-                    pad = torch.nn.ConstantPad2d((0,0,4,4), 0)
-                    data_PVE_noisy = pad(torch.from_numpy(data_PVE_noisy))
-                    data_PVfree = pad(torch.from_numpy(data_PVfree[None,:,:,:]))[0,:,:,:]
+
+                    data_PVE_noisy = self.pad(torch.from_numpy(data_PVE_noisy))
+                    data_PVfree = self.pad(torch.from_numpy(data_PVfree[None,:,:,:]))[0,:,:,:]
 
             return data_PVE_noisy,data_PVfree
 
