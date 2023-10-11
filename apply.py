@@ -64,10 +64,16 @@ def apply(pth, input,input_rec_fp, output_filename, device):
             # end sino
 
         elif params['full_sino']:
-            projs_input = itk.array_from_image(itk.imread(input)).transpose((1,0,2))[None,:,:,:]
-            pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
-            projs_input = pad(torch.Tensor(projs_input))
 
+            if 'sino' in params:
+                projs_input = itk.array_from_image(itk.imread(input)).transpose((1,0,2))[None,:,:,:]
+                pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
+                projs_input = pad(torch.Tensor(projs_input))
+            else:
+                projs_input = torch.Tensor(itk.array_from_image(itk.imread(input)))[None,:,:,:]
+                if with_rec_fp:
+                    img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[None,:,:,:])  # (120,1,256,256)
+                    projs_input = torch.cat((projs_input, img_rec_fp), dim=1)  # (1,240,256,256)
         else:
             projs_input = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
             if with_rec_fp:
@@ -93,7 +99,7 @@ def apply(pth, input,input_rec_fp, output_filename, device):
         print(f'network output shape : {denormed_output_i.shape}')
 
         if 'sino' not in params:
-            output_array = denormed_output_i.cpu().numpy()[:,0,:,:]
+            output_array = denormed_output_i.cpu().numpy()[:,0,:,:] if not params['full_sino'] else denormed_output_i.cpu().numpy()[0,:,:,:]
         else:
             if params['full_sino']:
                 output_array = denormed_output_i.cpu().numpy()[0,:,:,:].transpose((1,0,2))

@@ -10,8 +10,7 @@
   "dtype": "float16",
   "merged": true,
   "with_noise": true,
-  "with_rec_fp": false,
-  "sino": 6,
+  "with_rec_fp": true,
   "full_sino": true,
   "max_nb_data": 5120,
   "training_batchsize":4,
@@ -24,7 +23,7 @@
   "network": "unet_denoiser_pvc",
 
   "n_epochs":10,
-  "learning_rate":0.0001,
+  "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.5, 50],
   "early_stopping": true,
   "input_eq_angles": 1,
