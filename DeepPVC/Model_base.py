@@ -24,7 +24,6 @@ class ModelBase(torch.nn.Module):
         self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
         self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
-
         #sino
         if ('sino' in params):
             self.input_channels = params['sino']+1
@@ -32,10 +31,12 @@ class ModelBase(torch.nn.Module):
         #end sino
 
         if self.params['full_sino']:
-            self.input_channels = 256 if ('sino' in params) else 120
-            self.output_channels = self.input_channels
+            self.input_channels = 256 if ('sino' in params) else (240 if params['with_rec_fp'] else 120)
+            self.output_channels=self.output_channels_denoiser = self.input_channels // 2 if params['with_rec_fp'] else self.input_channels
         else:
+            self.output_channels_denoiser = self.input_channels - 1 if params['with_rec_fp'] else self.input_channels
             self.output_channels = 1
+
 
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
         self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None
