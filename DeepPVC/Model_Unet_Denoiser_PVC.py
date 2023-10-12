@@ -116,21 +116,20 @@ class UNet_Denoiser_PVC(ModelBase):
         self.losses_pvc = losses.UNetLosses(self.losses_params)
 
     def input_data(self, batch_inputs, batch_targets):
-        self.truePVE_noisy = batch_inputs[:,0,:,:,:]
-        self.truePVE = batch_inputs[:,1,:,:,:]
+        if self.with_rec_fp:
+            self.truePVE_noisy,self.truePVE,self.true_rec_fp  = batch_inputs
+        else:
+            self.truePVE_noisy, self.truePVE = batch_inputs
+
         self.truePVfree = batch_targets
 
-        if self.with_rec_fp:
-            self.true_rec_fp = batch_inputs[:,0,120:,:,:]
-            self.truePVE = batch_inputs[:,1,120:,:,:]
-
     def forward_unet_denoiser(self):
-        self.fakePVE = self.UNet_denoiser(self.truePVE_noisy)
+        input_denoiser = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
+        self.fakePVE = self.UNet_denoiser(input_denoiser)
 
     def forward_unet_pvc(self):
-        if self.with_rec_fp:
-            self.fakePVE = torch.concat((self.fakePVE,self.true_rec_fp),dim=1)
-        self.fakePVfree = self.UNet_pvc(self.fakePVE.detach())
+        input_pvc = torch.concat((self.fakePVE,self.true_rec_fp),dim=1) if self.with_rec_fp else self.fakePVE
+        self.fakePVfree = self.UNet_pvc(input_pvc.detach())
 
     def losses_unet_denoiser(self):
         self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE)
@@ -156,21 +155,21 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
     def forward(self, batch):
-        if batch.dim() == 4:
-            truePVEnoisy = batch
-        elif batch.dim() == 5:
-            truePVEnoisy = batch[:,0,:,:,:]
-
         if self.with_rec_fp:
-            true_rec_fp = truePVEnoisy[:,120:,:,:]
+            if len(batch)==3:
+                truePVEnoisy,true_rec_fp = batch[0], batch[2]
+                truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
+            elif len(batch)==2:
+                truePVEnoisy,true_rec_fp = batch
+        else:
+            truePVEnoisy = batch[0]
 
         with autocast(enabled=self.amp):
+
             fakePVE = self.UNet_denoiser(truePVEnoisy)
             if self.with_rec_fp:
                 fakePVE = torch.concat((fakePVE, true_rec_fp), dim=1)
-
             return self.UNet_pvc(fakePVE)
-
 
     def optimize_parameters(self):
         # Unet denoiser update

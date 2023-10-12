@@ -105,12 +105,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
 
-            batch_inputs = batch_inputs.to(device, non_blocking=True)
+            batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
             batch_targets = batch_targets.to(device, non_blocking=True)
 
-            norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
-            batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            # norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            # batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            # batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
 
             DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
@@ -120,23 +120,23 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_opt1=time.time()
 
                 if step==0:
-                    print(f'(gpu {rank}) batch_inputs shape : {batch_inputs.shape}')
+                    print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
                     print(f'(gpu {rank}) batch_tagets shape : {batch_targets.shape}')
-                    print(f'(gpu {rank}) batch type : {batch_inputs.dtype}')
+                    print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
-                        # fig,ax = plt.subplots(batch_inputs.shape[2],3)
-                        # for kk in range(batch_inputs.shape[2]):
-                        #     ax[kk,0].imshow(batch_inputs[0,0,kk,:,:].float().detach().cpu().numpy())
-                        #     ax[kk,0].set_title(f'input {kk}')
-                        #
-                        # ax[0,1].imshow(batch_targets[0,0,:,:].float().detach().cpu().numpy())
-                        # ax[0,1].set_title('target')
-                        # ax[0,2].imshow(debug_output[0,0,:,:].float().detach().cpu().numpy())
-                        # ax[0,2].set_title('output')
-                        # plt.show()
+                        fig,ax = plt.subplots(len(batch_inputs),3)
+                        for kk in range(len(batch_inputs)):
+                            ax[kk,0].imshow(batch_inputs[kk][0,0,:,:].float().detach().cpu().numpy())
+                            ax[kk,0].set_title(f'input {kk}')
+
+                        ax[0,1].imshow(batch_targets[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,1].set_title('target')
+                        ax[0,2].imshow(debug_output[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,2].set_title('output')
+                        plt.show()
 
 
                 # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy().astype(np.float32)

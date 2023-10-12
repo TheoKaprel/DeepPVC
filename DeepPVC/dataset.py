@@ -117,7 +117,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         self.build_channels_id()
         
         self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
-        self.len_dataset = self.nb_src * self.nb_projs_per_img if not self.params['full_sino'] else self.nb_src
+        self.full_sino = self.params['full_sino']
+        self.len_dataset = self.nb_src * self.nb_projs_per_img if not self.full_sino else self.nb_src
 
 
     def get_dtype(self,opt_dtype):
@@ -259,7 +260,14 @@ class BaseCustomPVEProjectionsDataset(Dataset):
                 temp_input = np.concatenate((temp_input, rec_fp),axis=0)
             return temp_input,temp_target
 
+
     def get_item_h5(self, item):
+        if self.full_sino:
+            return self.get_item_h5_full_sino(item)
+        else:
+            return self.get_item_h5_projs(item)
+
+    def get_item_h5_projs(self, item):
         src_i = item % self.nb_src
         proj_i = item // self.nb_src
         channels = self.get_channels_id_i(proj_i=proj_i)
@@ -267,57 +275,64 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         invid = np.argsort(id)
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
+            if not self.sino:
+                data_PVE_noisy,data_target = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+            else:
+            #sino
+                data_PVE_noisy, data_target = np.array(data['PVE_noisy'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=np.float32).transpose((1,0,2))
+                data_PVE_noisy = self.pad(torch.from_numpy(data_PVE_noisy[None, :, :, :]))[0, :, :, :]
+                data_target = self.pad(torch.from_numpy(data_target[None, :, :, :]))[0, :, :, :]
 
-            if not self.params['full_sino']:
+            # end sino
+
+            if self.with_rec_fp:
                 if not self.sino:
-                    data_PVE_noisy,data_target = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                    rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
                 else:
                 #sino
-                    data_PVE_noisy, data_target = np.array(data['PVE_noisy'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=np.float32).transpose((1,0,2))
+                    rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = np.float32).transpose((1,0,2))
+                    rec_fp = self.pad(torch.from_numpy(rec_fp[None, :, :, :]))[0, :, :, :]
+                #end sino
+
+            if (self.double_model and not self.test):
+                if not self.sino:
+                    data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
+                else:
+                #sino
+                    data_PVE = np.array(data['PVE'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid]
+                    data_PVE = self.pad(torch.from_numpy(data_PVE[None, :, :, :]))[0, :, :, :]
                 # end sino
-                if self.with_rec_fp:
-                    if not self.sino:
-                        rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
-                    else:
-                    #sino
-                        rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = np.float32).transpose((1,0,2))
-                    #end sino
-                    data_input = np.concatenate((data_PVE_noisy, rec_fp), axis=0)
-
-                if (self.double_model and not self.test):
-                    if not self.sino:
-                        data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
-                    else:
-                    # sino
-                       data_PVE = np.array(data['PVE'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid]
-                    # end sino
-                    if self.with_rec_fp:
-                        data_PVE = np.concatenate((data_PVE,rec_fp), axis=0)
-                    data_input = np.stack((data_input,data_PVE))
-
-                if self.sino:
-                    data_input = np.concatenate((self.zero_padding_for_sino, data_input, self.zero_padding_for_sino), axis=2 if (self.double_model and not self.test) else 1)
-                    data_target = np.concatenate((self.zero_padding_for_sino_pvfree, data_target, self.zero_padding_for_sino_pvfree), axis=1)
+                data_inputs = (data_PVE_noisy,data_PVE)
             else:
-                data_PVE_noisy, data_target = np.array(data['PVE_noisy'], dtype=np.float32), np.array(data['PVfree'],dtype=np.float32)
-                data_PVE = np.array(data['PVE'], dtype=np.float32)
+                data_inputs = (data_PVE_noisy)
+
+            if self.with_rec_fp:
+                data_inputs = data_inputs + (rec_fp,)
+
+        return data_inputs, data_target
+
+    def get_item_h5_full_sino(self, item):
+        with h5py.File(self.datasetfn, 'r') as f:
+            data = f[self.keys[item]]
+            data_PVE_noisy, data_target = np.array(data['PVE_noisy'], dtype=np.float32), np.array(data['PVfree'],dtype=np.float32)
+            data_PVE = np.array(data['PVE'], dtype=np.float32)
+
+            data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
+
+            if self.with_rec_fp:
+                data_rec_fp = np.array(data['rec_fp'], dtype=np.float32) # 120,256,256
+                data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+
+            if self.sino:
+                data_target = data_target.transpose((1,0,2)) # (2, 256, 120, 256), # (256, 120, 256)
+                data_target = self.pad(torch.from_numpy(data_target[None, :, :, :]))[0, :, :, :]
+
+                data_inputs = tuple([self.pad(torch.from_numpy(data.transpose((1,0,2))[None, :, :, :]))[0, :, :, :]
+                                     for data in data_inputs])
+
+        return data_inputs,data_target
 
 
-                if self.with_rec_fp:
-                    data_rec_fp = np.array(data['rec_fp'], dtype=np.float32) # 120,256,256
-                    data_PVE_noisy = np.concatenate((data_PVE_noisy, data_rec_fp), axis=0) # 240, 256, 256
-                    data_PVE = np.concatenate((data_PVE, data_rec_fp), axis=0) # 240, 256, 256
-
-                data_input = np.stack((data_PVE_noisy,data_PVE), axis=0) # 2, 240, 256, 256
-
-
-                if self.sino:
-                    data_input,data_target = data_input.transpose((0, 2, 1, 3)), data_target.transpose((1,0,2)) # (2, 256, 120, 256), # (256, 120, 256)
-
-                    data_input = self.pad(torch.from_numpy(data_input))
-                    data_target = self.pad(torch.from_numpy(data_target[None,:,:,:]))[0,:,:,:]
-
-            return data_input,data_target
 
     def __getitem__(self, item):
         return self._getitem(item)
