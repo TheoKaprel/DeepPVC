@@ -158,9 +158,10 @@ class UNet_Denoiser_PVC(ModelBase):
         if self.with_rec_fp:
             if len(batch)==3:
                 truePVEnoisy,true_rec_fp = batch[0], batch[2]
-                truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
             elif len(batch)==2:
                 truePVEnoisy,true_rec_fp = batch
+
+            truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
         else:
             truePVEnoisy = batch[0]
 
