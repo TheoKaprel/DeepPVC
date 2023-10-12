@@ -64,37 +64,40 @@ def apply(pth, input,input_rec_fp, output_filename, device):
             # end sino
 
         elif params['full_sino']:
-
+            projs_input = torch.Tensor(itk.array_from_image(itk.imread(input)))[None,:,:,:]
             if 'sino' in params:
-                projs_input = itk.array_from_image(itk.imread(input)).transpose((1,0,2))[None,:,:,:]
                 pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
-                projs_input = pad(torch.Tensor(projs_input))
+                projs_input = pad(projs_input.transpose((0,2,1,3)))
+
+            if with_rec_fp:
+                img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[None,:,:,:])
+                if 'sino' in params:
+                    img_rec_fp = pad(img_rec_fp.transpose((0, 2, 1, 3)))
+
+                data_input = (projs_input,img_rec_fp)
             else:
-                projs_input = torch.Tensor(itk.array_from_image(itk.imread(input)))[None,:,:,:]
-                if with_rec_fp:
-                    img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[None,:,:,:])  # (120,1,256,256)
-                    projs_input = torch.cat((projs_input, img_rec_fp), dim=1)  # (1,240,256,256)
+                data_input = (projs_input)
         else:
-            projs_input = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
+            data_input = helpers_data.load_image(filename=input, is_ref=False, type=None, params=params)
             if with_rec_fp:
                 img_rec_fp = torch.Tensor(
                     itk.array_from_image(itk.imread(input_rec_fp))[:, None, :, :])  # (120,1,256,256)
-                projs_input = torch.cat((projs_input, img_rec_fp), dim=1)  # (120,7,256,256)
+                data_input = torch.cat((data_input, img_rec_fp), dim=1)  # (120,7,256,256)
 
 
-        print(f'input shape : {projs_input.shape}')
+        print(f'input shape : {[data.shape for data in data_input]}')
 
 
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
-        if data_normalisation!='none':
-            print(f'norm shape : {norm_input[0].shape}')
-        normed_input = helpers_data.normalize_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation,
-                                                     norm=norm_input, params=model.params, to_torch=False)
-
-        normed_output_i = model.forward(normed_input.to(device))
-        denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,
-                                                          data_normalisation=data_normalisation,
-                                                          norm=norm_input, params=model.params, to_numpy=False)
+        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
+        # if data_normalisation!='none':
+        #     print(f'norm shape : {norm_input[0].shape}')
+        # normed_input = helpers_data.normalize_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation,
+        #                                              norm=norm_input, params=model.params, to_torch=False)
+        data_input = tuple([data.to(device) for data in data_input])
+        denormed_output_i = model.forward(data_input)
+        # denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,
+        #                                                   data_normalisation=data_normalisation,
+        #                                                   norm=norm_input, params=model.params, to_numpy=False)
 
         print(f'network output shape : {denormed_output_i.shape}')
 

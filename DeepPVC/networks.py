@@ -111,6 +111,8 @@ class UNet(nn.Module):
             self.conv3d=False
 
         self.ResUnet = ResUnet
+        self.input_channels = input_channel
+        self.output_channels = output_channel
 
         block_e,block_d = blocks[0], blocks[1]
 
@@ -156,7 +158,7 @@ class UNet(nn.Module):
 
     def forward(self, x):
         if self.residual_layer:
-            residual=x
+            residual=x[:,self.output_channels:,:,:] if self.input_channels != self.output_channels else x
 
         # 3D convolution
         if self.conv3d:
@@ -183,9 +185,9 @@ class UNet(nn.Module):
         # Final feature extraction
         y = self.final_feature(xy) # output_channel
 
-        # residual
+        # # residual
         if self.residual_layer:
-            y += residual[:,0:1,:,:]
+            y += residual
 
         y = self.activation(y)
         # ----------------------------------------------------------
