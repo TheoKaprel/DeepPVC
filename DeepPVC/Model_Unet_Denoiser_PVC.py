@@ -15,7 +15,12 @@ class UNet_Denoiser_PVC(ModelBase):
         super().__init__(params, resume_training, device=device)
         self.network_type = 'unet_denoiser_pvc'
         self.verbose = params['verbose']
-        self.conv3d = params['conv3d']
+
+        if params["dim"]=="2d":
+            self.dim=2
+        elif params["dim"]=="3d":
+            self.dim=3
+
         self.init_feature_kernel = params['init_feature_kernel']
         self.nb_ed_layers = params['nb_ed_layers']
         if "ed_blocks" in params:
@@ -76,14 +81,14 @@ class UNet_Denoiser_PVC(ModelBase):
             self.UNet_pvc = networks.vanillaCNN(in_channels=self.input_channels,out_channels=1,ngc = self.hidden_channels_unet,nb_ed_layers=self.nb_ed_layers).to(device=self.device)
         else:
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
-                                      conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
+                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet).to(device=self.device)
             self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
-                                      conv3d=self.conv3d, init_feature_kernel=self.init_feature_kernel,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
@@ -124,18 +129,25 @@ class UNet_Denoiser_PVC(ModelBase):
         self.truePVfree = batch_targets
 
     def forward_unet_denoiser(self):
-        input_denoiser = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
+        if self.dim==2:
+            input_denoiser = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
+        elif self.dim==3:
+            input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
         self.fakePVE = self.UNet_denoiser(input_denoiser)
 
     def forward_unet_pvc(self):
-        input_pvc = torch.concat((self.fakePVE,self.true_rec_fp),dim=1) if self.with_rec_fp else self.fakePVE
+        if self.dim==2:
+            input_pvc = torch.concat((self.fakePVE,self.true_rec_fp),dim=1) if self.with_rec_fp else self.fakePVE
+        elif self.dim==3:
+            input_pvc = torch.concat((self.fakePVE,self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.fakePVE
+
         self.fakePVfree = self.UNet_pvc(input_pvc.detach())
 
     def losses_unet_denoiser(self):
-        self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE)
+        self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:])
 
     def losses_unet_pvc(self):
-        self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree)
+        self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:])
 
     def backward_unet_denoiser(self):
         if self.amp:
@@ -160,17 +172,25 @@ class UNet_Denoiser_PVC(ModelBase):
                 truePVEnoisy,true_rec_fp = batch[0], batch[2]
             elif len(batch)==2:
                 truePVEnoisy,true_rec_fp = batch
-
-            truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
+            if self.dim==2:
+                truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
+            elif self.dim==3:
+                truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
         else:
-            truePVEnoisy = batch[0]
+            truePVEnoisy = batch[0] if self.dim==2 else batch[0][:,None,:,:,:]
 
         with autocast(enabled=self.amp):
 
             fakePVE = self.UNet_denoiser(truePVEnoisy)
             if self.with_rec_fp:
-                fakePVE = torch.concat((fakePVE, true_rec_fp), dim=1)
-            return self.UNet_pvc(fakePVE)
+                if self.dim==2:
+                    fakePVE = torch.concat((fakePVE, true_rec_fp), dim=1)
+                elif self.dim==3:
+                    fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:]), dim=1)
+            if self.dim==2:
+                return self.UNet_pvc(fakePVE)
+            elif self.dim==3:
+                return self.UNet_pvc(fakePVE)[:,0,:,:,:]
 
     def optimize_parameters(self):
         # Unet denoiser update
