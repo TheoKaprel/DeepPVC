@@ -162,9 +162,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
             print(f'transforms : {self.transforms}')
 
     def apply_noise(self, input_sinogram):
-        input = input_sinogram[1, :, :, :] if self.noisy else input_sinogram[0,:,:,:]
-        input_sinogram[0,:,:,:] = np.random.poisson(lam=input, size=input.shape).astype(dtype=input.dtype)
-        return input_sinogram
+        return np.random.poisson(lam=input_sinogram, size=input_sinogram.shape).astype(dtype=input_sinogram.dtype)
+
 
     def np_transforms(self, x):
         for trnsfm in self.transforms:
@@ -276,7 +275,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
             if not self.sino:
-                data_PVE_noisy,data_target = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid],np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                data_PVE_noisy = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid]
+                data_target = np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
             else:
             #sino
                 data_PVE_noisy, data_target = np.array(data['PVE_noisy'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=np.float32).transpose((1,0,2))
@@ -302,6 +302,8 @@ class BaseCustomPVEProjectionsDataset(Dataset):
                     data_PVE = np.array(data['PVE'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid]
                     data_PVE = self.pad(torch.from_numpy(data_PVE[None, :, :, :]))[0, :, :, :]
                 # end sino
+                data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=np.float32)
+
                 data_inputs = (data_PVE_noisy,data_PVE)
             else:
                 data_inputs = (data_PVE_noisy)
@@ -314,8 +316,10 @@ class BaseCustomPVEProjectionsDataset(Dataset):
     def get_item_h5_full_sino(self, item):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[item]]
-            data_PVE_noisy, data_target = np.array(data['PVE_noisy'], dtype=np.float32), np.array(data['PVfree'],dtype=np.float32)
+            data_target = np.array(data['PVfree'],dtype=np.float32)
             data_PVE = np.array(data['PVE'], dtype=np.float32)
+
+            data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=np.float32)
 
             data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
 
