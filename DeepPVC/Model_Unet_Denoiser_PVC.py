@@ -16,10 +16,13 @@ class UNet_Denoiser_PVC(ModelBase):
         self.network_type = 'unet_denoiser_pvc'
         self.verbose = params['verbose']
 
-        if params["dim"]=="2d":
+        if "dim" in params:
+            if params["dim"]=="2d":
+                self.dim=2
+            elif params["dim"]=="3d":
+                self.dim=3
+        else:
             self.dim=2
-        elif params["dim"]=="3d":
-            self.dim=3
 
         self.init_feature_kernel = params['init_feature_kernel']
         self.nb_ed_layers = params['nb_ed_layers']

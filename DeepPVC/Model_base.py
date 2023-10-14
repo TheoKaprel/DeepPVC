@@ -37,7 +37,7 @@ class ModelBase(torch.nn.Module):
             self.output_channels_denoiser = self.input_channels - 1 if params['with_rec_fp'] else self.input_channels
             self.output_channels = 1
 
-        if self.params['dim']=="3d":
+        if ("dim" in self.params and self.params['dim']=="3d"):
             self.input_channels = 2 if params['with_rec_fp'] else 1
             self.output_channels = self.output_channels_denoiser = 1
 
