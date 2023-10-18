@@ -114,7 +114,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             # batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
 
-            DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
+
 
             if debug:
                 t_preopt+=time.time()-timer_preopt1
@@ -127,7 +127,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     for obj in gc.get_objects():
                         try:
                             if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                                print(type(obj), obj.size())
+                                print(obj.device.type, type(obj), obj.size())
                         except:
                             pass
 
@@ -151,8 +151,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         ax[0,2].set_title('output')
                         plt.show()
 
-
+            DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
             DeepPVEModel.optimize_parameters()
+
 
             if debug:
                 t_opt += time.time() - timer_opt1
