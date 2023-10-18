@@ -122,7 +122,13 @@ def check_params(params, fatal_on_unknown=False):
     elif params['network']=='unet_denoiser_pvc':
         check_params_unet(params=params,fatal_on_unknown=fatal_on_unknown)
 
-
+    # compatibility with previous versions
+    if ('full_sino' in params and params['full_sino'] == True):
+        params["inputs"]="full_sino"
+    elif ('full_sino' in params and params['full_sino']==False):
+        params["inputs"]="projs"
+    elif ('full_sino' not in params and 'inputs' not in params):
+        params["inputs"]="projs"
 
 def check_params_pix2pix(params, fatal_on_unknown):
 

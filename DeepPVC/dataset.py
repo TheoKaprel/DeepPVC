@@ -1,8 +1,6 @@
 import itk
 import torch
 import numpy as np
-import glob
-import time
 import h5py
 from torch.utils.data import Dataset,DataLoader
 
@@ -24,6 +22,8 @@ class BaseDataset(Dataset):
         self.test = test
         self.params = params
         self.double_model=True if params['network']=="unet_denoiser_pvc" else False
+
+        self.dtype=self.get_dtype(params['dtype'])
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':
@@ -87,7 +87,6 @@ class ProjToProjDataset(BaseDataset):
         self.build_channels_id()
         
         self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
-        # self.len_dataset = self.nb_src * self.nb_projs_per_img if not self.full_sino else self.nb_src
         self.len_dataset = self.nb_src * self.nb_projs_per_img
 
     def build_channels_id(self):
@@ -167,7 +166,11 @@ class ProjToProjDataset(BaseDataset):
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
-
+        if params['pad']=="zero":
+            self.pad = torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
+        else:
+            self.pad = torch.nn.Identity()
+        self.patches=params['patches']
         self.init_h5()
 
     def init_h5(self):
@@ -175,9 +178,17 @@ class SinoToSinoDataset(BaseDataset):
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
         self.keys = sorted(list(self.dataseth5.keys()))
 
-        first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
+        first_data = np.array(self.dataseth5[self.keys[0]]['PVE_noisy'],dtype=self.dtype)
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
                                                               first_data.shape[2]
+
+
+        if self.patches:
+            self.patch_size=(32,64,64)
+            first_data=self.pad(torch.from_numpy(first_data))[None,:,:,:]
+            first_data_patches = first_data.unfold(1, self.patch_size[0], self.patch_size[0]).unfold(2, self.patch_size[1], self.patch_size[1]).unfold(3, self.patch_size[2], self.patch_size[2])
+            self.unfold_shape=first_data_patches.size()
+            self.tile_shape=(self.unfold_shape[1],self.unfold_shape[2],self.unfold_shape[3])
 
         if (self.max_nb_data > 0 and len(self.keys)> self.max_nb_data):
             self.keys = self.keys[:int(self.max_nb_data)]
@@ -188,24 +199,49 @@ class SinoToSinoDataset(BaseDataset):
 
         if self.verbose > 1:
             print(f'First : {self.keys[0]}')
+            print(f'Shape : {first_data.shape}')
         self.nb_src = len(self.keys)
 
-        self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
         self.len_dataset = self.nb_src
+        if self.patches:
+            self.len_dataset=self.len_dataset * self.tile_shape[0]*self.tile_shape[1]*self.tile_shape[2]
 
     def get_item_h5_full_sino(self, item):
-        with h5py.File(self.datasetfn, 'r') as f:
-            data = f[self.keys[item]]
-            data_target = np.array(data['PVfree'],dtype=np.float32)
-            data_PVE = np.array(data['PVE'], dtype=np.float32)
+        if self.patches:
+            src_i=item%self.nb_src
+            i,j,k=item%self.tile_shape[0],item%self.tile_shape[1],item%self.tile_shape[2]
+        else:
+            src_i=item
 
-            data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=np.float32)
+        with h5py.File(self.datasetfn, 'r') as f:
+            data = f[self.keys[src_i]]
+            data_target = np.array(data['PVfree'],dtype=self.dtype)
+            data_PVE = np.array(data['PVE'], dtype=self.dtype)
+
+            data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=self.dtype)
 
             data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
 
             if self.with_rec_fp:
-                data_rec_fp = np.array(data['rec_fp'], dtype=np.float32) # 120,256,256
+                data_rec_fp = np.array(data['rec_fp'], dtype=self.dtype) # (120,256,256)
                 data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+        #--------------------
+        data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
+        data_target = self.pad(torch.from_numpy(data_target))
+        #--------------------
+
+        if self.patches:
+            # ----------------------------
+            data_inputs = tuple([
+                data[None,:,:,:]
+                    .unfold(1, self.patch_size[0], self.patch_size[0])
+                    .unfold(2, self.patch_size[1], self.patch_size[1])
+                    .unfold(3, self.patch_size[2], self.patch_size[2])[0,i,j,k,:,:,:] for data in data_inputs])
+            data_target=data_target[None,:,:,:].unfold(1, self.patch_size[0], self.patch_size[0]
+                                                       ).unfold(2, self.patch_size[1], self.patch_size[1]
+                                                                ).unfold(3, self.patch_size[2], self.patch_size[2]
+                                                                         )[0,i,j,k,:,:,:]
+            # ----------------------------
 
         return data_inputs,data_target
 

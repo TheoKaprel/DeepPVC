@@ -1,6 +1,7 @@
 ﻿import matplotlib.pyplot as plt
 import torch
 import time
+import gc
 import json as js
 import os
 import numpy as np
@@ -119,7 +120,18 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
 
-                if step==0:
+                if (step==0):
+                    print("Memory summary : ")
+                    print(torch.cuda.memory_summary())
+                    print("-------")
+                    for obj in gc.get_objects():
+                        try:
+                            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                                print(type(obj), obj.size())
+                        except:
+                            pass
+
+
                     print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
                     print(f'(gpu {rank}) batch_tagets shape : {batch_targets.shape}')
                     print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
@@ -128,23 +140,16 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
                         fig,ax = plt.subplots(len(batch_inputs),3)
+                        i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
                         for kk in range(len(batch_inputs)):
-                            ax[kk,0].imshow(batch_inputs[kk][0,0,:,:].float().detach().cpu().numpy())
+                            ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
                             ax[kk,0].set_title(f'input {kk}')
 
-                        ax[0,1].imshow(batch_targets[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,1].imshow(batch_targets[i,j,:,:].float().detach().cpu().numpy())
                         ax[0,1].set_title('target')
-                        ax[0,2].imshow(debug_output[0,0,:,:].float().detach().cpu().numpy())
+                        ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
                         ax[0,2].set_title('output')
                         plt.show()
-
-
-                # plot_example = batch_inputs[0,:,:,:].detach().cpu().numpy().astype(np.float32)
-                # fig,ax = plt.subplots(1,plot_example.shape[0])
-                # for i in range(plot_example.shape[0]):
-                #     ax[i].imshow(plot_example[i,:,:])
-                #     ax[i].set_title(f'{i}')
-                # plt.show()
 
 
             DeepPVEModel.optimize_parameters()

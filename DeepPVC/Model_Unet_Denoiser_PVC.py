@@ -128,7 +128,6 @@ class UNet_Denoiser_PVC(ModelBase):
             self.truePVE_noisy,self.truePVE,self.true_rec_fp  = batch_inputs
         else:
             self.truePVE_noisy, self.truePVE = batch_inputs
-
         self.truePVfree = batch_targets
 
     def forward_unet_denoiser(self):
@@ -175,6 +174,15 @@ class UNet_Denoiser_PVC(ModelBase):
                 truePVEnoisy,true_rec_fp = batch[0], batch[2]
             elif len(batch)==2:
                 truePVEnoisy,true_rec_fp = batch
+            # ----------------------------
+
+            # patch_size=(32,64,64)
+            # truePVEnoisy = truePVEnoisy.unfold(1, patch_size[0], patch_size[0]).unfold(2, patch_size[1], patch_size[1]).unfold(3, patch_size[2], patch_size[2])
+            # true_rec_fp = true_rec_fp.unfold(1, patch_size[0], patch_size[0]).unfold(2, patch_size[1], patch_size[1]).unfold(3, patch_size[2], patch_size[2])
+            # unfold_shape=truePVEnoisy.size()
+            # truePVEnoisy=truePVEnoisy.contiguous().view(-1, patch_size[0], patch_size[1], patch_size[2])
+            # true_rec_fp=true_rec_fp.contiguous().view(-1, patch_size[0], patch_size[1], patch_size[2])
+
             if self.dim==2:
                 truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
             elif self.dim==3:
@@ -183,7 +191,7 @@ class UNet_Denoiser_PVC(ModelBase):
             truePVEnoisy = batch[0] if self.dim==2 else batch[0][:,None,:,:,:]
 
         with autocast(enabled=self.amp):
-
+            print(truePVEnoisy.shape)
             fakePVE = self.UNet_denoiser(truePVEnoisy)
             if self.with_rec_fp:
                 if self.dim==2:
@@ -193,7 +201,12 @@ class UNet_Denoiser_PVC(ModelBase):
             if self.dim==2:
                 return self.UNet_pvc(fakePVE)
             elif self.dim==3:
-                return self.UNet_pvc(fakePVE)[:,0,:,:,:]
+                output= self.UNet_pvc(fakePVE)[:,0,:,:,:]
+                # output=output.view(unfold_shape)
+                # output_c,output_h,output_w=unfold_shape[1]*unfold_shape[4],unfold_shape[2]*unfold_shape[5],unfold_shape[3]*unfold_shape[6]
+                # output=output.permute(0,1,4,2,5,3,6).contiguous()
+                # output = output.view(1, output_c, output_h, output_w)
+                return output
 
     def optimize_parameters(self):
         # Unet denoiser update
