@@ -6,7 +6,7 @@ from textwrap import fill
 not_updatable_paramter_list_when_resume_training = ['input_channels', 'hidden_channels_gen', 'hidden_channels_disc','optimizer',
                                                     'adv_loss', 'recon_loss','lambda_recon']
 
-required = ['dataset_path', 'test_dataset_path','with_noise','input_eq_angles',
+required = ['dataset_path', 'test_dataset_path',
             'data_normalisation', 'network', 'n_epochs', 'learning_rate',
             'optimizer', 'device', 'lr_policy']
 
@@ -91,7 +91,7 @@ def check_params(params, fatal_on_unknown=False):
 
     assert (params['data_normalisation'] in ["global_standard","img_standard","global_0_1","img_0_1","img_mean","none", "img_1_1"])
     assert (params["datatype"] in ["mhd", "mha", "npy", "pt", "h5"])
-    assert (type(params['with_noise'])==bool)
+    # assert (type(params['with_noise'])==bool)
 
     assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc', 'diffusion'])
 
@@ -122,7 +122,13 @@ def check_params(params, fatal_on_unknown=False):
     elif params['network']=='unet_denoiser_pvc':
         check_params_unet(params=params,fatal_on_unknown=fatal_on_unknown)
 
-
+    # compatibility with previous versions
+    if ('full_sino' in params and params['full_sino'] == True):
+        params["inputs"]="full_sino"
+    elif ('full_sino' in params and params['full_sino']==False):
+        params["inputs"]="projs"
+    elif ('full_sino' not in params and 'inputs' not in params):
+        params["inputs"]="projs"
 
 def check_params_pix2pix(params, fatal_on_unknown):
 

@@ -20,24 +20,26 @@ class ModelBase(torch.nn.Module):
         self.n_epochs = params['n_epochs']
         self.learning_rate = params['learning_rate']
 
-        self.input_channels = params['input_eq_angles']
-        self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
-        self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
+        if self.params["inputs"] == "projs":
+            self.input_channels = params['input_eq_angles']
+            self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
+            self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
-        #sino
-        if ('sino' in params):
-            self.input_channels = params['sino']+1
-            self.input_channels = self.input_channels + 1 if params['with_rec_fp'] else self.input_channels
-        #end sino
+            #sino
+            if ('sino' in params):
+                self.input_channels = params['sino']+1
+                self.input_channels = self.input_channels + 1 if params['with_rec_fp'] else self.input_channels
+            #end sino
 
-        if self.params['full_sino']:
-            self.input_channels = 256 if ('sino' in params) else (240 if params['with_rec_fp'] else 120)
-            self.output_channels=self.output_channels_denoiser = self.input_channels // 2 if params['with_rec_fp'] else self.input_channels
-        else:
             self.output_channels_denoiser = self.input_channels - 1 if params['with_rec_fp'] else self.input_channels
             self.output_channels = 1
 
-        if self.params['dim']=="3d":
+        elif self.params["inputs"]=="full_sino":
+            self.input_channels = 256 if ('sino' in params) else (240 if params['with_rec_fp'] else 120)
+            self.output_channels=self.output_channels_denoiser = self.input_channels // 2 if params['with_rec_fp'] else self.input_channels
+
+
+        if ("dim" in self.params and self.params['dim']=="3d"):
             self.input_channels = 2 if params['with_rec_fp'] else 1
             self.output_channels = self.output_channels_denoiser = 1
 
