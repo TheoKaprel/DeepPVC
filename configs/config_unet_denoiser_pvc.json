@@ -17,7 +17,7 @@
   "training_batchsize":1,
   "test_batchsize":1,
   "data_augmentation": ["noise"],
-  "data_normalisation": "3d_max",
+  "data_normalisation": "3d_mean",
   "pad": "none",
   "amp": true,
   "verbose": 2,
