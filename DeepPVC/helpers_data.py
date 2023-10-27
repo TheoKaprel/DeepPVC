@@ -68,6 +68,9 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
     elif data_normalisation=="3d_max":
         max = torch.amax(dataset_or_img[0], dim=(1,2,3), keepdim=False)
         return [max]
+    elif data_normalisation=="3d_mean":
+        mean = torch.mean(dataset_or_img[0], dim=(1,2,3), keepdim=False)
+        return [mean]
     else:
         print(f"ERROR in data_normalisation : {data_normalisation}")
         exit(0)
@@ -103,6 +106,12 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
             out = tuple([input_i/max[:,None,None,None] for input_i in dataset_or_img])
         else:
             out = dataset_or_img / max[:,None,None,None]
+    elif data_normalisation=="3d_mean":
+        mean= norm[0]
+        if type(dataset_or_img)==tuple:
+            out = tuple([input_i/mean[:,None,None,None] for input_i in dataset_or_img])
+        else:
+            out = dataset_or_img / mean[:,None,None,None]
     else:
         out = dataset_or_img
 
@@ -139,6 +148,9 @@ def denormalize_eval(dataset_or_img, data_normalisation, norm, params, to_numpy)
     elif data_normalisation=="3d_max":
         max = norm[0]
         output = dataset_or_img * max[:,None,None,None]
+    elif data_normalisation=="3d_mean":
+        mean = norm[0]
+        output = dataset_or_img * mean[:,None,None,None]
     else:
         output = dataset_or_img
 
