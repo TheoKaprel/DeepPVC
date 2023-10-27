@@ -109,9 +109,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
             batch_targets = batch_targets.to(device, non_blocking=True)
 
-            # norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            # batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
-            # batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            print(f'norm : {norm}')
+            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
 
 
@@ -121,15 +122,15 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_opt1=time.time()
 
                 if (step==0):
-                    print("Memory summary : ")
-                    print(torch.cuda.memory_summary())
-                    print("-------")
-                    for obj in gc.get_objects():
-                        try:
-                            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                                print(obj.device.type, type(obj), obj.size())
-                        except:
-                            pass
+                    # print("Memory summary : ")
+                    # print(torch.cuda.memory_summary())
+                    # print("-------")
+                    # for obj in gc.get_objects():
+                    #     try:
+                    #         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    #             print(obj.device.type, type(obj), obj.size())
+                    #     except:
+                    #         pass
 
 
                     print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
