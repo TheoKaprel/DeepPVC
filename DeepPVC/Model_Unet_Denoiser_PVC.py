@@ -191,7 +191,6 @@ class UNet_Denoiser_PVC(ModelBase):
             truePVEnoisy = batch[0] if self.dim==2 else batch[0][:,None,:,:,:]
 
         with autocast(enabled=self.amp):
-            print(truePVEnoisy.shape)
             fakePVE = self.UNet_denoiser(truePVEnoisy)
             if self.with_rec_fp:
                 if self.dim==2:
