@@ -157,7 +157,7 @@ def get_activation(activation):
         return nn.ReLU()
     elif activation == "softplus":
         return nn.Softplus()
-    elif activation == "none":
+    elif activation == "linear":
         return nn.Identity()
 
 
