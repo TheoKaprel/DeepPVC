@@ -214,7 +214,6 @@ class SinoToSinoDataset(BaseDataset):
             src_i=item
 
         with h5py.File(self.datasetfn, 'r') as f:
-            print(self.keys[src_i])
             data = f[self.keys[src_i]]
             data_target = np.array(data['PVfree'],dtype=self.dtype)
             data_PVE = np.array(data['PVE'], dtype=self.dtype)
