@@ -193,7 +193,7 @@ class SinoToSinoDataset(BaseDataset):
         if (self.max_nb_data > 0 and len(self.keys)> self.max_nb_data):
             self.keys = self.keys[:int(self.max_nb_data)]
 
-        if ('split_dataset' in self.params and self.params['split_dataset'] and not self.test):
+        if (self.params['split_dataset'] and not self.test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=self.params['jean_zay'])
             self.keys = list(np.array_split(self.keys, self.number_gpu)[self.gpu_id])
 
