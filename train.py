@@ -293,8 +293,10 @@ if __name__ == '__main__':
         import idr_torch
         # get distributed configuration from Slurm environment
         NODE_ID = os.environ['SLURM_NODEID']
-        MASTER_ADDR = os.environ['MASTER_ADDR']
+        # MASTER_ADDR = os.environ['MASTER_ADDR']
         TIME_LIMIT = os.environ['SBATCH_TIMELIMIT']
+
+        print(os.environ)
 
         print(f"TIME_LIMIT is : {TIME_LIMIT}")
         TIME_LIMIT_s = 0
@@ -309,7 +311,7 @@ if __name__ == '__main__':
         # display info
         if idr_torch.rank == 0:
             print(">>> Training on ", len(idr_torch.hostnames), " nodes and ", idr_torch.size,
-                  " processes, master node is ", MASTER_ADDR)
+                  " processes, master node is ")
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
         dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
