@@ -130,6 +130,9 @@ def check_params(params, fatal_on_unknown=False):
     elif ('full_sino' not in params and 'inputs' not in params):
         params["inputs"]="projs"
 
+    if 'sino' not in params:
+        params['sino'] = False
+
 def check_params_pix2pix(params, fatal_on_unknown):
 
     for req in required_pix2pix:

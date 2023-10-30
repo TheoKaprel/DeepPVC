@@ -101,7 +101,12 @@ class UNet_Denoiser_PVC(ModelBase):
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
 
-        if (('compile' in self.params) and (self.params['compile']==True)):
+        if (('compile' in self.params) and (self.params['compile'] == True)):
+            self.compile = True
+        else:
+            self.compile = False
+
+        if self.compile:
             self.UNet_denoiser = torch.compile(self.UNet_denoiser)
             self.UNet_pvc = torch.compile(self.UNet_pvc)
 
@@ -213,6 +218,8 @@ class UNet_Denoiser_PVC(ModelBase):
                 # output=output.permute(0,1,4,2,5,3,6).contiguous()
                 # output = output.view(1, output_c, output_h, output_w)
                 return output
+
+
 
     def optimize_parameters(self):
         # Unet denoiser update
