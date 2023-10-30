@@ -21,21 +21,22 @@ class ModelBase(torch.nn.Module):
         self.learning_rate = params['learning_rate']
 
         if self.params["inputs"] == "projs":
-            self.input_channels = params['input_eq_angles']
-            self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
-            self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
 
-            #sino
-            if ('sino' in params):
-                self.input_channels = params['sino']+1
+            if params['sino']==False:
+                self.input_channels = params['input_eq_angles']
+                self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
+                self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
+            else:
+                self.input_channels = params['input_eq_angles']+1
                 self.input_channels = self.input_channels + 1 if params['with_rec_fp'] else self.input_channels
-            #end sino
+
 
             self.output_channels_denoiser = self.input_channels - 1 if params['with_rec_fp'] else self.input_channels
             self.output_channels = 1
 
         elif self.params["inputs"]=="full_sino":
-            self.input_channels = 256 if ('sino' in params) else (240 if params['with_rec_fp'] else 120)
+            self.input_channels = 256 if (params['sino']) else 120
+            self.input_channels = 2 * self.input_channels if params['with_rec_fp'] else self.input_channels
             self.output_channels=self.output_channels_denoiser = self.input_channels // 2 if params['with_rec_fp'] else self.input_channels
 
 
