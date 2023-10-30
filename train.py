@@ -131,7 +131,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
                         fig,ax = plt.subplots(len(batch_inputs),3)
                         # i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
-                        i,j=np.random.randint(batch_inputs[0].shape[0]),64
+                        i,j=np.random.randint(batch_inputs[0].shape[0]),0
                         for kk in range(len(batch_inputs)):
                             ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
                             ax[kk,0].set_title(f'input {kk}')

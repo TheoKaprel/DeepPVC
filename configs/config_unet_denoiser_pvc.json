@@ -3,6 +3,7 @@
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_2/validation_dataset_2.h5"],
   "validation_ref_type_nosino": ["/export/home/tkaprelian/Desktop/PVE/datasets/IEC/IEC_air_10bg_intevo_280sid/iec_1mm_c_rot_air_proj256","mhd"],
   "jean_zay": false,
+  "compile": true,
   "store_dataset": false,
   "split_dataset": false,
   "num_workers": 2,
@@ -51,7 +52,7 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "nb_ed_layers": 3,
-  "hidden_channels_unet":16,
+  "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]

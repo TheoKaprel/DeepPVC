@@ -101,6 +101,10 @@ class UNet_Denoiser_PVC(ModelBase):
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
 
+        if (('compile' in self.params) and (self.params['compile']==True)):
+            self.UNet_denoiser = torch.compile(self.UNet_denoiser)
+            self.UNet_pvc = torch.compile(self.UNet_pvc)
+
     def init_optimization(self):
         if self.optimizer == 'Adam':
             self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
