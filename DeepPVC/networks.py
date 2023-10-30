@@ -219,7 +219,7 @@ class UNet(nn.Module):
     def forward(self, x):
         if self.residual_layer:
             if self.dim==2:
-                residual=x[:,self.output_channels:,:,:] if self.input_channels != self.output_channels else x
+                residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
             elif self.dim==3:
                 residual = x[:, self.output_channels:,:,:,:] if self.input_channels != self.output_channels else x
 

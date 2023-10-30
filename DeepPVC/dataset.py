@@ -38,20 +38,22 @@ class BaseDataset(Dataset):
             return np.uint
 
     def apply_noise(self, input_sinogram):
+        if type(input_sinogram)==torch.Tensor:
+            input_sinogram = input_sinogram.numpy()
         return np.random.poisson(lam=input_sinogram, size=input_sinogram.shape).astype(dtype=input_sinogram.dtype)
 
 
 class ProjToProjDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
-        self.with_adj_angles = params["with_adj_angles"]
-        self.input_eq_angles = params['input_eq_angles']
-
-        if "sino" in self.params:
+        if params['sino']:
             self.sino=True
-            self.nb_sino = self.params['sino']
+            self.nb_sino = self.params['input_eq_angles']
         else:
-            self.sino=False
+            self.sino = False
+            self.with_adj_angles = params["with_adj_angles"]
+            self.input_eq_angles = params['input_eq_angles']
+
 
         if self.filetype in ['mhd', 'mha', 'npy', 'pt']:
             print(f"ERROR: {self.filetype} datasets are not handled any more...")
@@ -65,16 +67,16 @@ class ProjToProjDataset(BaseDataset):
         self.keys = sorted(list(self.dataseth5.keys()))
 
         first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
-        self.nb_projs_per_img,self.nb_pix_x,self.nb_pix_y = first_data.shape[0],first_data.shape[1],first_data.shape[2]
+
         if self.sino:
             self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[1], first_data.shape[0],first_data.shape[2]
             self.zero_padding_for_sino = np.zeros((2, self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32) if (self.double_model and not self.test) else np.zeros((self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32)
             self.zero_padding_for_sino_pvfree = np.zeros((1,4, self.nb_pix_y),dtype=np.float32)
+        else:
+            self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], first_data.shape[2]
 
-        self.build_channels_id()
-
-        if (self.max_nb_data>0 and len(self.keys)*self.nb_projs_per_img>self.max_nb_data):
-            self.keys=self.keys[:int(self.max_nb_data/self.nb_projs_per_img)]
+        if (self.max_nb_data>0 and len(self.keys)>self.max_nb_data):
+            self.keys=self.keys[:int(self.max_nb_data)]
 
         if ('split_dataset' in  self.params and  self.params['split_dataset'] and not  self.test):
             self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay= self.params['jean_zay'])
@@ -91,20 +93,22 @@ class ProjToProjDataset(BaseDataset):
 
     def build_channels_id(self):
         # rotating channels id
-        step = int(self.nb_projs_per_img / (self.input_eq_angles))
         self.channels_id = np.array([0])
-        if self.with_adj_angles:
-            adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
-            #sino
-            if self.sino:
-                adjacent_channels_id = np.array([(-k) % self.nb_projs_per_img for k in range(1,self.nb_sino//2+1)]+
-                                                [(k) % self.nb_projs_per_img for k in range(1,self.nb_sino//2+1)])
-            # end sino
+        if self.sino:
+            adjacent_channels_id = np.array([(-k) % self.nb_projs_per_img for k in range(1, self.nb_sino // 2 + 1)] +
+                                            [(k) % self.nb_projs_per_img for k in range(1, self.nb_sino // 2 + 1)])
             self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
+        else:
+            step = int(self.nb_projs_per_img / (self.input_eq_angles))
 
-        equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
-        self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
-            equiditributed_channels_id) > 0 else self.channels_id
+            # adj angles
+            if self.with_adj_angles:
+                adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
+                self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
+            # eq angles
+            equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
+            self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
+                equiditributed_channels_id) > 0 else self.channels_id
 
     def get_channels_id_i(self, proj_i):
         return (self.channels_id+proj_i)%self.nb_projs_per_img
@@ -132,6 +136,7 @@ class ProjToProjDataset(BaseDataset):
                 data_PVE_noisy = self.pad(torch.from_numpy(data_PVE_noisy[None, :, :, :]))[0, :, :, :]
                 data_target = self.pad(torch.from_numpy(data_target[None, :, :, :]))[0, :, :, :]
             # end sino
+
             if self.with_rec_fp:
                 if not self.sino:
                     rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
@@ -166,10 +171,15 @@ class ProjToProjDataset(BaseDataset):
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
+        self.sino = params['sino']
+
         if params['pad']=="zero":
-            self.pad = torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
+            self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if self.sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
         else:
             self.pad = torch.nn.Identity()
+
+
+
         self.patches=params['patches']
         self.init_h5()
 
@@ -225,6 +235,11 @@ class SinoToSinoDataset(BaseDataset):
             if self.with_rec_fp:
                 data_rec_fp = np.array(data['rec_fp'], dtype=self.dtype) # (120,256,256)
                 data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+
+        if self.sino:
+            data_inputs = tuple([u.transpose((1,0,2)) for u in data_inputs])
+            data_target = data_target.transpose((1,0,2))
+
         #--------------------
         data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
         data_target = self.pad(torch.from_numpy(data_target))

@@ -53,31 +53,31 @@ def main():
 def apply_to_input(input, input_rec_fp, params, device, model):
     with_rec_fp = params['with_rec_fp']
     with torch.no_grad():
-        if ('sino' in params and not params['full_sino']):
+        if (params["inputs"]=="projs"):
             # sino
             projs_input_ = itk.array_from_image(itk.imread(input)) #(120,256,256)
-            nb_sino = params['sino']
-            projs_input_t = projs_input_.transpose((1,0,2)) # (256,120,256)
-            nb_projs_per_img = projs_input_t.shape[0]
-            adjacent_channels_id = np.array([0]+[(-k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)] +
-                                            [(k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)])
+            # nb_sino = params['input_eq_angles']
+            # projs_input_t = projs_input_.transpose((1,0,2)) # (256,120,256)
+            # nb_projs_per_img = projs_input_t.shape[0]
+            # adjacent_channels_id = np.array([0]+[(-k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)] +
+            #                                 [(k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)])
+            #
+            # projs_input = np.zeros((nb_projs_per_img,nb_sino+1, projs_input_t.shape[-2], projs_input_t.shape[-1]))
+            # for proj_i in range(nb_projs_per_img):
+            #     proj_channels = (adjacent_channels_id+proj_i)%nb_projs_per_img
+            #     projs_input[proj_i] = projs_input_t[proj_channels,:,:]
+            # # (256, 7,120,256)
+            # if with_rec_fp:
+            #     projs_rec_fp = itk.array_from_image(itk.imread(input_rec_fp)).transpose((1,0,2))[:,None,:,:] # (256,1,120,256)
+            #     projs_input = np.concatenate((projs_input,projs_rec_fp),axis=1)
+            #
+            # zeros_padding = np.zeros((projs_input.shape[0], projs_input.shape[1], 4, projs_input.shape[3]))
+            # projs_input = np.concatenate((zeros_padding,projs_input,zeros_padding), axis=2)
+            #
+            # projs_input = torch.Tensor(projs_input)
+            # # end sino
 
-            projs_input = np.zeros((nb_projs_per_img,nb_sino+1, projs_input_t.shape[-2], projs_input_t.shape[-1]))
-            for proj_i in range(nb_projs_per_img):
-                proj_channels = (adjacent_channels_id+proj_i)%nb_projs_per_img
-                projs_input[proj_i] = projs_input_t[proj_channels,:,:]
-            # (256, 7,120,256)
-            if with_rec_fp:
-                projs_rec_fp = itk.array_from_image(itk.imread(input_rec_fp)).transpose((1,0,2))[:,None,:,:] # (256,1,120,256)
-                projs_input = np.concatenate((projs_input,projs_rec_fp),axis=1)
-
-            zeros_padding = np.zeros((projs_input.shape[0], projs_input.shape[1], 4, projs_input.shape[3]))
-            projs_input = np.concatenate((zeros_padding,projs_input,zeros_padding), axis=2)
-
-            projs_input = torch.Tensor(projs_input)
-            # end sino
-
-        elif params['full_sino']:
+        elif params["inputs"]=="full_sino":
             projs_input = torch.Tensor(itk.array_from_image(itk.imread(input)).astype(np.float64))[None,:,:,:]
             if 'sino' in params:
                 pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
@@ -100,23 +100,27 @@ def apply_to_input(input, input_rec_fp, params, device, model):
 
 
         print(f'input shape : {[data.shape for data in data_input]}')
-
-
-        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation)
-        # if data_normalisation!='none':
-        #     print(f'norm shape : {norm_input[0].shape}')
-        # normed_input = helpers_data.normalize_eval(dataset_or_img=projs_input, data_normalisation=data_normalisation,
-        #                                              norm=norm_input, params=model.params, to_torch=False)
         data_input = tuple([data.to(device) for data in data_input])
-        denormed_output_i = model.forward(data_input)
-        # denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,
-        #                                                   data_normalisation=data_normalisation,
-        #                                                   norm=norm_input, params=model.params, to_numpy=False)
+
+
+        data_normalisation = params['data_normalisation']
+        norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
+        if (data_normalisation!='none'):
+            print(f'norm : {norm_input}')
+        normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
+                                                     norm=norm_input, params=model.params, to_torch=False)
+
+
+
+        normed_output_i = model.forward(normed_input)
+        denormed_output_i = helpers_data.denormalize_eval(dataset_or_img=normed_output_i,
+                                                          data_normalisation=data_normalisation,
+                                                          norm=norm_input, params=model.params, to_numpy=False)
 
         print(f'network output shape : {denormed_output_i.shape}')
 
         if 'sino' not in params:
-            output_array = denormed_output_i.cpu().numpy()[:,0,:,:] if not params['full_sino'] else denormed_output_i.cpu().numpy()[0,:,:,:]
+            output_array = denormed_output_i.cpu().numpy()[:,0,:,:] if (params['inputs']=='projs') else denormed_output_i.cpu().numpy()[0,:,:,:]
         else:
             if params['full_sino']:
                 output_array = denormed_output_i.cpu().numpy()[0,:,:,:].transpose((1,0,2))

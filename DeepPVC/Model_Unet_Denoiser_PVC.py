@@ -101,6 +101,10 @@ class UNet_Denoiser_PVC(ModelBase):
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
 
+        if (('compile' in self.params) and (self.params['compile']==True)):
+            self.UNet_denoiser = torch.compile(self.UNet_denoiser)
+            self.UNet_pvc = torch.compile(self.UNet_pvc)
+
     def init_optimization(self):
         if self.optimizer == 'Adam':
             self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
@@ -190,6 +194,8 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             truePVEnoisy = batch[0] if self.dim==2 else batch[0][:,None,:,:,:]
 
+
+
         with autocast(enabled=self.amp):
             fakePVE = self.UNet_denoiser(truePVEnoisy)
             if self.with_rec_fp:
@@ -198,6 +204,7 @@ class UNet_Denoiser_PVC(ModelBase):
                 elif self.dim==3:
                     fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:]), dim=1)
             if self.dim==2:
+
                 return self.UNet_pvc(fakePVE)
             elif self.dim==3:
                 output= self.UNet_pvc(fakePVE)[:,0,:,:,:]
