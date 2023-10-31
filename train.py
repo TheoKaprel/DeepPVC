@@ -296,8 +296,6 @@ if __name__ == '__main__':
         MASTER_ADDR = os.environ['MASTER_ADDR'] if ("MASTER_ADDR" in os.environ) else os.environ['HOSTNAME']
         TIME_LIMIT = os.environ['SBATCH_TIMELIMIT']
 
-        print(os.environ)
-
         print(f"TIME_LIMIT is : {TIME_LIMIT}")
         TIME_LIMIT_s = 0
         TIME_LIMIT_split =  TIME_LIMIT.split(":")
