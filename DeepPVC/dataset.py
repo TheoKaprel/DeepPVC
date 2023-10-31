@@ -226,11 +226,15 @@ class SinoToSinoDataset(BaseDataset):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
             data_target = np.array(data['PVfree'],dtype=self.dtype)
-            data_PVE = np.array(data['PVE'], dtype=self.dtype)
 
-            data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=self.dtype)
+            if (self.double_model and not self.test):
+                data_PVE = np.array(data['PVE'], dtype=self.dtype)
 
-            data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
+                data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=self.dtype)
+                data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
+            else:
+                data_PVE_noisy = np.array(data['PVE_noisy'], dtype=self.dtype)
+                data_inputs=(data_PVE_noisy,)
 
             if self.with_rec_fp:
                 data_rec_fp = np.array(data['rec_fp'], dtype=self.dtype) # (120,256,256)
