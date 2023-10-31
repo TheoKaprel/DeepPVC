@@ -129,18 +129,19 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
-                        fig,ax = plt.subplots(len(batch_inputs),3)
-                        # i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
-                        i,j=np.random.randint(batch_inputs[0].shape[0]),0
-                        for kk in range(len(batch_inputs)):
-                            ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
-                            ax[kk,0].set_title(f'input {kk}')
+                        if (params['jean_zay']==False):
+                            fig,ax = plt.subplots(len(batch_inputs),3)
+                            # i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
+                            i,j=np.random.randint(batch_inputs[0].shape[0]),0
+                            for kk in range(len(batch_inputs)):
+                                ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
+                                ax[kk,0].set_title(f'input {kk}')
 
-                        ax[0,1].imshow(batch_targets[i,j,:,:].float().detach().cpu().numpy())
-                        ax[0,1].set_title('target')
-                        ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
-                        ax[0,2].set_title('output')
-                        plt.show()
+                            ax[0,1].imshow(batch_targets[i,j,:,:].float().detach().cpu().numpy())
+                            ax[0,1].set_title('target')
+                            ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
+                            ax[0,2].set_title('output')
+                            plt.show()
 
             DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
             DeepPVEModel.optimize_parameters()
