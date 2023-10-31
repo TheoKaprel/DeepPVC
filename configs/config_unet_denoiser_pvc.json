@@ -14,14 +14,14 @@
   "sino": true,
   "input_eq_angles": 1,
   "with_adj_angles": true,
-  "dim": "2d",
+  "dim": "3d",
 
   "max_nb_data": 10,
-  "training_batchsize":8,
-  "test_batchsize":8,
+  "training_batchsize":1,
+  "test_batchsize":1,
   "data_augmentation": ["noise"],
   "data_normalisation": "none",
-  "pad": "zero",
+  "pad": "none",
   "amp": true,
   "verbose": 2,
 
@@ -39,7 +39,7 @@
   "patches":false,
   "ed_blocks": ["conv-norm-relu-conv-norm-relu-pool", "convT-norm-relu-conv-norm-relu"],
   "residual_layer": true,
-  "resunet": true,
+  "resunet": false,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
@@ -51,8 +51,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 4,
-  "hidden_channels_unet":16,
+  "nb_ed_layers": 3,
+  "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]

@@ -110,7 +110,7 @@ def check_params(params, fatal_on_unknown=False):
     assert(params['lr_policy'][0] in lr_policies)
     assert(type(params['lr_policy'][1]) in [int, float])
 
-    assert (params['optimizer'] in ["Adam"])
+    assert (params['optimizer'] in ["Adam", "AdamW", "SGD", "RMSprop"])
     assert (params['device'] in ["cpu", "cuda", "auto"])
 
     assert (params['validation_norm'] in losses)
