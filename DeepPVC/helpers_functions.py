@@ -30,6 +30,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
                 fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
                                                                     norm=norm_batch,params=model.params,to_numpy=False)
 
+                print(f'(evaltime) batch_outputs shape : {fakePVfree.shape}')
 
                 if do_NRMSE:
                     MSE_batch = torch.mean((fakePVfree-batch_targets)**2)
