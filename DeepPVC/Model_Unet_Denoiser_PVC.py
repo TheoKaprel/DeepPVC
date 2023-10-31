@@ -210,7 +210,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
 
-        with autocast(enabled=self.amp):
+        with autocast(enabled=self.amp,dtype=torch.float16):
             fakePVE = self.UNet_denoiser(truePVEnoisy)
 
         if self.with_rec_fp:
@@ -220,11 +220,11 @@ class UNet_Denoiser_PVC(ModelBase):
                 fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:]), dim=1)
 
         if self.dim==2:
-            with autocast(enabled=self.amp):
+            with autocast(enabled=self.amp,dtype=torch.float16):
                 output = self.UNet_pvc(fakePVE)
             return output
         elif self.dim==3:
-            with autocast(enabled=self.amp):
+            with autocast(enabled=self.amp,dtype=torch.float16):
                 output= self.UNet_pvc(fakePVE)[:,0,:,:,:]
             # output=output.view(unfold_shape)
             # output_c,output_h,output_w=unfold_shape[1]*unfold_shape[4],unfold_shape[2]*unfold_shape[5],unfold_shape[3]*unfold_shape[6]
