@@ -21,15 +21,10 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
             batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
                                                        norm=norm_batch,params=model.params,to_torch=False)
 
-            print(f'(evaltime) batch_inputs shape  : {[batch_input.shape for batch_input in batch_inputs]}')
-            print(f'(evaltime) batch_targets shape : {batch_targets.shape}')
-            print(f'(evaltime) batch_inputs type   : {batch_inputs[0].dtype}')
-
             fakePVfree = model.forward(batch_inputs)
             fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
                                                                 norm=norm_batch,params=model.params,to_numpy=False)
 
-            print(f'(evaltime) batch_outputs shape : {fakePVfree.shape}')
 
         if do_NRMSE:
             MSE_batch = torch.mean((fakePVfree-batch_targets)**2)
