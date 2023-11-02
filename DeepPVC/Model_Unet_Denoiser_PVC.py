@@ -44,13 +44,15 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.attention = False if 'attention' not in params else params['attention']
 
-        self.init_model()
-
         if from_pth:
+            self.for_training=False
+            self.init_model()
             if self.verbose > 1:
                 print(
                     'normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
         else:
+            self.for_training = True
+            self.init_model()
             self.init_optimization()
             self.init_losses()
 
@@ -106,7 +108,7 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             self.compile = False
 
-        if self.compile:
+        if (self.compile and self.for_training):
             self.UNet_denoiser = torch.compile(self.UNet_denoiser)
             self.UNet_pvc = torch.compile(self.UNet_pvc)
 
@@ -309,7 +311,7 @@ class UNet_Denoiser_PVC(ModelBase):
             jsonFile.write(formatted_params)
             jsonFile.close()
 
-    def load_model(self, pth_path):
+    def load_model(self, pth_path, new_lr=None):
         if self.verbose > 0:
             print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path, map_location=self.device)
@@ -328,16 +330,19 @@ class UNet_Denoiser_PVC(ModelBase):
         self.current_epoch = checkpoint['epoch']
 
         if self.resume_training:
-            self.learning_rate = checkpoint['unet_denoiser_opt']['param_groups'][0]['lr']
+            if (new_lr is not None):
+                print(f"NEW LEARNING RATE FOR RESUME TRAINING : {self.learning_rate}")
+            else:
+                self.learning_rate = checkpoint['unet_denoiser_opt']['param_groups'][0]['lr']
 
             self.init_optimization()
             self.init_losses()
             self.unet_denoiser_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
             self.unet_pvc_optimizer.load_state_dict(checkpoint['unet_pvc_opt'])
             for g in self.unet_denoiser_optimizer.param_groups:
-                g['lr'] = self.scheduler_unet_denoiser.get_last_lr()[0]
+                g['lr'] = self.learning_rate
             for g in self.unet_pvc_optimizer.param_groups:
-                g['lr'] = self.scheduler_unet_pvc.get_last_lr()[0]
+                g['lr'] = self.learning_rate
             self.start_epoch = self.current_epoch
 
     def switch_eval(self):
