@@ -230,3 +230,60 @@ def load_PVE_PVfree(ref, type,params):
             return TensorDataset(imgPVE_noisy, imgPVfree[:,0:1,:,:])
     else:
         return TensorDataset(imgPVE, imgPVfree[:,0:1,:,:])
+
+
+
+def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array):
+    with_rec_fp = params['with_rec_fp']
+
+
+def get_data_for_eval_(params,input_PVE_noisy_array, input_rec_fp_array):
+    with_rec_fp = params['with_rec_fp']
+
+    if ('sino' in params and not params['full_sino']):
+        # sino
+        # projs_input_ = itk.array_from_image(itk.imread(input_fn))  # (120,256,256)
+        nb_sino = params['sino']
+        projs_input_t = projs_input_.transpose((1, 0, 2))  # (256,120,256)
+        nb_projs_per_img = projs_input_t.shape[0]
+        adjacent_channels_id = np.array([0] + [(-k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)] +
+                                        [(k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)])
+
+        projs_input = np.zeros((nb_projs_per_img, nb_sino + 1, projs_input_t.shape[-2], projs_input_t.shape[-1]))
+        for proj_i in range(nb_projs_per_img):
+            proj_channels = (adjacent_channels_id + proj_i) % nb_projs_per_img
+            projs_input[proj_i] = projs_input_t[proj_channels, :, :]
+        # (256, 7,120,256)
+        if with_rec_fp:
+            projs_rec_fp = itk.array_from_image(itk.imread(input_rec_fp_fn)).transpose((1, 0, 2))[:, None, :,
+                           :]  # (256,1,120,256)
+            projs_input = np.concatenate((projs_input, projs_rec_fp), axis=1)
+
+        zeros_padding = np.zeros((projs_input.shape[0], projs_input.shape[1], 4, projs_input.shape[3]))
+        projs_input = np.concatenate((zeros_padding, projs_input, zeros_padding), axis=2)
+
+        projs_input = torch.Tensor(projs_input)
+        # end sino
+
+    elif params['full_sino']:
+        projs_input = torch.Tensor(itk.array_from_image(itk.imread(input)))[None, :, :, :]
+        if 'sino' in params:
+            pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
+            projs_input = pad(projs_input.transpose((0, 2, 1, 3)))
+
+        if with_rec_fp:
+            img_rec_fp = torch.Tensor(itk.array_from_image(itk.imread(input_rec_fp))[None, :, :, :])
+            if 'sino' in params:
+                img_rec_fp = pad(img_rec_fp.transpose((0, 2, 1, 3)))
+
+            data_input = (projs_input, img_rec_fp)
+        else:
+            data_input = (projs_input)
+    else:
+        data_input = load_image(filename=input, is_ref=False, type=None, params=params)
+        if with_rec_fp:
+            img_rec_fp = torch.Tensor(
+                itk.array_from_image(itk.imread(input_rec_fp))[:, None, :, :])  # (120,1,256,256)
+            data_input = torch.cat((data_input, img_rec_fp), dim=1)  # (120,7,256,256)
+
+
