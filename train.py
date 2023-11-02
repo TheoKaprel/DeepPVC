@@ -65,7 +65,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
 
     if resume_pth is not None:
-        DeepPVEModel.load_model(pth_path=resume_pth)
+        new_lr = None
+        for up in user_param_float:
+            if up[0]=='learning_rate':
+                new_lr = up[1]
+        DeepPVEModel.load_model(pth_path=resume_pth,new_lr=new_lr)
 
     if rank == 0:
         DeepPVEModel.show_infos()

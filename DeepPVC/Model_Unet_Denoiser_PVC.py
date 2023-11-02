@@ -311,7 +311,7 @@ class UNet_Denoiser_PVC(ModelBase):
             jsonFile.write(formatted_params)
             jsonFile.close()
 
-    def load_model(self, pth_path):
+    def load_model(self, pth_path, new_lr=None):
         if self.verbose > 0:
             print(f'Loading Model from {pth_path}... ')
         checkpoint = torch.load(pth_path, map_location=self.device)
@@ -330,7 +330,7 @@ class UNet_Denoiser_PVC(ModelBase):
         self.current_epoch = checkpoint['epoch']
 
         if self.resume_training:
-            if self.learning_rate!=checkpoint['params']['learning_rate']:
+            if (new_lr is not None):
                 print(f"NEW LEARNING RATE FOR RESUME TRAINING : {self.learning_rate}")
             else:
                 self.learning_rate = checkpoint['unet_denoiser_opt']['param_groups'][0]['lr']
