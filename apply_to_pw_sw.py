@@ -5,7 +5,9 @@ import torch
 import numpy as np
 import itk
 
-from DeepPVC import Model_instance, helpers_data, helpers, helpers_params
+from apply import apply_to_input
+
+from DeepPVC import Model_instance, helpers, helpers_params
 
 def main():
     print(args)
@@ -18,7 +20,6 @@ def main():
     params = pth_file['params']
     helpers_params.check_params(params)
 
-    data_normalisation = params['data_normalisation']
     params['jean_zay']=False
 
     model = Model_instance.ModelInstance(params=params, from_pth=args.pth,resume_training=False,device=device)
@@ -48,38 +49,6 @@ def main():
     output_image.SetOrigin(vOffset)
     itk.imwrite(output_image, args.output)
     print(f'Done! output at : {args.output}')
-
-def apply_to_input(input, input_rec_fp, params, device, model):
-
-    input_PVE_noisy_array = itk.array_from_image(itk.imread(input))
-    input_rec_fp_array = itk.array_from_image(itk.imread(input_rec_fp)) if ((input_rec_fp is not None) and (params['with_rec_fp'])) else None
-
-    with torch.no_grad():
-        data_input = helpers_data.get_dataset_for_eval(params=params,
-                                                       input_PVE_noisy_array=input_PVE_noisy_array,
-                                                       input_rec_fp_array=input_rec_fp_array)
-
-
-        print(f'input shape : {[data.shape for data in data_input]}')
-        data_input = tuple([data.to(device) for data in data_input])
-
-
-        data_normalisation = params['data_normalisation']
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
-        if (data_normalisation!='none'):
-            print(f'norm : {norm_input}')
-        normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
-                                                     norm=norm_input, params=model.params, to_torch=False)
-
-        normed_output = model.forward(normed_input)
-        denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
-                                                          data_normalisation=data_normalisation,
-                                                          norm=norm_input, params=model.params, to_numpy=False)
-
-        print(f'network output shape : {denormed_output.shape}')
-
-        output_array = helpers_data.back_to_input_format(params=params,output=denormed_output)
-        return output_array
 
 
 

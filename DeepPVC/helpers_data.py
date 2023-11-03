@@ -285,10 +285,10 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
             channels_i = get_channels_id_i(channels_id=channels_id, proj_i=proj_i, nb_projs_per_img=nb_projs_per_img)
 
             if not sino:
-                data_PVE_noisy_i = torch.from_numpy(input_PVE_noisy_array[channels_i,:,:])
+                data_PVE_noisy_i = torch.Tensor(input_PVE_noisy_array[channels_i,:,:])
             else:
                 data_PVE_noisy_i = input_PVE_noisy_array.transpose((1,0,2))[channels_i,:,:]
-                data_PVE_noisy_i = pad(torch.from_numpy(data_PVE_noisy_i[None, :, :, :]))[0,:,:,:]
+                data_PVE_noisy_i = pad(torch.Tensor(data_PVE_noisy_i[None, :, :, :]))[0,:,:,:]
 
             if data_PVE_noisy is None:
                 data_PVE_noisy = data_PVE_noisy_i[None,:,:,:]
@@ -297,10 +297,10 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
 
         if with_rec_fp:
             if not sino:
-                rec_fp = torch.from_numpy(input_rec_fp_array)[:,None,:,:]
+                rec_fp = torch.Tensor(input_rec_fp_array)[:,None,:,:]
             else:
                 rec_fp = input_rec_fp_array.transpose((1,0,2))
-                rec_fp = pad(torch.from_numpy(rec_fp[None, :, :, :])).transpose(0,1)
+                rec_fp = pad(torch.Tensor(rec_fp[None, :, :, :])).transpose(0,1)
             return (data_PVE_noisy,rec_fp)
         else:
             return (data_PVE_noisy,)
@@ -308,7 +308,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
     elif params['inputs']=='full_sino':
         sino = params['sino']
         nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1],input_PVE_noisy_array.shape[2]
-        data_PVE_noisy = torch.from_numpy(input_PVE_noisy_array[None,:,:,:])
+        data_PVE_noisy = torch.Tensor(input_PVE_noisy_array[None,:,:,:])
 
         if params['pad']=="zero":
             pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
@@ -317,7 +317,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
 
 
         if with_rec_fp:
-            data_rec_fp = torch.from_numpy(input_rec_fp_array[None,:,:,:])
+            data_rec_fp = torch.Tensor(input_rec_fp_array[None,:,:,:])
             data_inputs = (data_PVE_noisy,data_rec_fp)
         else:
             data_inputs = (data_PVE_noisy,)
@@ -337,8 +337,6 @@ def back_to_input_format(params,output):
         output_array = output.cpu().numpy()[0, :, :, :]
         if params['sino']:
             output_array = output_array.transpose((1,0,2))[4:124,:,:]
-
-    print(f'final output shape : {output_array.shape}')
     return output_array
 
 

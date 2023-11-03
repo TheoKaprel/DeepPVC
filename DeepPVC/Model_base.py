@@ -21,7 +21,6 @@ class ModelBase(torch.nn.Module):
         self.learning_rate = params['learning_rate']
 
         if self.params["inputs"] == "projs":
-
             if params['sino']==False:
                 self.input_channels = params['input_eq_angles']
                 self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels

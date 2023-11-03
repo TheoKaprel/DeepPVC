@@ -177,7 +177,10 @@ class SinoToSinoDataset(BaseDataset):
         else:
             self.pad = torch.nn.Identity()
 
-
+        if self.params['dim'] == "2d":
+            self.dim=2
+        elif self.params['dim']=="3d":
+            self.dim=3
 
         self.patches=params['patches']
         self.init_h5()
@@ -211,7 +214,12 @@ class SinoToSinoDataset(BaseDataset):
             print(f'Shape : {first_data.shape}')
         self.nb_src = len(self.keys)
 
-        self.len_dataset = self.nb_src
+        if self.dim==2:
+            self.channels_id = torch.Tensor([k for k in range(self.nb_projs_per_img)]).to(int)
+
+        self.len_dataset = self.nb_src if (self.dim==3 or self.test) else self.nb_src * self.nb_projs_per_img
+        # self.len_dataset = self.nb_src
+
         if self.patches:
             self.len_dataset=self.len_dataset * self.tile_shape[0]*self.tile_shape[1]*self.tile_shape[2]
 
@@ -220,7 +228,12 @@ class SinoToSinoDataset(BaseDataset):
             src_i=item%self.nb_src
             i,j,k=item%self.tile_shape[0],item%self.tile_shape[1],item%self.tile_shape[2]
         else:
-            src_i=item
+            if (self.dim==3 or self.test):
+                src_i=item
+            elif self.dim==2:
+                src_i = item%self.nb_src
+                proj_i = item%self.nb_projs_per_img
+            # src_i = item
 
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
@@ -238,6 +251,11 @@ class SinoToSinoDataset(BaseDataset):
             if self.with_rec_fp:
                 data_rec_fp = np.array(data['rec_fp'], dtype=self.dtype) # (120,256,256)
                 data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+
+        if (self.dim==2 and not self.test):
+            data_inputs = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_inputs])
+            data_target = data_target[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
+
 
         if self.sino:
             data_inputs = tuple([u.transpose((1,0,2)) for u in data_inputs])
