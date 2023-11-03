@@ -13,7 +13,6 @@ class BaseDataset(Dataset):
         self.dataset_path = paths
         self.filetype = params["datatype"] if (filetype is None) else filetype
         self.with_rec_fp = params['with_rec_fp']
-        self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
         self.img_type = self.get_dtype(params['dtype'])
         self.verbose = params['verbose']
