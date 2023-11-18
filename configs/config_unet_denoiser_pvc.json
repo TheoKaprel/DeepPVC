@@ -12,9 +12,9 @@
   "with_rec_fp": true,
   "inputs": "full_sino",
   "sino": false,
-  "input_eq_angles": 1,
+  "input_eq_angles": 6,
   "with_adj_angles": true,
-  "dim": "2d",
+  "dim": "3d",
 
   "max_nb_data": 3,
   "training_batchsize":1,
@@ -51,7 +51,7 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 4,
+  "nb_ed_layers": 3,
   "hidden_channels_unet":16,
   "unet_activation": "relu",
   "recon_loss":["L1"],
