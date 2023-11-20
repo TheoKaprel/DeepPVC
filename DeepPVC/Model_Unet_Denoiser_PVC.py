@@ -145,10 +145,10 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def input_data(self, batch_inputs, batch_targets):
         if self.with_rec_fp:
-            self.truePVE_noisy,self.truePVE,self.true_rec_fp  = batch_inputs
+            self.truePVE_noisy,self.true_rec_fp  = batch_inputs
         else:
-            self.truePVE_noisy, self.truePVE = batch_inputs
-        self.truePVfree = batch_targets
+            self.truePVE_noisy = batch_inputs
+        self.truePVE, self.truePVfree = batch_targets
 
     def forward_unet_denoiser(self):
         if self.dim==2:
@@ -190,10 +190,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def forward(self, batch):
         if self.with_rec_fp:
-            if len(batch)==3:
-                truePVEnoisy,true_rec_fp = batch[0], batch[2]
-            elif len(batch)==2:
-                truePVEnoisy,true_rec_fp = batch
+            truePVEnoisy,true_rec_fp = batch
             # ----------------------------
 
             # patch_size=(32,64,64)

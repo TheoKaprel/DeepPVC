@@ -110,7 +110,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_preopt1=time.time()
 
             batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
-            batch_targets = batch_targets.to(device, non_blocking=True)
+            batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
 
 
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
@@ -126,7 +126,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 if (step==0):
                     print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
-                    print(f'(gpu {rank}) batch_tagets shape : {batch_targets.shape}')
+                    print(f'(gpu {rank}) batch_tagets shape : {[batch_target.shape for batch_target in batch_targets]}')
                     print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
@@ -140,8 +140,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                                 ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
                                 ax[kk,0].set_title(f'input {kk}')
 
-                            ax[0,1].imshow(batch_targets[i,j,:,:].float().detach().cpu().numpy())
-                            ax[0,1].set_title('target')
+                            for kk in range(len(batch_targets)):
+                                ax[kk,1].imshow(batch_targets[kk][i,j,:,:].float().detach().cpu().numpy())
+                                ax[kk,1].set_title(f'target {kk}')
+
+
                             ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
                             ax[0,2].set_title('output')
                             plt.show()

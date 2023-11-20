@@ -233,17 +233,17 @@ class SinoToSinoDataset(BaseDataset):
             elif self.dim==2:
                 src_i = item%self.nb_src
                 proj_i = item%self.nb_projs_per_img
-            # src_i = item
 
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
-            data_target = np.array(data['PVfree'],dtype=self.dtype)
+            data_target = (np.array(data['PVfree'],dtype=self.dtype),)
 
             if (self.double_model and not self.test):
                 data_PVE = np.array(data['PVE'], dtype=self.dtype)
 
                 data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=self.dtype)
-                data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
+                data_inputs = (data_PVE_noisy,)
+                data_target = (data_PVE,)+data_target
             else:
                 data_PVE_noisy = np.array(data['PVE_noisy'], dtype=self.dtype)
                 data_inputs=(data_PVE_noisy,)
@@ -254,16 +254,16 @@ class SinoToSinoDataset(BaseDataset):
 
         if (self.dim==2 and not self.test):
             data_inputs = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_inputs])
-            data_target = data_target[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
+            data_target = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_target])
 
 
         if self.sino:
             data_inputs = tuple([u.transpose((1,0,2)) for u in data_inputs])
-            data_target = data_target.transpose((1,0,2))
+            data_target = tuple([u.transpose((1,0,2)) for u in data_target])
 
         #--------------------
         data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
-        data_target = self.pad(torch.from_numpy(data_target))
+        data_target = tuple([self.pad(torch.from_numpy(u)) for u in data_target])
         #--------------------
 
         if self.patches:
