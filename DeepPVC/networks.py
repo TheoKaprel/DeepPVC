@@ -221,7 +221,7 @@ class UNet(nn.Module):
             if self.dim==2:
                 residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
             elif self.dim==3:
-                residual = x[:, self.output_channels:,:,:,:] if self.input_channels != self.output_channels else x
+                residual = x[:, 1:(1+self.output_channels),:,:,:] if self.input_channels != self.output_channels else x
 
         # ----------------------------------------------------------
         #first feature extraction

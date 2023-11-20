@@ -16,7 +16,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
         batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
         batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
 
-        ground_truth=batch_targets[1]
+        ground_truth=batch_targets[0]
 
         with torch.no_grad():
             norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
