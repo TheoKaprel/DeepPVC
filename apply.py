@@ -6,7 +6,7 @@ import itk
 
 
 
-from DeepPVC import Model_instance, helpers_data, helpers, helpers_params
+from .DeepPVC import Model_instance, helpers_data, helpers, helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -17,10 +17,13 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--output', '-o', help = 'Output filename (mhd)')
 @click.option("--device", default = "cpu")
 def apply_click(pth,input,input_rec_fp, output, device):
-    apply(pth, input,input_rec_fp, output_filename=output, device=device)
+    output_image = apply(pth, input,input_rec_fp, device=device)
+
+    itk.imwrite(output_image, output)
+    print(f'Done! output at : {output}')
 
 
-def apply(pth, input,input_rec_fp, output_filename, device):
+def apply(pth, input,input_rec_fp, device):
     print(f'Apply the pth {pth} to the set of projections contained in {input}')
 
     device = helpers.get_auto_device(device_mode=device)
@@ -47,9 +50,7 @@ def apply(pth, input,input_rec_fp, output_filename, device):
     output_image.SetSpacing(vSpacing)
     output_image.SetOrigin(vOffset)
 
-
-    itk.imwrite(output_image, output_filename)
-    print(f'Done! output at : {output_filename}')
+    return output_image
 
 
 

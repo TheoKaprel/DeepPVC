@@ -10,6 +10,7 @@
   "datatype": "h5",
   "dtype": "float16",
   "with_rec_fp": true,
+  "with_att": false,
   "inputs": "full_sino",
   "sino": false,
   "input_eq_angles": 6,
