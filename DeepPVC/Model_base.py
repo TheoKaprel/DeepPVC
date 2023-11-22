@@ -20,8 +20,13 @@ class ModelBase(torch.nn.Module):
         self.n_epochs = params['n_epochs']
         self.learning_rate = params['learning_rate']
 
-        if self.params["inputs"] == "projs":
+        if "with_att" in params:
+            self.with_att = params["with_att"]
+        else:
+            self.with_att = False
 
+
+        if self.params["inputs"] == "projs":
             if params['sino']==False:
                 self.input_channels = params['input_eq_angles']
                 self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
@@ -41,7 +46,11 @@ class ModelBase(torch.nn.Module):
 
 
         if ("dim" in self.params and self.params['dim']=="3d"):
-            self.input_channels = 2 if params['with_rec_fp'] else 1
+            if self.with_att:
+                self.input_channels = 3 if params['with_rec_fp'] else 2
+            else:
+                self.input_channels = 2 if params['with_rec_fp'] else 1
+
             self.output_channels = self.output_channels_denoiser = 1
 
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None

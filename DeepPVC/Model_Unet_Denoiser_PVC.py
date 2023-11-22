@@ -145,23 +145,37 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def input_data(self, batch_inputs, batch_targets):
         if self.with_rec_fp:
-            self.truePVE_noisy,self.truePVE,self.true_rec_fp  = batch_inputs
+            if self.with_att:
+                self.truePVE_noisy,self.true_rec_fp,self.attmap_fp  = batch_inputs
+            else:
+                self.truePVE_noisy,self.true_rec_fp  = batch_inputs
         else:
-            self.truePVE_noisy, self.truePVE = batch_inputs
-        self.truePVfree = batch_targets
+            if self.with_att:
+                self.truePVE_noisy,self.attmap_fp = batch_inputs
+            else:
+                self.truePVE_noisy = batch_inputs
+
+        self.truePVE, self.truePVfree = batch_targets
 
     def forward_unet_denoiser(self):
         if self.dim==2:
             input_denoiser = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
         elif self.dim==3:
-            input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
+            if self.with_att:
+                input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
+            else:
+                input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:]), dim=1)
+
         self.fakePVE = self.UNet_denoiser(input_denoiser)
 
     def forward_unet_pvc(self):
         if self.dim==2:
             input_pvc = torch.concat((self.fakePVE,self.true_rec_fp),dim=1) if self.with_rec_fp else self.fakePVE
         elif self.dim==3:
-            input_pvc = torch.concat((self.fakePVE,self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.fakePVE
+            if self.with_att:
+                input_pvc = torch.concat((self.fakePVE,self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.fakePVE, self.attmap_fp[:,None,:,:,:]), dim=1)
+            else:
+                input_pvc = torch.concat((self.fakePVE,self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.fakePVE
 
         self.fakePVfree = self.UNet_pvc(input_pvc.detach())
 
@@ -190,10 +204,11 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def forward(self, batch):
         if self.with_rec_fp:
-            if len(batch)==3:
-                truePVEnoisy,true_rec_fp = batch[0], batch[2]
-            elif len(batch)==2:
-                truePVEnoisy,true_rec_fp = batch
+            if self.with_att:
+                truePVEnoisy,true_rec_fp,attmap_fp = batch
+            else:
+                truePVEnoisy, true_rec_fp = batch
+
             # ----------------------------
 
             # patch_size=(32,64,64)
@@ -206,10 +221,12 @@ class UNet_Denoiser_PVC(ModelBase):
             if self.dim==2:
                 truePVEnoisy = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
             elif self.dim==3:
-                truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
+                if self.with_att:
+                    truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:], attmap_fp[:,None,:,:,:]),dim=1)
+                else:
+                    truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
         else:
-            truePVEnoisy = batch[0] if self.dim==2 else batch[0][:,None,:,:,:]
-
+            truePVEnoisy = batch[0] if self.dim==2 else torch.concat((batch[0][:,None,:,:,:], batch[1][:,None,:,:,:]), dim=1)
 
 
         with autocast(enabled=self.amp,dtype=torch.float16):
@@ -219,7 +236,15 @@ class UNet_Denoiser_PVC(ModelBase):
             if self.dim==2:
                 fakePVE = torch.concat((fakePVE, true_rec_fp), dim=1)
             elif self.dim==3:
-                fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:]), dim=1)
+                if self.with_att:
+                    fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:], attmap_fp[:,None,:,:,:]), dim=1)
+                else:
+                    fakePVE = torch.concat((fakePVE, true_rec_fp[:,None,:,:,:]), dim=1)
+        else:
+            if self.dim == 3:
+                if self.with_att:
+                    fakePVE = torch.concat((fakePVE,attmap_fp[:, None, :, :, :]), dim=1)
+
 
         if self.dim==2:
             with autocast(enabled=self.amp,dtype=torch.float16):

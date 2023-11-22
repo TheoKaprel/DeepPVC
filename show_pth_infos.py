@@ -27,7 +27,7 @@ def show_pth(lpth, losses, legend):
         helpers_params.check_params(params)
         params['jean_zay']=False
         lparams.append(params)
-        ref=params['ref']
+        ref=params['ref']+f'_{params["current_epoch"]}'
 
         print(params)
 

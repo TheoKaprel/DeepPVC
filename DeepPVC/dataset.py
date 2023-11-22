@@ -13,7 +13,6 @@ class BaseDataset(Dataset):
         self.dataset_path = paths
         self.filetype = params["datatype"] if (filetype is None) else filetype
         self.with_rec_fp = params['with_rec_fp']
-        self.data_normalisation = params['data_normalisation']
         self.device = helpers.get_auto_device(params['device'])
         self.img_type = self.get_dtype(params['dtype'])
         self.verbose = params['verbose']
@@ -178,7 +177,10 @@ class SinoToSinoDataset(BaseDataset):
         else:
             self.pad = torch.nn.Identity()
 
-
+        if self.params['dim'] == "2d":
+            self.dim=2
+        elif self.params['dim']=="3d":
+            self.dim=3
 
         self.patches=params['patches']
         self.init_h5()
@@ -188,7 +190,7 @@ class SinoToSinoDataset(BaseDataset):
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
         self.keys = sorted(list(self.dataseth5.keys()))
 
-        first_data = np.array(self.dataseth5[self.keys[0]]['PVE_noisy'],dtype=self.dtype)
+        first_data = np.array(self.dataseth5[self.keys[0]]['PVE_att_noisy'],dtype=self.dtype)
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
                                                               first_data.shape[2]
 
@@ -212,7 +214,12 @@ class SinoToSinoDataset(BaseDataset):
             print(f'Shape : {first_data.shape}')
         self.nb_src = len(self.keys)
 
-        self.len_dataset = self.nb_src
+        if self.dim==2:
+            self.channels_id = torch.Tensor([k for k in range(self.nb_projs_per_img)]).to(int)
+
+        self.len_dataset = self.nb_src if (self.dim==3 or self.test) else self.nb_src * self.nb_projs_per_img
+        # self.len_dataset = self.nb_src
+
         if self.patches:
             self.len_dataset=self.len_dataset * self.tile_shape[0]*self.tile_shape[1]*self.tile_shape[2]
 
@@ -221,32 +228,46 @@ class SinoToSinoDataset(BaseDataset):
             src_i=item%self.nb_src
             i,j,k=item%self.tile_shape[0],item%self.tile_shape[1],item%self.tile_shape[2]
         else:
-            src_i=item
+            if (self.dim==3 or self.test):
+                src_i=item
+            elif self.dim==2:
+                src_i = item%self.nb_src
+                proj_i = item%self.nb_projs_per_img
 
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
-            data_target = np.array(data['PVfree'],dtype=self.dtype)
+            data_target = (np.array(data['PVfree_att'],dtype=self.dtype),)
 
             if (self.double_model and not self.test):
-                data_PVE = np.array(data['PVE'], dtype=self.dtype)
+                data_PVE = np.array(data['PVE_att'], dtype=self.dtype)
 
-                data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_noisy'], dtype=self.dtype)
-                data_inputs = (data_PVE_noisy,data_PVE) # ( (120,256,256), (120,256,256) )
+                data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'], dtype=self.dtype)
+                data_inputs = (data_PVE_noisy,)
+                data_target = (data_PVE,)+data_target
             else:
-                data_PVE_noisy = np.array(data['PVE_noisy'], dtype=self.dtype)
+                data_PVE_noisy = np.array(data['PVE_att_noisy'], dtype=self.dtype)
                 data_inputs=(data_PVE_noisy,)
 
             if self.with_rec_fp:
-                data_rec_fp = np.array(data['rec_fp'], dtype=self.dtype) # (120,256,256)
+                data_rec_fp = np.array(data['rec_fp_att'], dtype=self.dtype) # (120,256,256)
                 data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+
+            # (forward_projected) attenuation
+            data_attmap_fp = np.array(data['attmap_fp'], dtype=self.dtype)
+            data_inputs = data_inputs + (data_attmap_fp,)
+
+        if (self.dim==2 and not self.test):
+            data_inputs = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_inputs])
+            data_target = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_target])
+
 
         if self.sino:
             data_inputs = tuple([u.transpose((1,0,2)) for u in data_inputs])
-            data_target = data_target.transpose((1,0,2))
+            data_target = tuple([u.transpose((1,0,2)) for u in data_target])
 
         #--------------------
         data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
-        data_target = self.pad(torch.from_numpy(data_target))
+        data_target = tuple([self.pad(torch.from_numpy(u)) for u in data_target])
         #--------------------
 
         if self.patches:

@@ -232,9 +232,113 @@ def load_PVE_PVfree(ref, type,params):
         return TensorDataset(imgPVE, imgPVfree[:,0:1,:,:])
 
 
+def build_channels_id(sino,nb_projs_per_img,input_eq_angles=None,nb_sino=None,with_adj_angles=None):
+    # rotating channels id
+    channels_id = np.array([0])
+    if sino:
+        adjacent_channels_id = np.array([(-k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)] +
+                                        [(k) % nb_projs_per_img for k in range(1, nb_sino // 2 + 1)])
+        channels_id = np.concatenate((channels_id, adjacent_channels_id))
+    else:
+        step = int(nb_projs_per_img / (input_eq_angles))
+        # adj angles
+        if with_adj_angles:
+            adjacent_channels_id = np.array([(-1) % nb_projs_per_img, (1) % nb_projs_per_img])
+            channels_id = np.concatenate((channels_id, adjacent_channels_id))
+        # eq angles
+        equiditributed_channels_id = np.array(
+            [(k * step) % nb_projs_per_img for k in range(1, input_eq_angles)])
+        channels_id = np.concatenate((channels_id, equiditributed_channels_id)) if len(
+            equiditributed_channels_id) > 0 else channels_id
+    return channels_id
 
-def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array):
+
+def get_channels_id_i(channels_id,proj_i,nb_projs_per_img):
+    return (channels_id + proj_i) % nb_projs_per_img
+
+
+def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
     with_rec_fp = params['with_rec_fp']
+
+    if params['inputs']=="projs":
+        if params['sino']:
+            sino=True
+            nb_sino = params['input_eq_angles']
+            nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[0],input_PVE_noisy_array.shape[2]
+            with_adj_angles = None
+            input_eq_angles = None
+        else:
+            sino = False
+            with_adj_angles = params["with_adj_angles"]
+            input_eq_angles = params['input_eq_angles']
+            nb_sino=None
+            nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[2]
+        pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0)
+
+
+
+        data_PVE_noisy = None
+        for proj_i in range(nb_projs_per_img):
+            channels_id = build_channels_id(sino=sino, nb_projs_per_img=nb_projs_per_img,
+                                            input_eq_angles=input_eq_angles, nb_sino=nb_sino,
+                                            with_adj_angles=with_adj_angles)
+            channels_i = get_channels_id_i(channels_id=channels_id, proj_i=proj_i, nb_projs_per_img=nb_projs_per_img)
+
+            if not sino:
+                data_PVE_noisy_i = torch.Tensor(input_PVE_noisy_array[channels_i,:,:])
+            else:
+                data_PVE_noisy_i = input_PVE_noisy_array.transpose((1,0,2))[channels_i,:,:]
+                data_PVE_noisy_i = pad(torch.Tensor(data_PVE_noisy_i[None, :, :, :]))[0,:,:,:]
+
+            if data_PVE_noisy is None:
+                data_PVE_noisy = data_PVE_noisy_i[None,:,:,:]
+            else:
+                data_PVE_noisy = torch.concatenate((data_PVE_noisy,data_PVE_noisy_i[None,:,:,:]),dim=0)
+
+        if with_rec_fp:
+            if not sino:
+                rec_fp = torch.Tensor(input_rec_fp_array)[:,None,:,:]
+            else:
+                rec_fp = input_rec_fp_array.transpose((1,0,2))
+                rec_fp = pad(torch.Tensor(rec_fp[None, :, :, :])).transpose(0,1)
+            return (data_PVE_noisy,rec_fp)
+        else:
+            return (data_PVE_noisy,)
+
+    elif params['inputs']=='full_sino':
+        sino = params['sino']
+        nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1],input_PVE_noisy_array.shape[2]
+        data_PVE_noisy = torch.Tensor(input_PVE_noisy_array[None,:,:,:])
+
+        if params['pad']=="zero":
+            pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
+        else:
+            pad = torch.nn.Identity()
+
+
+        if with_rec_fp:
+            data_rec_fp = torch.Tensor(input_rec_fp_array[None,:,:,:])
+            data_inputs = (data_PVE_noisy,data_rec_fp)
+        else:
+            data_inputs = (data_PVE_noisy,)
+
+        if sino:
+            data_inputs = tuple([u.transpose((0,2,1,3)) for u in data_inputs])
+            data_inputs = pad(data_inputs)
+        return data_inputs
+
+
+def back_to_input_format(params,output):
+    if params['inputs']=="projs":
+        output_array = output.cpu().numpy()[:, 0, :, :]
+        if params['sino']:
+            output_array = output_array.transpose((1,0,2))[4:124,:,:]
+    elif params['inputs']=="full_sino":
+        output_array = output.cpu().numpy()[0, :, :, :]
+        if params['sino']:
+            output_array = output_array.transpose((1,0,2))[4:124,:,:]
+    return output_array
+
 
 
 def get_data_for_eval_(params,input_PVE_noisy_array, input_rec_fp_array):
