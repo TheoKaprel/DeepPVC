@@ -327,7 +327,8 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
             data_inputs = (data_PVE_noisy,)
 
         if with_att:
-            data_inputs = data_inputs+(attmap_fp_array,)
+            data_attmap_fp = torch.Tensor(attmap_fp_array[None,:,:,:])
+            data_inputs = data_inputs+(data_attmap_fp,)
 
 
         if sino:
