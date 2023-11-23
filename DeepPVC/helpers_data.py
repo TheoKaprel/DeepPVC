@@ -257,8 +257,12 @@ def get_channels_id_i(channels_id,proj_i,nb_projs_per_img):
     return (channels_id + proj_i) % nb_projs_per_img
 
 
-def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
+def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, attmap_fp_array=None):
     with_rec_fp = params['with_rec_fp']
+    if "with_att" in params:
+        with_att = params['with_att']
+    else:
+        with_att = False
 
     if params['inputs']=="projs":
         if params['sino']:
@@ -321,6 +325,10 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None):
             data_inputs = (data_PVE_noisy,data_rec_fp)
         else:
             data_inputs = (data_PVE_noisy,)
+
+        if with_att:
+            data_inputs = data_inputs+(attmap_fp_array,)
+
 
         if sino:
             data_inputs = tuple([u.transpose((0,2,1,3)) for u in data_inputs])
