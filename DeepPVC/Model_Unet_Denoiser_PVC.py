@@ -191,10 +191,10 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def backward_unet_denoiser(self):
         if self.amp:
-            self.scaler.scale(self.unet_denoiser_loss).backward()
+            self.scaler.scale(self.unet_denoiser_loss).backward(retain_graph=True)
             self.scaler.step(self.unet_denoiser_optimizer)
         else:
-            self.unet_denoiser_loss.backward()
+            self.unet_denoiser_loss.backward(retain_graph=True)
             self.unet_denoiser_optimizer.step()
 
     def backward_unet_pvc(self):
