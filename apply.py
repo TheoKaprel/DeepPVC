@@ -6,7 +6,7 @@ import itk
 
 
 
-from .DeepPVC import Model_instance, helpers_data, helpers, helpers_params
+from DeepPVC import Model_instance, helpers_data, helpers, helpers_params
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -14,16 +14,17 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--pth') # 'path/to/saved/model.pth'
 @click.option('--input', '-i')
 @click.option('--input_rec_fp')
+@click.option('--attmap_fp')
 @click.option('--output', '-o', help = 'Output filename (mhd)')
 @click.option("--device", default = "cpu")
-def apply_click(pth,input,input_rec_fp, output, device):
-    output_image = apply(pth, input,input_rec_fp, device=device)
+def apply_click(pth,input,input_rec_fp,attmap_fp, output, device):
+    output_image = apply(pth, input,input_rec_fp,attmap_fp, device=device)
 
     itk.imwrite(output_image, output)
     print(f'Done! output at : {output}')
 
 
-def apply(pth, input,input_rec_fp, device):
+def apply(pth, input,input_rec_fp,attmap_fp, device):
     print(f'Apply the pth {pth} to the set of projections contained in {input}')
 
     device = helpers.get_auto_device(device_mode=device)
@@ -39,7 +40,7 @@ def apply(pth, input,input_rec_fp, device):
     model.switch_eval()
     model.show_infos()
 
-    output_array = apply_to_input(input=input,input_rec_fp=input_rec_fp,params=params,device=device,model=model)
+    output_array = apply_to_input(input=input,input_rec_fp=input_rec_fp,attmap_fp=attmap_fp,params=params,device=device,model=model)
 
 
     input_image = itk.imread(input)
@@ -54,15 +55,17 @@ def apply(pth, input,input_rec_fp, device):
 
 
 
-def apply_to_input(input, input_rec_fp, params, device, model):
+def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
     input_PVE_noisy_array = itk.array_from_image(itk.imread(input))
     input_rec_fp_array = itk.array_from_image(itk.imread(input_rec_fp)) if ((input_rec_fp is not None) and (params['with_rec_fp'])) else None
+    attmap_fp_array = itk.array_from_image(itk.imread(attmap_fp)) if (attmap_fp is not None) else None
 
     with torch.no_grad():
         data_input = helpers_data.get_dataset_for_eval(params=params,
                                                        input_PVE_noisy_array=input_PVE_noisy_array,
-                                                       input_rec_fp_array=input_rec_fp_array)
+                                                       input_rec_fp_array=input_rec_fp_array,
+                                                       attmap_fp_array=attmap_fp_array)
 
 
         print(f'input shape : {[data.shape for data in data_input]}')

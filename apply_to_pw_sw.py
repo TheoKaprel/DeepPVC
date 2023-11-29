@@ -28,8 +28,8 @@ def main():
     model.switch_eval()
     model.show_infos()
 
-    output_pw = apply_to_input(input=args.pw,input_rec_fp=args.pw_rec_fp,params=params,device=device,model=model)
-    output_sw = apply_to_input(input=args.sw,input_rec_fp=args.sw_rec_fp,params=params,device=device,model=model)
+    output_pw = apply_to_input(input=args.pw,input_rec_fp=args.pw_rec_fp,attmap_fp=args.attmap_fp,params=params,device=device,model=model)
+    output_sw = apply_to_input(input=args.sw,input_rec_fp=args.sw_rec_fp,attmap_fp=args.attmap_fp,params=params,device=device,model=model)
 
 
     # SCATTER CORRECTION DEW
@@ -59,6 +59,7 @@ if __name__ == '__main__':
     parser.add_argument("--pw_rec_fp")
     parser.add_argument("--sw")
     parser.add_argument("--sw_rec_fp")
+    parser.add_argument("--attmap_fp")
     parser.add_argument("--output")
     args = parser.parse_args()
     main()

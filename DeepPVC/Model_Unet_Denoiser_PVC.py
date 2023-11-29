@@ -1,5 +1,7 @@
 import os.path
 import time
+
+import matplotlib.pyplot as plt
 import torch
 from torch import optim
 
@@ -115,7 +117,8 @@ class UNet_Denoiser_PVC(ModelBase):
     def init_optimization(self):
         if self.optimizer == 'Adam':
             self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
-            self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
+            # self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
+            self.unet_pvc_optimizer = optim.Adam(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
         elif self.optimizer =="AdamW":
             self.unet_denoiser_optimizer = optim.AdamW(self.UNet_denoiser.parameters(), lr=self.learning_rate)
             self.unet_pvc_optimizer = optim.AdamW(self.UNet_pvc.parameters(), lr=self.learning_rate)
@@ -177,7 +180,8 @@ class UNet_Denoiser_PVC(ModelBase):
             else:
                 input_pvc = torch.concat((self.fakePVE,self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.fakePVE
 
-        self.fakePVfree = self.UNet_pvc(input_pvc.detach())
+        # self.fakePVfree = self.UNet_pvc(input_pvc.detach())
+        self.fakePVfree = self.UNet_pvc(input_pvc)
 
     def losses_unet_denoiser(self):
         self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:])
@@ -414,3 +418,8 @@ class UNet_Denoiser_PVC(ModelBase):
     def plot_losses(self, save, wait, title):
         plots.plot_losses_UNet(unet_losses=self.unet_denoiser_losses, test_mse=[], save=save, wait=True, title=title)
         plots.plot_losses_UNet(unet_losses=self.unet_pvc_losses, test_mse=[], save=save, wait=wait, title=title)
+
+        fig,ax =plt.subplots()
+        ax.plot(self.unet_denoiser_losses, label="denoiser")
+        ax.plot(self.unet_pvc_losses, label="pvc")
+        fig.legend()
