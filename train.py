@@ -89,6 +89,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if verbose_main_process:
         print('Begining of training .....')
 
+    torch.autograd.set_detect_anomaly(True)
+
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose_main_process:
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
@@ -112,12 +114,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
             batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
 
-
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
             batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
             batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
-
-
 
 
             if debug:
@@ -128,6 +127,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
                     print(f'(gpu {rank}) batch_tagets shape : {[batch_target.shape for batch_target in batch_targets]}')
                     print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
+                    print(f' batch_inputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_inputs])}')
+                    print(f' batch_ouputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_targets])}')
+                    print(f' unet_denoiser size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in DeepPVEModel.UNet_denoiser.parameters()])}')
+
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
@@ -151,7 +154,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
             DeepPVEModel.optimize_parameters()
-
 
             if debug:
                 t_opt += time.time() - timer_opt1
