@@ -89,7 +89,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if verbose_main_process:
         print('Begining of training .....')
 
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose_main_process:
