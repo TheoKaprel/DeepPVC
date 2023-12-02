@@ -10,7 +10,7 @@
   "datatype": "h5",
   "dtype": "float16",
   "with_rec_fp": false,
-  "with_att": true,
+  "with_att": false,
   "inputs": "full_sino",
   "sino": false,
   "input_eq_angles": 6,
@@ -53,7 +53,7 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "nb_ed_layers": 2,
-  "hidden_channels_unet":8,
+  "hidden_channels_unet":2,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]

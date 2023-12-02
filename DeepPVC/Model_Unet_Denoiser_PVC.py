@@ -116,9 +116,9 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
-            self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
+            # self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
             # self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
-            self.unet_pvc_optimizer = optim.Adam(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
+            self.double_optimizer = optim.Adam(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
         elif self.optimizer =="AdamW":
             self.unet_denoiser_optimizer = optim.AdamW(self.UNet_denoiser.parameters(), lr=self.learning_rate)
             self.unet_pvc_optimizer = optim.AdamW(self.UNet_pvc.parameters(), lr=self.learning_rate)
@@ -137,8 +137,9 @@ class UNet_Denoiser_PVC(ModelBase):
             self.update_lr_every = self.learning_rate_policy_infos[2]
             lbda = lambda epoch: mult_rate
 
-            self.scheduler_unet_denoiser = optim.lr_scheduler.MultiplicativeLR(self.unet_denoiser_optimizer, lbda)
-            self.scheduler_unet_pvc = optim.lr_scheduler.MultiplicativeLR(self.unet_pvc_optimizer, lbda)
+            # self.scheduler_unet_denoiser = optim.lr_scheduler.MultiplicativeLR(self.unet_denoiser_optimizer, lbda)
+            # self.scheduler_unet_pvc = optim.lr_scheduler.MultiplicativeLR(self.unet_pvc_optimizer, lbda)
+            self.scheduler = optim.lr_scheduler.MultiplicativeLR(self.double_optimizer, lbda)
 
     def init_losses(self):
         self.losses_params = {'recon_loss': self.params['recon_loss'],
@@ -156,7 +157,7 @@ class UNet_Denoiser_PVC(ModelBase):
             if self.with_att:
                 self.truePVE_noisy,self.attmap_fp = batch_inputs
             else:
-                self.truePVE_noisy = batch_inputs
+                self.truePVE_noisy = batch_inputs[0]
 
         self.truePVE, self.truePVfree = batch_targets
 
@@ -167,7 +168,7 @@ class UNet_Denoiser_PVC(ModelBase):
             if self.with_att:
                 input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
             else:
-                input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:]), dim=1)
+                input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
 
         self.fakePVE = self.UNet_denoiser(input_denoiser)
 
@@ -205,6 +206,14 @@ class UNet_Denoiser_PVC(ModelBase):
             self.unet_pvc_loss.backward()
             self.unet_pvc_optimizer.step()
 
+    def backward_double_unet(self):
+        double_loss = self.unet_denoiser_loss + self.unet_pvc_loss
+        if self.amp:
+            self.scaler.scale(double_loss).backward()
+            self.scaler.step(self.double_optimizer)
+        else:
+            double_loss.backward()
+            self.double_optimizer.step()
 
     def forward(self, batch):
         if self.with_rec_fp:
@@ -230,8 +239,18 @@ class UNet_Denoiser_PVC(ModelBase):
                 else:
                     truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
         else:
-            truePVEnoisy = batch[0] if self.dim==2 else torch.concat((batch[0][:,None,:,:,:], batch[1][:,None,:,:,:]), dim=1)
+            if self.with_att:
+                truePVEnoisy,attmap_fp = batch
+            else:
+                truePVEnoisy = batch[0]
 
+            if self.dim==2:
+                truePVEnoisy = batch[0]
+            elif self.dim==3:
+                if self.with_att:
+                    truePVEnoisy = torch.concat((truePVEnoisy[:,None,:,:,:], attmap_fp[:,None,:,:,:]),dim=1)
+                else:
+                    truePVEnoisy = truePVEnoisy[:,None,:,:,:]
 
         with autocast(enabled=self.amp,dtype=torch.float16):
             fakePVE = self.UNet_denoiser(truePVEnoisy)
@@ -268,19 +287,28 @@ class UNet_Denoiser_PVC(ModelBase):
     def optimize_parameters(self):
         # Unet denoiser update
         self.set_requires_grad(self.UNet_denoiser, requires_grad=True)
-        self.unet_denoiser_optimizer.zero_grad(set_to_none=True)
+        self.set_requires_grad(self.UNet_pvc, requires_grad=True)
+        self.double_optimizer.zero_grad(set_to_none=True)
+        # self.unet_denoiser_optimizer.zero_grad(set_to_none=True)
+        # with autocast(enabled=self.amp):
+            # self.forward_unet_denoiser()
+            # self.losses_unet_denoiser()
+        # self.backward_unet_denoiser()
+
+        # Unet pvc update
+        # self.set_requires_grad(self.UNet_pvc, requires_grad=True)
+        # self.unet_pvc_optimizer.zero_grad(set_to_none=True)
+        # with autocast(enabled=self.amp):
+        #     self.forward_unet_pvc()
+            # self.losses_unet_pvc()
+        # self.backward_unet_pvc()
+
         with autocast(enabled=self.amp):
             self.forward_unet_denoiser()
             self.losses_unet_denoiser()
-        self.backward_unet_denoiser()
-
-        # Unet pvc update
-        self.set_requires_grad(self.UNet_pvc, requires_grad=True)
-        self.unet_pvc_optimizer.zero_grad(set_to_none=True)
-        with autocast(enabled=self.amp):
             self.forward_unet_pvc()
             self.losses_unet_pvc()
-        self.backward_unet_pvc()
+        self.backward_double_unet()
 
         if self.amp:
             self.scaler.update()
@@ -296,11 +324,13 @@ class UNet_Denoiser_PVC(ModelBase):
             print(f'Unet denoiser loss : {round(self.unet_denoiser_losses[-1], 5)} / pvc loss : {round(self.unet_pvc_losses[-1], 5)}')
 
         if self.current_epoch % self.update_lr_every == 0:
-            self.scheduler_unet_denoiser.step()
-            self.scheduler_unet_pvc.step()
+            # self.scheduler_unet_denoiser.step()
+            # self.scheduler_unet_pvc.step()
+            self.scheduler.step()
 
         if self.verbose > 1:
-            print(f'next lr : {self.scheduler_unet_denoiser.get_last_lr()}')
+            # print(f'next lr : {self.scheduler_unet_denoiser.get_last_lr()}')
+            print(f'next lr : {self.scheduler.get_last_lr()}')
 
         self.current_epoch += 1
         self.current_iteration = 0
@@ -321,8 +351,9 @@ class UNet_Denoiser_PVC(ModelBase):
                     'epoch': self.current_epoch,
                     'unet_denoiser': self.UNet_denoiser.module.state_dict() if jean_zay else self.UNet_denoiser.state_dict(),
                     'unet_pvc': self.UNet_pvc.module.state_dict() if jean_zay else self.UNet_pvc.state_dict(),
-                    'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
-                    'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
+                    # 'unet_denoiser_opt': self.unet_denoiser_optimizer.state_dict(),
+                    # 'unet_pvc_opt': self.unet_pvc_optimizer.state_dict(),
+                    'double_optimizer': self.double_optimizer.state_dict(),
                     'unet_denoiser_losses': self.unet_denoiser_losses,
                     'unet_pvc_losses': self.unet_pvc_losses,
                     'test_error': self.test_error,
