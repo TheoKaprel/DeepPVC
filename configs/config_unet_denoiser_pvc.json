@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/val_dataset_att/val_dataset_att.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/val_dataset_att/val_dataset_att.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_att/test_dataset_att.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_att/test_dataset_att.h5"],
   "validation_ref_type_nosino": ["/export/home/tkaprelian/Desktop/PVE/datasets/IEC/IEC_air_10bg_intevo_280sid/iec_1mm_c_rot_air_proj256","mhd"],
   "jean_zay": false,
   "compile": false,
@@ -9,8 +9,8 @@
   "num_workers": 1,
   "datatype": "h5",
   "dtype": "float16",
-  "with_rec_fp": false,
-  "with_att": false,
+  "with_rec_fp": true,
+  "with_att": true,
   "inputs": "full_sino",
   "sino": false,
   "input_eq_angles": 6,
@@ -55,6 +55,6 @@
   "nb_ed_layers": 2,
   "hidden_channels_unet":2,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
-  "lambda_recon":[1]
+  "recon_loss":["L1", "lesion"],
+  "lambda_recon":[1, 100]
 }
