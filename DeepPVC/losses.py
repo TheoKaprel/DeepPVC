@@ -19,7 +19,7 @@ def get_nn_loss(loss_name):
     elif loss_name=="SmoothL1":
         return nn.SmoothL1Loss()
     elif loss_name=="lesion":
-        return Lesion_loss()
+        return nn.L1Loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -93,14 +93,16 @@ class Sum_loss(nn.Module):
 class Model_Loss(nn.Module):
     def __init__(self, losses_params):
         super().__init__()
-        self.recon_loss,self.lambdas=[],[]
+        self.loss_name, self.recon_loss,self.lambdas=[],[],[]
         if type(losses_params['recon_loss'])==list:
             for (loss,lbda) in zip(losses_params['recon_loss'],losses_params['lambda_recon']):
                 self.recon_loss.append(get_nn_loss(loss_name=loss))
                 self.lambdas.append(lbda)
+                self.loss_name.append(loss)
         else:
             self.recon_loss=[get_nn_loss(loss_name=losses_params['recon_loss'])]
             self.lambdas=[1]
+            self.loss_name = [losses_params['recon_loss']]
 
         self.device = losses_params['device']
 
@@ -154,9 +156,9 @@ class UNetLosses(Model_Loss):
 
     def get_unet_loss(self, target, output, lesion_mask):
         unet_loss = 0
-        for (loss,lbda) in zip(self.recon_loss,self.lambdas):
-            if type(loss)==Lesion_loss:
-                unet_loss+= lbda * loss(target, output,lesion_mask)
+        for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
+            if type(loss_name)=="lesion":
+                unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
             else:
                 unet_loss+= lbda * loss(target, output)
         return unet_loss
