@@ -18,10 +18,20 @@ def get_nn_loss(loss_name):
         return Sum_loss()
     elif loss_name=="SmoothL1":
         return nn.SmoothL1Loss()
+    elif loss_name=="lesion":
+        return Lesion_loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
 
+class Lesion_loss(nn.Module):
+    def __init__(self):
+        super(Lesion_loss, self).__init__()
+        self.l1=nn.L1Loss()
+
+    @custom_fwd
+    def forward(self, y_true, y_pred, lesion_mask):
+        return self.l1(y_true[lesion_mask], y_pred[lesion_mask])
 
 class PoissonLikelihood_loss(nn.Module):
     def __init__(self):
@@ -142,8 +152,11 @@ class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
         super().__init__(losses_params)
 
-    def get_unet_loss(self, target, output):
+    def get_unet_loss(self, target, output, lesion_mask):
         unet_loss = 0
         for (loss,lbda) in zip(self.recon_loss,self.lambdas):
-            unet_loss+= lbda * loss(target, output)
+            if type(loss)==Lesion_loss:
+                unet_loss+= lbda * loss(target, output,lesion_mask)
+            else:
+                unet_loss+= lbda * loss(target, output)
         return unet_loss

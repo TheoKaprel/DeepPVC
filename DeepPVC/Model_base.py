@@ -53,6 +53,8 @@ class ModelBase(torch.nn.Module):
 
             self.output_channels = self.output_channels_denoiser = 1
 
+        self.with_lesion=("lesion" in params['recon_loss'])
+
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
         self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None
         self.optimizer = params['optimizer']

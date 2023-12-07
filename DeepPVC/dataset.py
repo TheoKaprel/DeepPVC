@@ -22,6 +22,8 @@ class BaseDataset(Dataset):
         self.params = params
         self.double_model=True if params['network']=="unet_denoiser_pvc" else False
 
+        self.with_lesion=("lesion" in params["recon_loss"])
+
         self.dtype=self.get_dtype(params['dtype'])
 
     def get_dtype(self,opt_dtype):
@@ -251,6 +253,10 @@ class SinoToSinoDataset(BaseDataset):
             if self.with_rec_fp:
                 data_rec_fp = np.array(data['rec_fp_att'], dtype=self.dtype) # (120,256,256)
                 data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+
+            if (self.with_lesion and not self.test):
+                lesion_mask=np.array(data['lesion_mask_fp'], dtype=self.dtype).astype(bool)
+                data_target = data_target+(lesion_mask,)
 
             # (forward_projected) attenuation
             data_attmap_fp = np.array(data['attmap_fp'], dtype=self.dtype)
