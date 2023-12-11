@@ -120,14 +120,17 @@ class UNet_Denoiser_PVC(ModelBase):
             # self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
             self.double_optimizer = optim.Adam(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
         elif self.optimizer =="AdamW":
-            self.unet_denoiser_optimizer = optim.AdamW(self.UNet_denoiser.parameters(), lr=self.learning_rate)
-            self.unet_pvc_optimizer = optim.AdamW(self.UNet_pvc.parameters(), lr=self.learning_rate)
+            # self.unet_denoiser_optimizer = optim.AdamW(self.UNet_denoiser.parameters(), lr=self.learning_rate)
+            # self.unet_pvc_optimizer = optim.AdamW(self.UNet_pvc.parameters(), lr=self.learning_rate)
+            self.double_optimizer = optim.AdamW(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
         elif self.optimizer =="SGD":
-            self.unet_denoiser_optimizer = optim.SGD(self.UNet_denoiser.parameters(), lr=self.learning_rate,momentum=0.9)
-            self.unet_pvc_optimizer = optim.SGD(self.UNet_pvc.parameters(), lr=self.learning_rate,momentum=0.9)
+            # self.unet_denoiser_optimizer = optim.SGD(self.UNet_denoiser.parameters(), lr=self.learning_rate,momentum=0.9)
+            # self.unet_pvc_optimizer = optim.SGD(self.UNet_pvc.parameters(), lr=self.learning_rate,momentum=0.9)
+            self.double_optimizer = optim.SGD(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate,momentum=0.9)
         elif self.optimizer=="RMSprop":
-            self.unet_denoiser_optimizer = optim.RMSprop(self.UNet_denoiser.parameters(), lr=self.learning_rate,momentum=0.9)
-            self.unet_pvc_optimizer = optim.RMSprop(self.UNet_pvc.parameters(), lr=self.learning_rate,momentum=0.9)
+            # self.unet_denoiser_optimizer = optim.RMSprop(self.UNet_denoiser.parameters(), lr=self.learning_rate,momentum=0.9)
+            # self.unet_pvc_optimizer = optim.RMSprop(self.UNet_pvc.parameters(), lr=self.learning_rate,momentum=0.9)
+            self.double_optimizer = optim.RMSprop(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate,momentum=0.9)
         else:
             raise ValueError("Unknown optimizer. Choose between : Adam, AdamW, SGD, RMSprop")
 
