@@ -465,39 +465,75 @@ class ResCNN(nn.Module):
 
 
 class vanillaCNN(nn.Module):
-    def __init__(self, in_channels, out_channels, ngc=64, nb_ed_layers=7):
+    def __init__(self,input_channel, ngc,init_feature_kernel,
+                 output_channel,nb_ed_layers,generator_activation,
+                 use_dropout,leaky_relu, norm, residual_layer=False, ResUnet=False,
+                 dim=2):
         super(vanillaCNN, self).__init__()
+
+        self.ResUnet = ResUnet
+        self.input_channels = input_channel
+        self.output_channels = output_channel
+
+        if dim==2:
+            self.dim = 2
+            conv = nn.Conv2d
+            init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel)),(1,1), int(init_feature_kernel / 2)
+            conv_kernels,conv_strides,conv_paddings = (3,3), (1,1), 1
+
+            if norm=="batch_norm":
+                norm_layer = nn.BatchNorm2d
+            elif norm=="inst_norm":
+                norm_layer = nn.InstanceNorm2d
+            else:
+                norm_layer = nn.Identity
+
+        elif dim==3:
+            self.dim=3
+            conv = nn.Conv3d
+            init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1, 1), int(init_feature_kernel / 2)
+            conv_kernels,conv_strides,conv_paddings = (3,3,3), (1,1,1), 1
+
+            if norm=="batch_norm":
+                norm_layer = nn.BatchNorm3d
+            elif norm=="inst_norm":
+                norm_layer = nn.InstanceNorm3d
+            else:
+                norm_layer = nn.Identity
 
         sequence = []
 
         # First Layer
-        sequence.append(nn.Conv2d(in_channels,
+        sequence.append(conv(input_channel,
                                       ngc,
-                                      kernel_size=(3,3),
-                                      stride=(1,1),
-                                      padding = 1))
+                                      kernel_size=init_feature_kernel_size,
+                                      stride=init_feature_stride,
+                                      padding = init_feature_padding))
         sequence.append(nn.ReLU())
-        # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
-        sequence.append(nn.InstanceNorm2d(ngc))
-        sequence.append(nn.Dropout(0.3))
+        sequence.append(norm_layer(ngc))
+
+        if use_dropout:
+            sequence.append(nn.Dropout(0.3))
 
         # Inner layers
         for k in range(nb_ed_layers - 2):
-            sequence.append(nn.Conv2d(ngc,
-                                      ngc,
-                                      kernel_size=(3,3),
-                                      stride=(1,1),
-                                      padding = 1))
-            # sequence.append(nn.BatchNorm2d(ngc, track_running_stats=False))
-            sequence.append(nn.InstanceNorm2d(ngc))
+            sequence.append(conv(ngc,
+                                  ngc,
+                                  kernel_size=conv_kernels,
+                                  stride=conv_strides,
+                                  padding = conv_paddings))
+            sequence.append(nn.ReLU())
+            sequence.append(norm_layer(ngc))
 
         # Last Layer
-        sequence.append(nn.Conv2d(ngc,
-                                  out_channels,
-                                  kernel_size=(3,3),
-                                  stride=(1,1),
-                                  padding = 1))
-        sequence.append(nn.ReLU())
+        sequence.append(conv(ngc,
+                                  output_channel,
+                                  kernel_size=conv_kernels,
+                                  stride=conv_strides,
+                                  padding = conv_paddings))
+
+
+        sequence.append(get_activation(generator_activation))
 
         self.sequence_CNN = nn.Sequential(*sequence)
 

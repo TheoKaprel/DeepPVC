@@ -84,8 +84,20 @@ class UNet_Denoiser_PVC(ModelBase):
         elif self.DCNN:
             # self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc=self.hidden_channels_unet).to(device=self.device)
             # self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1,ngc=self.hidden_channels_unet).to(device=self.device)
-            self.UNet_denoiser = networks.vanillaCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc = self.hidden_channels_unet,nb_ed_layers=self.nb_ed_layers).to(device=self.device)
-            self.UNet_pvc = networks.vanillaCNN(in_channels=self.input_channels,out_channels=1,ngc = self.hidden_channels_unet,nb_ed_layers=self.nb_ed_layers).to(device=self.device)
+            self.UNet_denoiser = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_layer,
+                                      ResUnet=self.ResUnet).to(device=self.device)
+            self.UNet_pvc = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_layer,
+                                      ResUnet=self.ResUnet).to(device=self.device)
         else:
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                     dim=self.dim,init_feature_kernel=self.init_feature_kernel,
