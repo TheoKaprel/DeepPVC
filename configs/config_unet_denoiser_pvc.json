@@ -39,7 +39,7 @@
 
   "patches":false,
   "ed_blocks": ["conv-norm-relu-pool", "convT-norm-relu"],
-  "residual_layer": false,
+  "residual_layer": true,
   "resunet": false,
   "attention": false,
   "save_every_n_epoch": 9999,
@@ -50,10 +50,10 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "DCNN": false,
-  "init_feature_kernel": 3,
-  "nb_ed_layers": 2,
-  "hidden_channels_unet":2,
+  "DCNN": true,
+  "init_feature_kernel": 7,
+  "nb_ed_layers": 5,
+  "hidden_channels_unet":32,
   "unet_activation": "relu",
   "recon_loss":["L1", "lesion"],
   "lambda_recon":[1, 100]

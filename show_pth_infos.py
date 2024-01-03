@@ -52,7 +52,7 @@ def show_pth(lpth, losses, legend):
         fig_test,ax_test=plt.subplots()
         # cm = plt.get_cmap('gist_rainbow')
         # NUM_COLORS=len(dict_test.items())
-        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet']
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink']
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
@@ -65,6 +65,22 @@ def show_pth(lpth, losses, legend):
         ax_test.set_xlabel("Epochs", fontsize = 18)
         ax_test.set_ylabel("Test Loss (L1)", fontsize = 18)
         plt.show()
+
+    params_keys=list(lparams[0].keys())
+
+    params_with_differences=[]
+    for key in params_keys:
+        values=list(set([par[key] if not type(par[key])==list else str(par[key]) for par in lparams]))
+        if len(values)>1:
+            params_with_differences.append(key)
+
+
+    print(params_with_differences)
+    for par in lparams:
+        print(par['ref'])
+        for key_diff in params_with_differences:
+            print(f'{key_diff}: {par[key_diff]}')
+        print('--'*20)
 
     # helpers_params.make_and_print_params_info_table(lparams)
 
