@@ -1,7 +1,7 @@
 {
   "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_att/test_dataset_att.h5"],
   "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_att/test_dataset_att.h5"],
-  "validation_ref_type_nosino": ["/export/home/tkaprelian/Desktop/PVE/datasets/IEC/IEC_air_10bg_intevo_280sid/iec_1mm_c_rot_air_proj256","mhd"],
+  "validation_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
   "store_dataset": false,
@@ -51,9 +51,9 @@
   "comment": "",
 
   "DCNN": true,
-  "init_feature_kernel": 7,
-  "nb_ed_layers": 5,
-  "hidden_channels_unet":32,
+  "init_feature_kernel": 5,
+  "nb_ed_layers": 3,
+  "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1", "lesion"],
   "lambda_recon":[1, 100]
