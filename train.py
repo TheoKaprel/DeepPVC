@@ -76,7 +76,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     device = DeepPVEModel.device
 
-    min_val_mse=np.infty
+    min_val_mae=np.infty
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
@@ -191,10 +191,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
                 DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
 
-                if (RMSE_val<min_val_mse and params['early_stopping'] and rank==0):
-                    min_val_mse=RMSE_val
+                if (MAE_val<min_val_mae and params['early_stopping'] and rank==0):
+                    min_val_mae=MAE_val
                     DeepPVEModel.params['training_duration'] = round(time.time() - t0)
-                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth",f"_early_stopping.pth"))
+                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth",f"_{DeepPVEModel.current_epoch}_early_stopping.pth"))
                     DeepPVEModel.save_model(output_path=emergency_output_filename)
 
             if verbose_main_process:

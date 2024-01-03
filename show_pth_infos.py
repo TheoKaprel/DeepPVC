@@ -40,7 +40,8 @@ def show_pth(lpth, losses, legend):
         if losses:
             model.plot_losses(save=False, wait=True, title=pth)
             dict_test[ref]=model.test_error
-            dict_val[ref]=model.val_error_MSE
+            # dict_val[ref]=model.val_error_MSE
+            dict_val[ref]=model.val_error_MAE
             print(model.val_error_MSE)
 
     if losses:

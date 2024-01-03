@@ -341,10 +341,9 @@ def load_data(params):
                                   pin_memory=True,
                                   sampler=test_sampler)
 
-    if "validation_ref_type" in params:
-        validation_dataset = helpers_data.load_image(filename=params["validation_ref_type"][0],
-                                                     is_ref=True, type=params["validation_ref_type"][1],
-                                                     params=params)
+    if ("validation_dataset_path" in params):
+        validation_dataset = get_dataset(params=params, paths=params['validation_dataset_path'], test=True)
+        val_batchsize = params['test_batchsize']
 
         if params['jean_zay']:
             import idr_torch
@@ -355,14 +354,13 @@ def load_data(params):
         else:
             val_sampler = None
 
-        val_batchsize = 30
-
         validation_dataloader = DataLoader(dataset=validation_dataset,
-                                           batch_size=val_batchsize,
-                                           shuffle=False,
-                                           num_workers=4,
-                                           pin_memory=True,
-                                           sampler=val_sampler)
+                                     batch_size=val_batchsize,
+                                     shuffle=False,
+                                     num_workers=params['num_workers'],
+                                     pin_memory=True,
+                                     sampler=val_sampler)
+
     else:
         validation_dataloader = None
 
@@ -371,6 +369,8 @@ def load_data(params):
     if params['verbose']>0:
         print(f'Number of training data : {nb_training_data}')
         print(f'Number of testing data : {nb_testing_data}')
+        if validation_dataloader is not None:
+            print(f'Number of validation data : {len(validation_dataset)}')
     params['nb_training_data'] = nb_training_data
     params['nb_testing_data'] = nb_testing_data
     params['nb_gpu'] = number_gpu
