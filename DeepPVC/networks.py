@@ -467,11 +467,11 @@ class ResCNN(nn.Module):
 class vanillaCNN(nn.Module):
     def __init__(self,input_channel, ngc,init_feature_kernel,
                  output_channel,nb_ed_layers,generator_activation,
-                 use_dropout,leaky_relu, norm, residual_layer=False, ResUnet=False,
+                 use_dropout,leaky_relu, norm, residual_layer=False,
                  dim=2):
         super(vanillaCNN, self).__init__()
 
-        self.ResUnet = ResUnet
+        self.residual_layer= residual_layer
         self.input_channels = input_channel
         self.output_channels = output_channel
 
@@ -491,8 +491,9 @@ class vanillaCNN(nn.Module):
         elif dim==3:
             self.dim=3
             conv = nn.Conv3d
-            init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1, 1), int(init_feature_kernel / 2)
-            conv_kernels,conv_strides,conv_paddings = (3,3,3), (1,1,1), 1
+            init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1,1), int(init_feature_kernel / 2)
+            # conv_kernels,conv_strides,conv_paddings = (3,3,3), (1,1,1), 1
+            conv_kernels,conv_strides,conv_paddings = (7,7,7), (1,1,1), 3
 
             if norm=="batch_norm":
                 norm_layer = nn.BatchNorm3d
@@ -533,10 +534,18 @@ class vanillaCNN(nn.Module):
                                   padding = conv_paddings))
 
 
-        sequence.append(get_activation(generator_activation))
+        # sequence.append(get_activation(generator_activation))
 
         self.sequence_CNN = nn.Sequential(*sequence)
-
+        self.final_activation=get_activation(generator_activation)
 
     def forward(self,x):
-        return self.sequence_CNN(x)
+        if self.residual_layer:
+            if self.dim==2:
+                residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
+            elif self.dim==3:
+                residual = x[:, 1:2,:,:,:]
+
+            return self.final_activation(residual+self.sequence_CNN(x))
+        else:
+            return self.final_activation(self.sequence_CNN(x))
