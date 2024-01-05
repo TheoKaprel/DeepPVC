@@ -44,6 +44,34 @@ def show_pth(lpth, losses, legend):
             dict_val[ref]=model.val_error_MAE
             print(model.val_error_MSE)
 
+    params_keys=list(lparams[0].keys())
+
+    params_with_differences=[]
+    for key in params_keys:
+        all_keys=[]
+        for par in lparams:
+            if key in par:
+                all_keys.append(par[key] if not type(par[key])==list else str(par[key]))
+            else:
+                all_keys.append('None')
+
+        values=list(set(all_keys))
+        if len(values)>1:
+            params_with_differences.append(key)
+
+
+    print(params_with_differences)
+    for par in lparams:
+        print(par['ref'])
+        for key_diff in params_with_differences:
+            if key_diff in par:
+                print(f'{key_diff}: {par[key_diff]}')
+            else:
+                print(f'{key_diff}: NONE')
+        print('--'*20)
+
+
+
     if losses:
         if legend is None:
             legend = list(dict_test.keys())
@@ -67,21 +95,6 @@ def show_pth(lpth, losses, legend):
         ax_test.set_ylabel("Test Loss (L1)", fontsize = 18)
         plt.show()
 
-    params_keys=list(lparams[0].keys())
-
-    params_with_differences=[]
-    for key in params_keys:
-        values=list(set([par[key] if not type(par[key])==list else str(par[key]) for par in lparams]))
-        if len(values)>1:
-            params_with_differences.append(key)
-
-
-    print(params_with_differences)
-    for par in lparams:
-        print(par['ref'])
-        for key_diff in params_with_differences:
-            print(f'{key_diff}: {par[key_diff]}')
-        print('--'*20)
 
     # helpers_params.make_and_print_params_info_table(lparams)
 

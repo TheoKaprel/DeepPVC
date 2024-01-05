@@ -165,7 +165,7 @@ class UNet(nn.Module):
     def __init__(self,input_channel, ngc,init_feature_kernel,
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=False, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
-                 dim=2):
+                 dim=2,final_2dconv=False, final_2dchannels=0):
         super(UNet, self).__init__()
 
         self.ResUnet = ResUnet
@@ -216,6 +216,12 @@ class UNet(nn.Module):
 
         self.activation = get_activation(generator_activation)
 
+        if final_2dconv:
+            self.do_final_2d_conv=True
+            self.final_2d_conv=nn.Conv2d(in_channels=final_2dchannels, out_channels=1, stride=(1,1), kernel_size=(3,3),padding=1)
+        else:
+            self.do_final_2d_conv=False
+
     def forward(self, x):
         if self.residual_layer:
             if self.dim==2:
@@ -245,6 +251,10 @@ class UNet(nn.Module):
         # # residual
         if self.residual_layer:
             y += residual
+
+        if self.do_final_2d_conv:
+            y = y[:,0,:,:,:]
+            y = self.final_2d_conv(y)[:,None,:,:,:]
 
         y = self.activation(y)
         # ----------------------------------------------------------

@@ -42,6 +42,8 @@ class UNet_Denoiser_PVC(ModelBase):
         self.residual_layer = params['residual_layer']
         self.ResUnet = params['resunet']
 
+        self.final_2dconv = True if (params['dim']=="3d" and params['inputs']=="projs") else False
+
         self.DCNN = params['DCNN'] if 'DCNN' in params else False
 
         self.attention = False if 'attention' not in params else params['attention']
@@ -105,14 +107,16 @@ class UNet_Denoiser_PVC(ModelBase):
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet).to(device=self.device)
+                                      ResUnet=self.ResUnet,
+                                               final_2dconv=False).to(device=self.device)
             self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet).to(device=self.device)
+                                      ResUnet=self.ResUnet,
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
