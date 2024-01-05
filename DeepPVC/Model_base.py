@@ -29,7 +29,8 @@ class ModelBase(torch.nn.Module):
         if self.params["inputs"] == "projs":
             if params['sino']==False:
                 self.input_channels = params['input_eq_angles']
-                self.input_channels = self.input_channels+2 if params['with_adj_angles'] else self.input_channels
+
+                self.input_channels = self.input_channels+2*params['nb_adj_angles'] if params['with_adj_angles'] else self.input_channels
                 self.input_channels = self.input_channels+1 if params['with_rec_fp'] else self.input_channels
             else:
                 self.input_channels = params['input_eq_angles']+1
@@ -51,7 +52,11 @@ class ModelBase(torch.nn.Module):
             else:
                 self.input_channels = 2 if params['with_rec_fp'] else 1
 
-            self.output_channels = self.output_channels_denoiser = 1
+            if self.params['inputs']=="projs":
+                self.output_channels = self.output_channels_denoiser = 1
+            else:
+                self.output_channels = self.output_channels_denoiser = 1
+
 
         self.with_lesion=("lesion" in params['recon_loss'])
 

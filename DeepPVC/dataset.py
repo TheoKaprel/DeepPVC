@@ -54,7 +54,7 @@ class ProjToProjDataset(BaseDataset):
             self.sino = False
             self.with_adj_angles = params["with_adj_angles"]
             self.input_eq_angles = params['input_eq_angles']
-
+            self.nb_adj_angles = params['nb_adj_angles']
 
         if self.filetype in ['mhd', 'mha', 'npy', 'pt']:
             print(f"ERROR: {self.filetype} datasets are not handled any more...")
@@ -67,12 +67,12 @@ class ProjToProjDataset(BaseDataset):
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
         self.keys = sorted(list(self.dataseth5.keys()))
 
-        first_data = self.dataseth5[self.keys[0]]['PVE_noisy']
+        first_data = self.dataseth5[self.keys[0]]['PVE_att_noisy']
 
         if self.sino:
             self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[1], first_data.shape[0],first_data.shape[2]
-            self.zero_padding_for_sino = np.zeros((2, self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32) if (self.double_model and not self.test) else np.zeros((self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=np.float32)
-            self.zero_padding_for_sino_pvfree = np.zeros((1,4, self.nb_pix_y),dtype=np.float32)
+            self.zero_padding_for_sino = np.zeros((2, self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=self.dtype) if (self.double_model and not self.test) else np.zeros((self.nb_sino+2 if self.with_rec_fp else self.nb_sino+1, 4, self.nb_pix_y),dtype=self.dtype)
+            self.zero_padding_for_sino_pvfree = np.zeros((1,4, self.nb_pix_y),dtype=self.dtype)
         else:
             self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], first_data.shape[2]
 
@@ -104,13 +104,22 @@ class ProjToProjDataset(BaseDataset):
 
             # adj angles
             if self.with_adj_angles:
-                adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
-                self.channels_id = np.concatenate((self.channels_id, adjacent_channels_id))
+                # adjacent_channels_id = np.array([(-1) % self.nb_projs_per_img, (1) % self.nb_projs_per_img])
+
+                adjacent_channels_id = np.array([
+                    k%self.nb_projs_per_img for k in range(-self.nb_adj_angles, self.nb_adj_angles)
+                ])
+
+                self.channels_id = adjacent_channels_id
+
             # eq angles
             equiditributed_channels_id = np.array([(k * step) % self.nb_projs_per_img for k in range(1, self.input_eq_angles)])
             self.channels_id = np.concatenate((self.channels_id, equiditributed_channels_id)) if len(
                 equiditributed_channels_id) > 0 else self.channels_id
 
+            print('à'*30)
+            print(self.channels_id)
+            print('à' * 30)
     def get_channels_id_i(self, proj_i):
         return (self.channels_id+proj_i)%self.nb_projs_per_img
 
@@ -129,42 +138,56 @@ class ProjToProjDataset(BaseDataset):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
             if not self.sino:
-                data_PVE_noisy = np.array(data['PVE_noisy'][channels[id],:,:],dtype=np.float32)[invid]
-                data_target = np.array(data['PVfree'][proj_i:proj_i+1,:,:],dtype=np.float32)
+                data_PVE_noisy = np.array(data['PVE_att_noisy'][channels[id],:,:],dtype=self.dtype)[invid]
+                data_PVfree = np.array(data['PVfree_att'][proj_i:proj_i+1,:,:],dtype=self.dtype)
             else:
             #sino
-                data_PVE_noisy, data_target = np.array(data['PVE_noisy'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=np.float32).transpose((1,0,2))
+                data_PVE_noisy, data_PVfree = np.array(data['PVE_att_noisy'][:,channels[id],:], dtype=self.dtype).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=self.dtype).transpose((1,0,2))
                 data_PVE_noisy = self.pad(torch.from_numpy(data_PVE_noisy[None, :, :, :]))[0, :, :, :]
-                data_target = self.pad(torch.from_numpy(data_target[None, :, :, :]))[0, :, :, :]
+                data_PVfree = self.pad(torch.from_numpy(data_PVfree[None, :, :, :]))[0, :, :, :]
             # end sino
 
-            if self.with_rec_fp:
-                if not self.sino:
-                    rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=np.float32)
-                else:
-                #sino
-                    rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = np.float32).transpose((1,0,2))
-                    rec_fp = self.pad(torch.from_numpy(rec_fp[None, :, :, :]))[0, :, :, :]
-                #end sino
+            data_target=(data_PVfree,)
+
 
             if (self.double_model and not self.test):
                 if not self.sino:
-                    data_PVE = np.array(data['PVE'][channels[id],:,:],dtype=np.float32)[invid]
+                    data_PVE = np.array(data['PVE_att'][channels[id],:,:],dtype=self.dtype)[invid]
                 else:
                 #sino
-                    data_PVE = np.array(data['PVE'][:,channels[id],:], dtype=np.float32).transpose((1,0,2))[invid]
+                    data_PVE = np.array(data['PVE_att'][:,channels[id],:], dtype=self.dtype).transpose((1,0,2))[invid]
                     data_PVE = self.pad(torch.from_numpy(data_PVE[None, :, :, :]))[0, :, :, :]
                 # end sino
 
                 if "noise" in self.list_transforms:
                     data_PVE_noisy = self.apply_noise(data_PVE)
 
-                data_inputs = (data_PVE_noisy,data_PVE)
+                data_inputs = (data_PVE_noisy,)
+                data_target = (data_PVE,)+data_target
             else:
                 data_inputs = (data_PVE_noisy,)
 
+
             if self.with_rec_fp:
+                if not self.sino:
+                    # rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=self.dtype)
+                    rec_fp = np.array(data['rec_fp_att'][channels[id], :, :], dtype=self.dtype)[invid]
+                else:
+                #sino
+                    rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = self.dtype).transpose((1,0,2))
+                    rec_fp = self.pad(torch.from_numpy(rec_fp[None, :, :, :]))[0, :, :, :]
+                #end sino
+
                 data_inputs = data_inputs + (rec_fp,)
+
+            if (self.with_lesion and not self.test):
+                lesion_mask = np.array(data['lesion_mask_fp'][channels[id], :, :], dtype=self.dtype)[invid].astype(bool)
+                data_target = data_target+(lesion_mask,)
+
+            # (forward_projected) attenuation
+            data_attmap_fp = np.array(data['attmap_fp'][channels[id], :, :], dtype=self.dtype)[invid]
+            data_inputs = data_inputs + (data_attmap_fp,)
+
 
         return data_inputs, data_target
 
