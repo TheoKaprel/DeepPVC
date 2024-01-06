@@ -189,6 +189,10 @@ class ProjToProjDataset(BaseDataset):
             data_inputs = data_inputs + (data_attmap_fp,)
 
 
+        data_inputs = tuple([torch.from_numpy(u) for u in data_inputs])
+        data_target = tuple([torch.from_numpy(u) for u in data_target])
+
+
         return data_inputs, data_target
 
 
