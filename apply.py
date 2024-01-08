@@ -66,30 +66,36 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                                                        input_PVE_noisy_array=input_PVE_noisy_array,
                                                        input_rec_fp_array=input_rec_fp_array,
                                                        attmap_fp_array=attmap_fp_array)
+        out=np.zeros((data_input[0].shape[0], data_input[0].shape[2], data_input[0].shape[3]))
+        for i in range(data_input[0].shape[0]):
+            print(i)
+            batch=(data_input[0][i:i+1,:,:,:],data_input[1][i:i+1,:,:,:], data_input[2][i:i+1,:,:,:])
+            out[i,:,:] = model.forward(batch=batch)[0,0,:,:]
 
-
-        print(f'input shape : {[data.shape for data in data_input]}')
-        data_input = tuple([data.to(device) for data in data_input])
-
-
-        data_normalisation = params['data_normalisation']
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
-        if (data_normalisation!='none'):
-            print(f'norm : {norm_input}')
-        normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
-                                                     norm=norm_input, params=model.params, to_torch=False)
-
-        normed_output = model.forward(normed_input)
-        denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
-                                                          data_normalisation=data_normalisation,
-                                                          norm=norm_input, params=model.params, to_numpy=False)
-
-        print(f'network output shape : {denormed_output.shape}')
-
-        output_array = helpers_data.back_to_input_format(params=params,output=denormed_output)
-        print(f'final output shape : {output_array.shape}')
-
-        return output_array
+        np.save("out.npy", out)
+        # print(f'input shape : {[data.shape for data in data_input]}')
+        # data_input = tuple([data.to(device) for data in data_input])
+        #
+        #
+        # data_normalisation = params['data_normalisation']
+        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
+        # if (data_normalisation!='none'):
+        #     print(f'norm : {norm_input}')
+        # normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
+        #                                              norm=norm_input, params=model.params, to_torch=False)
+        #
+        # normed_output = model.forward(normed_input)
+        # denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
+        #                                                   data_normalisation=data_normalisation,
+        #                                                   norm=norm_input, params=model.params, to_numpy=False)
+        #
+        # print(f'network output shape : {denormed_output.shape}')
+        #
+        # output_array = helpers_data.back_to_input_format(params=params,output=denormed_output)
+        # print(f'final output shape : {output_array.shape}')
+        #
+        # return output_array
+        return out
 
 
 
