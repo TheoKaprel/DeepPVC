@@ -6,7 +6,7 @@
   "compile": false,
   "store_dataset": false,
   "split_dataset": false,
-  "num_workers": 1,
+  "num_workers": 4,
   "datatype": "h5",
   "dtype": "float16",
   "with_rec_fp": true,
@@ -15,7 +15,7 @@
   "sino": false,
   "input_eq_angles": 1,
   "with_adj_angles": true,
-  "nb_adj_angles": 16,
+  "nb_adj_angles": 8,
   "dim": "3d",
 
   "max_nb_data": 2,
@@ -40,8 +40,8 @@
 
   "patches":false,
   "ed_blocks": ["conv-norm-relu-pool", "convT-norm-relu"],
-  "residual_layer": false,
-  "resunet": false,
+  "residual_layer": true,
+  "resunet": true,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,

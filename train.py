@@ -46,6 +46,9 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     params, start_epoch, ref = get_init_check_params(resume_pth=resume_pth,json=json,output=output)
     verbose=params['verbose']
 
+    print(f"Initial mem ", torch.cuda.memory_allocated("cuda:0"))
+
+
     # Update parameters specified in command line
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
     for user_param_to_modify in (user_param_str,user_param_float,user_param_int,user_param_bool,user_param_list):
@@ -80,10 +83,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     DeepPVEModel.params['training_start_time'] = time.asctime()
 
+    print(f"After model creation ", torch.cuda.memory_allocated(device))
 
     data_normalisation = params['data_normalisation']
     if with_tensorboard and (rank==0):
         writer=SummaryWriter(log_dir=os.path.join(output_folder,'runs/'+ref),flush_secs=60,filename_suffix=time.strftime("%Y_%m_%d_%Hh_%M_%S"))
+
 
     verbose_main_process=((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])) and (verbose>0)
     if verbose_main_process:
@@ -101,6 +106,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch = time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
+        # print(f"Epoch beggining ", torch.cuda.memory_allocated(device))
+
         for step,(batch_inputs,batch_targets) in enumerate(train_dataloader):
             if debug:
                 timer_loading2 = time.time()
@@ -110,6 +117,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
+            # print(f"Step beggining ", torch.cuda.memory_allocated(device))
 
             batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
             batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
@@ -118,6 +126,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
             batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
+            # print(f"After batch->gpu ", torch.cuda.memory_allocated(device))
 
             if debug:
                 t_preopt+=time.time()-timer_preopt1
@@ -153,7 +162,24 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                             plt.show()
 
             DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
+            # print(f"After input data ", torch.cuda.memory_allocated(device))
+
+            del batch_inputs
+            del batch_targets
+
+            # print(f"After del input data ", torch.cuda.memory_allocated(device))
             DeepPVEModel.optimize_parameters()
+
+
+
+            # print(f"After empty cache ", torch.cuda.memory_allocated(device))
+
+            # for obj in gc.get_objects():
+            #     try:
+            #         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+            #             print(type(obj), obj.size())
+            #     except:
+            #         pass
 
             if debug:
                 t_opt += time.time() - timer_opt1
@@ -237,7 +263,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 print(f'preopt time : {t_preopt}')
                 print(f'opt time : {t_opt}')
                 print(f'test time : {t_test}')
-
+        # plt.show()
 
     if ((params['jean_zay'] and idr_torch.rank == 0) or (not params['jean_zay'])):
         tf = time.time()

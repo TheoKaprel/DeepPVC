@@ -67,7 +67,10 @@ class UNet_Denoiser_PVC(ModelBase):
             self.start_epoch = 1
 
         self.current_iteration = 0
+            # self.mean_unet_denoiser_loss, self.mean_unet_pvc_loss = torch.tensor([0], device=self.device, dtype=torch.float64), torch.tensor([0],  device=self.device,  dtype=torch.float64)
         self.mean_unet_denoiser_loss, self.mean_unet_pvc_loss = 0,0
+
+        # self.iter_loss=[]
 
         self.amp = self.params['amp']
         if self.amp:
@@ -230,13 +233,17 @@ class UNet_Denoiser_PVC(ModelBase):
             self.unet_pvc_optimizer.step()
 
     def backward_double_unet(self):
-        double_loss = self.unet_denoiser_loss + self.unet_pvc_loss
+        # double_loss = self.unet_denoiser_loss + self.unet_pvc_loss
         if self.amp:
-            self.scaler.scale(double_loss).backward()
+            self.scaler.scale(self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+            # if (self.current_iteration%3==0):
             self.scaler.step(self.double_optimizer)
+            self.scaler.update()
+            self.double_optimizer.zero_grad(set_to_none=True)
         else:
-            double_loss.backward()
+            (self.unet_denoiser_loss + self.unet_pvc_loss).backward()
             self.double_optimizer.step()
+            self.double_optimizer.zero_grad(set_to_none=True)
 
     def forward(self, batch):
         if self.with_rec_fp:
@@ -311,7 +318,7 @@ class UNet_Denoiser_PVC(ModelBase):
         # Unet denoiser update
         self.set_requires_grad(self.UNet_denoiser, requires_grad=True)
         self.set_requires_grad(self.UNet_pvc, requires_grad=True)
-        self.double_optimizer.zero_grad(set_to_none=True)
+        # self.double_optimizer.zero_grad(set_to_none=True)
         # self.unet_denoiser_optimizer.zero_grad(set_to_none=True)
         # with autocast(enabled=self.amp):
             # self.forward_unet_denoiser()
@@ -326,19 +333,42 @@ class UNet_Denoiser_PVC(ModelBase):
             # self.losses_unet_pvc()
         # self.backward_unet_pvc()
 
-        with autocast(enabled=self.amp):
+        with autocast(enabled=self.amp, dtype=torch.float16):
             self.forward_unet_denoiser()
             self.losses_unet_denoiser()
             self.forward_unet_pvc()
             self.losses_unet_pvc()
         self.backward_double_unet()
 
-        if self.amp:
-            self.scaler.update()
-
         self.mean_unet_denoiser_loss += self.unet_denoiser_loss.item()
         self.mean_unet_pvc_loss += self.unet_pvc_loss.item()
         self.current_iteration += 1
+
+
+        # self.iter_loss.append((self.unet_denoiser_loss + self.unet_pvc_loss).item())
+
+        self.del_variables()
+
+
+    def del_variables(self):
+        if self.with_rec_fp:
+            if self.with_att:
+                del self.truePVE_noisy,self.true_rec_fp,self.attmap_fp
+            else:
+                del self.truePVE_noisy,self.true_rec_fp
+        else:
+            if self.with_att:
+                del self.truePVE_noisy,self.attmap_fp
+            else:
+                del self.truePVE_noisy
+
+        if self.with_lesion:
+            del self.truePVE, self.truePVfree,self.lesion_mask_fp
+        else:
+            del self.truePVE, self.truePVfree
+            del self.lesion_mask_fp
+
+        del self.fakePVE, self.fakePVfree
 
     def update_epoch(self):
         self.unet_denoiser_losses.append(self.mean_unet_denoiser_loss / self.current_iteration)
@@ -358,6 +388,11 @@ class UNet_Denoiser_PVC(ModelBase):
         self.current_epoch += 1
         self.current_iteration = 0
         self.mean_unet_denoiser_loss, self.mean_unet_pvc_loss = 0,0
+
+        # fig,ax = plt.subplots()
+        # ax.plot(self.iter_loss)
+        # plt.show()
+        # self.iter_loss=[]
 
     def save_model(self, output_path=None, save_json=False):
         self.params['start_epoch'] = self.start_epoch
