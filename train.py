@@ -56,6 +56,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     network_architecture = params['network']
 
+    torch.backends.cudnn.benchmark=True
+    
     output_filename = f"{network_architecture}_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=resume_pth)
 
