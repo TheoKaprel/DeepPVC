@@ -260,6 +260,59 @@ class UNet(nn.Module):
         # ----------------------------------------------------------
         return(y)
 
+
+
+class UNET_3D_2D(nn.Module):
+    def __init__(self,input_channel, residual_layer=False,final_2dchannels=0):
+        super(UNET_3D_2D, self).__init__()
+
+        self.final_2dchannels = final_2dchannels
+        self.residual_layer = residual_layer
+        list_3d_channels=[input_channel, 16, 32, 64, 64, 1]
+
+        sequence_3D = []
+
+        for c in range(len(list_3d_channels)-1):
+            sequence_3D.append(nn.Conv2d(in_channels=list_3d_channels[c],
+                                         out_channels=list_3d_channels[c+1],
+                                         kernel_size=(3,3,3),
+                                         stride=(1,1,1),
+                                         padding = 1))
+            sequence_3D.append(nn.InstanceNorm3d(list_3d_channels[c + 1]))
+            sequence_3D.append(nn.ReLU())
+
+        self.sequence_3D = nn.Sequential(*sequence_3D)
+
+        sequence_2D = []
+
+        for c in range(5):
+            sequence_2D.append(nn.Conv2d(in_channels=final_2dchannels,
+                                         out_channels=final_2dchannels,
+                                         kernel_size=(3,3),
+                                         stride=(1,1),
+                                         padding = 1))
+            sequence_2D.append(nn.InstanceNorm2d(final_2dchannels))
+            sequence_2D.append(nn.ReLU())
+
+        self.sequence_2D = nn.Sequential(*sequence_2D)
+
+
+    def forward(self, x):
+        if self.residual_layer:
+            residual = x[:, 1:2,self.final_2dchannels//2,:,:]
+
+        y = self.sequence_3D(x)
+        y = self.sequence_2D(y[:,0,:,:,:])
+
+        if self.residual_layer:
+            return y+residual
+        else:
+            return y
+
+
+
+
+
 class NEncodingLayers(nn.Module):
     def __init__(self, input_channel, ndc,norm,leaky_relu, output_channel=1, blocks = "conv-relu-norm"):
         super(NEncodingLayers, self).__init__()
