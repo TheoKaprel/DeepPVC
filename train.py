@@ -151,7 +151,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         if (params['jean_zay']==False):
                             fig,ax = plt.subplots(len(batch_inputs.keys()),3)
 
-                            i,j=np.random.randint(batch_inputs['PVE_noisy'].shape[0]),16
+                            i,j=np.random.randint(batch_inputs['PVE_noisy'].shape[0]),params['nb_adj_angles']
                             for kk,key in enumerate(batch_inputs.keys()):
                                 ax[kk,0].imshow(batch_inputs[key][i,j,:,:].float().detach().cpu().numpy())
                                 ax[kk,0].set_title(key)

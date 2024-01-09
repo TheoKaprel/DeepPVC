@@ -141,8 +141,8 @@ class ProjToProjDataset(BaseDataset):
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
             if not self.sino:
-                data_PVE_noisy = np.array(data['PVE_att_noisy'][channels[id],:,:],dtype=self.dtype)[invid]
-                data_PVfree = np.array(data['PVfree_att'][proj_i:proj_i+1,:,:],dtype=self.dtype)
+                data_PVE_noisy = np.array(data['PVE_att_noisy'][channels[id],48:208,16:240],dtype=self.dtype)[invid]
+                data_PVfree = np.array(data['PVfree_att'][proj_i:proj_i+1,48:208,16:240],dtype=self.dtype)
             else:
             #sino
                 data_PVE_noisy, data_PVfree = np.array(data['PVE_att_noisy'][:,channels[id],:], dtype=self.dtype).transpose((1,0,2))[invid], np.array(data['PVfree'][:,proj_i:proj_i+1,:], dtype=self.dtype).transpose((1,0,2))
@@ -155,7 +155,7 @@ class ProjToProjDataset(BaseDataset):
 
             if (self.double_model and not self.test):
                 if not self.sino:
-                    data_PVE = np.array(data['PVE_att'][channels[id],:,:],dtype=self.dtype)[invid]
+                    data_PVE = np.array(data['PVE_att'][channels[id],48:208,16:240],dtype=self.dtype)[invid]
                 else:
                 #sino
                     data_PVE = np.array(data['PVE_att'][:,channels[id],:], dtype=self.dtype).transpose((1,0,2))[invid]
@@ -173,8 +173,7 @@ class ProjToProjDataset(BaseDataset):
 
             if self.with_rec_fp:
                 if not self.sino:
-                    # rec_fp = np.array(data['rec_fp'][proj_i:proj_i+1,:,:],dtype=self.dtype)
-                    rec_fp = np.array(data['rec_fp_att'][channels[id], :, :], dtype=self.dtype)[invid]
+                    rec_fp = np.array(data['rec_fp_att'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
                 else:
                 #sino
                     rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = self.dtype).transpose((1,0,2))
@@ -184,12 +183,12 @@ class ProjToProjDataset(BaseDataset):
                 data_inputs['rec_fp'] = rec_fp
 
             if (self.with_lesion and not self.test):
-                lesion_mask = np.array(data['lesion_mask_fp'][proj_i:proj_i+1, :, :], dtype=self.dtype).astype(bool)
+                lesion_mask = np.array(data['lesion_mask_fp'][proj_i:proj_i+1,48:208,16:240], dtype=self.dtype).astype(bool)
                 data_targets['lesion_mask'] = lesion_mask
 
             # (forward_projected) attenuation
             if self.with_att:
-                data_attmap_fp = np.array(data['attmap_fp'][channels[id], :, :], dtype=self.dtype)[invid]
+                data_attmap_fp = np.array(data['attmap_fp'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
                 data_inputs['attmap_fp'] = data_attmap_fp
 
 
@@ -274,28 +273,27 @@ class SinoToSinoDataset(BaseDataset):
 
             data_inputs, data_targets={}, {}
 
-            data_targets['PVfree'] = np.array(data['PVfree_att'],dtype=self.dtype)
+            data_targets['PVfree'] = np.array(data['PVfree_att'][:,48:208,16:240],dtype=self.dtype)
 
             if (self.double_model and not self.test):
-                data_PVE = np.array(data['PVE_att'], dtype=self.dtype)
-                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'], dtype=self.dtype)
+                data_PVE = np.array(data['PVE_att'][:,48:208,16:240], dtype=self.dtype)
+                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'][:,48:208,16:240], dtype=self.dtype)
                 data_targets['PVE'] = data_PVE
             else:
-                data_PVE_noisy = np.array(data['PVE_att_noisy'], dtype=self.dtype)
-                data_inputs['PVE_noisy'] = data_PVE_noisy
+                data_inputs['PVE_noisy'] = np.array(data['PVE_att_noisy'][:,48:208,16:240], dtype=self.dtype)
+
 
             if self.with_rec_fp:
-                data_rec_fp = np.array(data['rec_fp_att'], dtype=self.dtype) # (120,256,256)
-                data_inputs['rec_fp'] = data_rec_fp # ( (120,256,256), (120,256,256) )
+                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,48:208,16:240], dtype=self.dtype) # (120,256,256)
 
             if (self.with_lesion and not self.test):
-                lesion_mask=np.array(data['lesion_mask_fp'], dtype=self.dtype).astype(bool)
-                data_targets['lesion_mask'] = lesion_mask
+                data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,48:208,16:240], dtype=self.dtype).astype(bool)
+
 
             if self.with_att:
                 # (forward_projected) attenuation
-                data_attmap_fp = np.array(data['attmap_fp'], dtype=self.dtype)
-                data_inputs['attmap_fp'] = data_attmap_fp
+                data_inputs['attmap_fp'] = np.array(data['attmap_fp'][:,48:208,16:240], dtype=self.dtype)
+
 
         if (self.dim==2 and not self.test):
             for key in data_inputs.keys():
