@@ -268,12 +268,12 @@ class UNET_3D_2D(nn.Module):
 
         self.final_2dchannels = final_2dchannels
         self.residual_layer = residual_layer
-        list_3d_channels=[input_channel, 16, 32, 64, 64, 1]
+        list_3d_channels=[input_channel, 16, 32, 64, 64,128, 1]
 
         sequence_3D = []
 
         for c in range(len(list_3d_channels)-1):
-            sequence_3D.append(nn.Conv2d(in_channels=list_3d_channels[c],
+            sequence_3D.append(nn.Conv3d(in_channels=list_3d_channels[c],
                                          out_channels=list_3d_channels[c+1],
                                          kernel_size=(3,3,3),
                                          stride=(1,1,1),
@@ -285,7 +285,7 @@ class UNET_3D_2D(nn.Module):
 
         sequence_2D = []
 
-        for c in range(5):
+        for c in range(4):
             sequence_2D.append(nn.Conv2d(in_channels=final_2dchannels,
                                          out_channels=final_2dchannels,
                                          kernel_size=(3,3),
@@ -293,6 +293,15 @@ class UNET_3D_2D(nn.Module):
                                          padding = 1))
             sequence_2D.append(nn.InstanceNorm2d(final_2dchannels))
             sequence_2D.append(nn.ReLU())
+
+        sequence_2D.append(nn.Conv2d(in_channels=final_2dchannels,
+                                     out_channels=1,
+                                     kernel_size=(3, 3),
+                                     stride=(1, 1),
+                                     padding=1))
+        sequence_2D.append(nn.InstanceNorm2d(final_2dchannels))
+        sequence_2D.append(nn.ReLU())
+
 
         self.sequence_2D = nn.Sequential(*sequence_2D)
 
@@ -305,9 +314,9 @@ class UNET_3D_2D(nn.Module):
         y = self.sequence_2D(y[:,0,:,:,:])
 
         if self.residual_layer:
-            return y+residual
+            return (y+residual)[:,None,:,:,:]
         else:
-            return y
+            return y[:,None,:,:,:]
 
 
 
