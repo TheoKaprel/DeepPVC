@@ -56,7 +56,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     network_architecture = params['network']
 
-    torch.backends.cudnn.benchmark=True
+    # torch.backends.cudnn.benchmark=True
     
     output_filename = f"{network_architecture}_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=resume_pth)
@@ -140,7 +140,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
                     print(f' batch_inputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_inputs])}')
                     print(f' batch_ouputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_targets])}')
-                    print(f' unet_denoiser size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in DeepPVEModel.UNet_denoiser.parameters()])}')
+                    # print(f' unet_denoiser size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in DeepPVEModel.UNet_denoiser.parameters()])}')
 
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
@@ -149,17 +149,21 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         if (params['jean_zay']==False):
                             fig,ax = plt.subplots(len(batch_inputs),3)
                             # i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
-                            i,j=np.random.randint(batch_inputs[0].shape[0]),0
+                            i,j=np.random.randint(batch_inputs[0].shape[0]),16
                             for kk in range(len(batch_inputs)):
                                 ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
                                 ax[kk,0].set_title(f'input {kk}')
 
                             for kk in range(len(batch_targets)):
-                                ax[kk,1].imshow(batch_targets[kk][i,j,:,:].float().detach().cpu().numpy())
+                                if kk==1:
+                                    jj=0
+                                else:
+                                    jj=16
+                                ax[kk,1].imshow(batch_targets[kk][i,jj,:,:].float().detach().cpu().numpy())
                                 ax[kk,1].set_title(f'target {kk}')
 
 
-                            ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
+                            ax[0,2].imshow(debug_output[i,0,:,:].float().detach().cpu().numpy())
                             ax[0,2].set_title('output')
                             plt.show()
 

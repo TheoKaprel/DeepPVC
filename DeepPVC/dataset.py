@@ -20,7 +20,8 @@ class BaseDataset(Dataset):
         self.max_nb_data = params['max_nb_data']
         self.test = test
         self.params = params
-        self.double_model=True if params['network']=="unet_denoiser_pvc" else False
+        # self.double_model=True if params['network']=="unet_denoiser_pvc" else False
+        self.double_model=True
 
         self.with_lesion=("lesion" in params["recon_loss"])
 
