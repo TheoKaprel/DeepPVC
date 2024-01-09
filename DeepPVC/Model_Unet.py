@@ -241,11 +241,9 @@ class UNetModel(ModelBase):
             else:
                 del self.truePVE_noisy
 
-        if self.with_lesion:
-            del self.truePVE, self.truePVfree,self.lesion_mask_fp
-        else:
-            del self.truePVE, self.truePVfree
-            del self.lesion_mask_fp
+
+        del self.truePVfree,self.lesion_mask_fp
+
 
         del self.fakePVfree
 
