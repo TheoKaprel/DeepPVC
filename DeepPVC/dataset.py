@@ -20,8 +20,10 @@ class BaseDataset(Dataset):
         self.max_nb_data = params['max_nb_data']
         self.test = test
         self.params = params
-        # self.double_model=True if params['network']=="unet_denoiser_pvc" else False
-        self.double_model=True
+        self.double_model=True if params['network']=="unet_denoiser_pvc" else False
+        # self.double_model=True
+
+        self.with_att = params['with_att']
 
         self.with_lesion=("lesion" in params["recon_loss"])
 
@@ -148,8 +150,8 @@ class ProjToProjDataset(BaseDataset):
                 data_PVfree = self.pad(torch.from_numpy(data_PVfree[None, :, :, :]))[0, :, :, :]
             # end sino
 
-            data_target=(data_PVfree,)
-
+            data_targets, data_inputs = {},{}
+            data_targets['PVfree'] = data_PVfree
 
             if (self.double_model and not self.test):
                 if not self.sino:
@@ -160,14 +162,14 @@ class ProjToProjDataset(BaseDataset):
                     data_PVE = self.pad(torch.from_numpy(data_PVE[None, :, :, :]))[0, :, :, :]
                 # end sino
 
+                data_targets['PVE'] = data_PVE
+
                 if "noise" in self.list_transforms:
                     data_PVE_noisy = self.apply_noise(data_PVE)
 
-                data_inputs = (data_PVE_noisy,)
-                data_target = (data_PVE,)+data_target
-            else:
-                data_inputs = (data_PVE_noisy,)
 
+
+            data_inputs['PVE_noisy'] = data_PVE_noisy
 
             if self.with_rec_fp:
                 if not self.sino:
@@ -179,22 +181,25 @@ class ProjToProjDataset(BaseDataset):
                     rec_fp = self.pad(torch.from_numpy(rec_fp[None, :, :, :]))[0, :, :, :]
                 #end sino
 
-                data_inputs = data_inputs + (rec_fp,)
+                data_inputs['rec_fp'] = rec_fp
 
             if (self.with_lesion and not self.test):
-                lesion_mask = np.array(data['lesion_mask_fp'][channels[id], :, :], dtype=self.dtype)[invid].astype(bool)
-                data_target = data_target+(lesion_mask,)
+                lesion_mask = np.array(data['lesion_mask_fp'][proj_i:proj_i+1, :, :], dtype=self.dtype).astype(bool)
+                data_targets['lesion_mask'] = lesion_mask
 
             # (forward_projected) attenuation
-            data_attmap_fp = np.array(data['attmap_fp'][channels[id], :, :], dtype=self.dtype)[invid]
-            data_inputs = data_inputs + (data_attmap_fp,)
+            if self.with_att:
+                data_attmap_fp = np.array(data['attmap_fp'][channels[id], :, :], dtype=self.dtype)[invid]
+                data_inputs['attmap_fp'] = data_attmap_fp
 
 
-        data_inputs = tuple([torch.from_numpy(u) for u in data_inputs])
-        data_target = tuple([torch.from_numpy(u) for u in data_target])
+        for key in data_inputs.keys():
+            data_inputs[key] = torch.from_numpy(data_inputs[key])
 
+        for key in data_targets.keys():
+            data_targets[key] = torch.from_numpy(data_targets[key])
 
-        return data_inputs, data_target
+        return data_inputs, data_targets
 
 
 class SinoToSinoDataset(BaseDataset):
@@ -266,58 +271,68 @@ class SinoToSinoDataset(BaseDataset):
 
         with h5py.File(self.datasetfn, 'r') as f:
             data = f[self.keys[src_i]]
-            data_target = (np.array(data['PVfree_att'],dtype=self.dtype),)
+
+            data_inputs, data_targets={}, {}
+
+            data_targets['PVfree'] = np.array(data['PVfree_att'],dtype=self.dtype)
 
             if (self.double_model and not self.test):
                 data_PVE = np.array(data['PVE_att'], dtype=self.dtype)
-
-                data_PVE_noisy = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'], dtype=self.dtype)
-                data_inputs = (data_PVE_noisy,)
-                data_target = (data_PVE,)+data_target
+                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'], dtype=self.dtype)
+                data_targets['PVE'] = data_PVE
             else:
                 data_PVE_noisy = np.array(data['PVE_att_noisy'], dtype=self.dtype)
-                data_inputs=(data_PVE_noisy,)
+                data_inputs['PVE_noisy'] = data_PVE_noisy
 
             if self.with_rec_fp:
                 data_rec_fp = np.array(data['rec_fp_att'], dtype=self.dtype) # (120,256,256)
-                data_inputs = data_inputs+(data_rec_fp,) # ( (120,256,256), (120,256,256) )
+                data_inputs['rec_fp'] = data_rec_fp # ( (120,256,256), (120,256,256) )
 
             if (self.with_lesion and not self.test):
                 lesion_mask=np.array(data['lesion_mask_fp'], dtype=self.dtype).astype(bool)
-                data_target = data_target+(lesion_mask,)
+                data_targets['lesion_mask'] = lesion_mask
 
-            # (forward_projected) attenuation
-            data_attmap_fp = np.array(data['attmap_fp'], dtype=self.dtype)
-            data_inputs = data_inputs + (data_attmap_fp,)
+            if self.with_att:
+                # (forward_projected) attenuation
+                data_attmap_fp = np.array(data['attmap_fp'], dtype=self.dtype)
+                data_inputs['attmap_fp'] = data_attmap_fp
 
         if (self.dim==2 and not self.test):
-            data_inputs = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_inputs])
-            data_target = tuple([u[(self.channels_id+proj_i)%self.nb_projs_per_img,:,:] for u in data_target])
+            for key in data_inputs.keys():
+                data_inputs[key] = data_inputs[key][(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
 
+            for key in data_targets.keys():
+                data_targets[key] = data_targets[key][(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
 
         if self.sino:
-            data_inputs = tuple([u.transpose((1,0,2)) for u in data_inputs])
-            data_target = tuple([u.transpose((1,0,2)) for u in data_target])
+            for key in data_inputs.keys():
+                data_inputs[key] = data_inputs[key].transpose((1,0,2))
+            for key in data_targets.keys():
+                data_targets[key] = data_targets[key].transpose((1,0,2))
 
         #--------------------
-        data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
-        data_target = tuple([self.pad(torch.from_numpy(u)) for u in data_target])
+        # data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
+        # data_target = tuple([self.pad(torch.from_numpy(u)) for u in data_target])
         #--------------------
+        for key_inputs in data_inputs.keys():
+            data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
+        for key_targets in data_targets.keys():
+            data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
-        if self.patches:
-            # ----------------------------
-            data_inputs = tuple([
-                data[None,:,:,:]
-                    .unfold(1, self.patch_size[0], self.patch_size[0])
-                    .unfold(2, self.patch_size[1], self.patch_size[1])
-                    .unfold(3, self.patch_size[2], self.patch_size[2])[0,i,j,k,:,:,:] for data in data_inputs])
-            data_target=data_target[None,:,:,:].unfold(1, self.patch_size[0], self.patch_size[0]
-                                                       ).unfold(2, self.patch_size[1], self.patch_size[1]
-                                                                ).unfold(3, self.patch_size[2], self.patch_size[2]
-                                                                         )[0,i,j,k,:,:,:]
-            # ----------------------------
+        # if self.patches:
+        #     # ----------------------------
+        #     data_inputs = tuple([
+        #         data[None,:,:,:]
+        #             .unfold(1, self.patch_size[0], self.patch_size[0])
+        #             .unfold(2, self.patch_size[1], self.patch_size[1])
+        #             .unfold(3, self.patch_size[2], self.patch_size[2])[0,i,j,k,:,:,:] for data in data_inputs])
+        #     data_target=data_target[None,:,:,:].unfold(1, self.patch_size[0], self.patch_size[0]
+        #                                                ).unfold(2, self.patch_size[1], self.patch_size[1]
+        #                                                         ).unfold(3, self.patch_size[2], self.patch_size[2]
+        #                                                                  )[0,i,j,k,:,:,:]
+        #     # ----------------------------
 
-        return data_inputs,data_target
+        return data_inputs,data_targets
 
     def __len__(self):
         return self.len_dataset

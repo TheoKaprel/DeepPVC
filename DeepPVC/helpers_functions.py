@@ -13,27 +13,29 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
     MAE = torch.Tensor([0.]).to(device)
 
     for test_it,(batch_inputs,batch_targets) in enumerate(test_dataloader):
-        batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
-        batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
+        for key_inputs in batch_inputs.keys():
+            batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
+        for key_targets in batch_targets.keys():
+            batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
-        ground_truth=batch_targets[0]
+        ground_truth=batch_targets['PVfree']
 
         with torch.no_grad():
-            norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
-                                                       norm=norm_batch,params=model.params,to_torch=False)
+            # norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            # batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
+            #                                            norm=norm_batch,params=model.params,to_torch=False)
 
             fakePVfree = model.forward(batch_inputs)
-            fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
-                                                                norm=norm_batch,params=model.params,to_numpy=False)
+            # fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
+            #                                                     norm=norm_batch,params=model.params,to_numpy=False)
 
 
         if do_NRMSE:
             MSE_batch = torch.mean((fakePVfree-ground_truth)**2)
-            MSE += MSE_batch.item()*batch_inputs[0].size(0)/nb_testing_data
+            MSE += MSE_batch.item()*batch_inputs['PVE_noisy'].size(0)/nb_testing_data
         if do_NMAE:
             MAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))
-            MAE += MAE_batch.item()*batch_inputs[0].size(0)/nb_testing_data
+            MAE += MAE_batch.item()*batch_inputs['PVE_noisy'].size(0)/nb_testing_data
 
     if do_NRMSE:
         if model.params['jean_zay']:

@@ -121,12 +121,14 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_preopt1=time.time()
             # print(f"Step beggining ", torch.cuda.memory_allocated(device))
 
-            batch_inputs = tuple([input_i.to(device, non_blocking=True) for input_i in batch_inputs])
-            batch_targets = tuple([target_i.to(device, non_blocking=True) for target_i in batch_targets])
+            for key_inputs in batch_inputs.keys():
+                batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
+            for key_targets in batch_targets.keys():
+                batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
-            norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
-            batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            # norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            # batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+            # batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
             # print(f"After batch->gpu ", torch.cuda.memory_allocated(device))
 
@@ -135,11 +137,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 timer_opt1=time.time()
 
                 if (step==0):
-                    print(f'(gpu {rank}) batch_inputs shape : {[batch_input.shape for batch_input in batch_inputs]}')
-                    print(f'(gpu {rank}) batch_tagets shape : {[batch_target.shape for batch_target in batch_targets]}')
-                    print(f'(gpu {rank}) batch type : {batch_inputs[0].dtype}')
-                    print(f' batch_inputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_inputs])}')
-                    print(f' batch_ouputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_targets])}')
+                    print(f'(gpu {rank}) batch_inputs shape : {[(k, v.shape) for (k,v) in batch_inputs.items()]}')
+                    print(f'(gpu {rank}) batch_tagets shape : {[(k, v.shape) for (k,v) in batch_targets.items()]}')
+                    print(f"(gpu {rank}) batch type : {batch_inputs['PVE_noisy'].dtype}")
+                    print(f' batch_inputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_inputs.values()])}')
+                    print(f' batch_targets size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_targets.values()])}')
                     # print(f' unet_denoiser size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in DeepPVEModel.UNet_denoiser.parameters()])}')
 
                     with torch.no_grad():
@@ -147,20 +149,16 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
                         if (params['jean_zay']==False):
-                            fig,ax = plt.subplots(len(batch_inputs),3)
-                            # i,j=np.random.randint(batch_inputs[0].shape[0]), np.random.randint(batch_inputs[0].shape[1])
-                            i,j=np.random.randint(batch_inputs[0].shape[0]),16
-                            for kk in range(len(batch_inputs)):
-                                ax[kk,0].imshow(batch_inputs[kk][i,j,:,:].float().detach().cpu().numpy())
-                                ax[kk,0].set_title(f'input {kk}')
+                            fig,ax = plt.subplots(len(batch_inputs.keys()),3)
 
-                            for kk in range(len(batch_targets)):
-                                if kk==1:
-                                    jj=0
-                                else:
-                                    jj=16
-                                ax[kk,1].imshow(batch_targets[kk][i,jj,:,:].float().detach().cpu().numpy())
-                                ax[kk,1].set_title(f'target {kk}')
+                            i,j=np.random.randint(batch_inputs['PVE_noisy'].shape[0]),16
+                            for kk,key in enumerate(batch_inputs.keys()):
+                                ax[kk,0].imshow(batch_inputs[key][i,j,:,:].float().detach().cpu().numpy())
+                                ax[kk,0].set_title(key)
+
+                            for kk, key in enumerate(batch_targets.keys()):
+                                ax[kk,1].imshow(batch_targets[key][i,0,:,:].float().detach().cpu().numpy())
+                                ax[kk,1].set_title(key)
 
 
                             ax[0,2].imshow(debug_output[i,0,:,:].float().detach().cpu().numpy())
