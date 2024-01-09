@@ -142,22 +142,17 @@ class UNetModel(ModelBase):
         self.losses = losses.UNetLosses(self.losses_params)
 
     def input_data(self, batch_inputs, batch_targets):
-        if self.with_rec_fp:
-            if self.with_att:
-                self.truePVE_noisy,self.true_rec_fp,self.attmap_fp  = batch_inputs
-            else:
-                self.truePVE_noisy,self.true_rec_fp  = batch_inputs
-        else:
-            if self.with_att:
-                self.truePVE_noisy,self.attmap_fp = batch_inputs
-            else:
-                self.truePVE_noisy = batch_inputs[0]
+        self.truePVE_noisy = batch_inputs['PVE_noisy']
+        self.truePVfree = batch_targets['PVfree']
 
+        if self.with_rec_fp:
+            self.true_rec_fp = batch_inputs['rec_fp']
+        if self.with_att:
+            self.attmap_fp = batch_inputs['attmap_fp']
         if self.with_lesion:
-            self.truePVE, self.truePVfree,self.lesion_mask_fp = batch_targets
+            self.lesion_mask_fp = batch_targets['lesion_mask']
         else:
-            self.truePVE, self.truePVfree = batch_targets
-            self.lesion_mask_fp=None
+            self.lesion_mask_fp = None
 
     def forward_unet(self):
         if self.dim==2:
@@ -185,12 +180,14 @@ class UNetModel(ModelBase):
             self.double_optimizer.zero_grad(set_to_none=True)
 
     def forward(self, batch):
-        if self.with_rec_fp:
-            if self.with_att:
-                truePVEnoisy,true_rec_fp,attmap_fp = batch
-            else:
-                truePVEnoisy, true_rec_fp = batch
 
+        truePVEnoisy = batch['PVE_noisy']
+        if self.with_rec_fp:
+            true_rec_fp = batch['rec_fp']
+        if self.with_att:
+            attmap_fp = batch['attmap_fp']
+
+        if self.with_rec_fp:
             # ----------------------------
             if self.dim==2:
                 input = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
@@ -200,11 +197,6 @@ class UNetModel(ModelBase):
                 else:
                     input = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
         else:
-            if self.with_att:
-                truePVEnoisy,attmap_fp = batch
-            else:
-                truePVEnoisy = batch[0]
-
             if self.dim==2:
                 input = batch[0]
             elif self.dim==3:
