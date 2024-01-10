@@ -66,7 +66,7 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
         mean = torch.mean(dataset_or_img, dim=(1, 2, 3))
         norm = [mean]
     elif data_normalisation=="3d_max":
-        max = torch.amax(dataset_or_img[0], dim=(1,2,3), keepdim=False)
+        max = torch.amax(dataset_or_img['rec_fp'], dim=(1,2,3), keepdim=False)
         return [max]
     elif data_normalisation=="3d_mean":
         mean = torch.mean(dataset_or_img[0], dim=(1,2,3), keepdim=False)
@@ -106,10 +106,15 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
         out = dataset_or_img / mean_per_img
     elif data_normalisation=="3d_max":
         max= norm[0]
-        if type(dataset_or_img)==tuple:
-            out = tuple([input_i/max[:,None,None,None] for input_i in dataset_or_img])
-        else:
-            out = dataset_or_img / max[:,None,None,None]
+        for key in dataset_or_img.keys():
+            if key=="attmap_fp":
+                max_attmap = dataset_or_img[key].amax(dim=(1,2,3), keepdim=False)
+                dataset_or_img[key] = dataset_or_img[key]/ max_attmap[:,None,None,None]
+            elif key=="lesion_mask":
+                pass
+            else:
+                dataset_or_img[key] = dataset_or_img[key] / max[:,None,None,None]
+        out = dataset_or_img
     elif data_normalisation=="3d_mean":
         mean= norm[0]
         if type(dataset_or_img)==tuple:
@@ -341,16 +346,14 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
                 if with_att:
                     data_attmap_fp = torch.concatenate((data_attmap_fp,data_attmap_fp_i[None,:,:,:]),dim=0)
 
+
+        data_inputs = {}
+        data_inputs['PVE_noisy'] = data_PVE_noisy
         if with_rec_fp:
-            if with_att:
-                return (data_PVE_noisy, data_rec_fp, data_attmap_fp)
-            else:
-                return (data_PVE_noisy, data_rec_fp)
-        else:
-            if with_att:
-                return (data_PVE_noisy, data_attmap_fp)
-            else:
-                return (data_PVE_noisy,)
+            data_inputs['rec_fp'] = data_rec_fp
+        if with_att:
+            data_inputs['attmap_fp'] = data_attmap_fp
+        return data_inputs
 
     elif params['inputs']=='full_sino':
         sino = params['sino']
@@ -363,20 +366,12 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
             pad = torch.nn.Identity()
 
 
+        data_inputs = {}
+        data_inputs['PVE_noisy'] = data_PVE_noisy
         if with_rec_fp:
-            data_rec_fp = torch.Tensor(input_rec_fp_array[None,:,:,:])
-            data_inputs = (data_PVE_noisy,data_rec_fp)
-        else:
-            data_inputs = (data_PVE_noisy,)
-
+            data_inputs['rec_fp'] = torch.Tensor(input_rec_fp_array[None,:,:,:])
         if with_att:
-            data_attmap_fp = torch.Tensor(attmap_fp_array[None,:,:,:])
-            data_inputs = data_inputs+(data_attmap_fp,)
-
-
-        if sino:
-            data_inputs = tuple([u.transpose((0,2,1,3)) for u in data_inputs])
-            data_inputs = pad(data_inputs)
+            data_inputs['attmap_fp'] = torch.Tensor(attmap_fp_array[None,:,:,:])
         return data_inputs
 
 

@@ -67,36 +67,39 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                                                        input_rec_fp_array=input_rec_fp_array,
                                                        attmap_fp_array=attmap_fp_array)
 
-        print(f'input shape : {[data.shape for data in data_input]}')
-        data_input = tuple([data.to(device) for data in data_input])
+        print(f'input shape :  {[(k, v.shape) for (k,v) in data_input.items()]}')
+        for key in data_input.keys():
+            data_input[key] = data_input[key].to(device)
 
-        data_normalisation = params['data_normalisation']
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
-        if (data_normalisation!='none'):
-            print(f'norm : {norm_input}')
-        normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
-                                                     norm=norm_input, params=model.params, to_torch=False)
+        # data_normalisation = params['data_normalisation']
+        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
+        # if (data_normalisation!='none'):
+        #     print(f'norm : {norm_input}')
+        # normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
+        #                                              norm=norm_input, params=model.params, to_torch=False)
 
-
+        normed_output=np.zeros((data_input['PVE_noisy'].shape[0], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
         if params['inputs']=='projs':
-            normed_output=np.zeros((data_input[0].shape[0], data_input[0].shape[2], data_input[0].shape[3]))
             batch_size = 4
-            for i in range(data_input[0].shape[0]//batch_size):
+            for i in range(data_input['PVE_noisy'].shape[0]//batch_size):
                 print(i)
+                batch={}
+                for key in data_input.keys():
+                    batch[key] = data_input[key][i*batch_size:(i+1)*batch_size,:,48:208,16:240]
 
-                batch=(normed_input[0][i*batch_size:(i+1)*batch_size,:,:,:],normed_input[1][i*batch_size:(i+1)*batch_size,:,:,:], normed_input[2][i*batch_size:(i+1)*batch_size,:,:,:])
-                normed_output[i*batch_size:(i+1)*batch_size,:,:] = model.forward(batch=batch)[:,0,:,:].cpu().numpy()
+                normed_output[i*batch_size:(i+1)*batch_size,48:208,16:240] = model.forward(batch=batch)[:,0,:,:].cpu().numpy()
+
         elif params['inputs']=="full_sino":
 
-            normed_output = model.forward(normed_input)
+            normed_output[:,48:208,16:240] = model.forward(data_input)
 
-        denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
-                                                          data_normalisation=data_normalisation,
-                                                          norm=norm_input, params=model.params, to_numpy=False)
+        # denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
+                                                          # data_normalisation=data_normalisation,
+                                                          # norm=norm_input, params=model.params, to_numpy=False)
 
-        print(f'network output shape : {denormed_output.shape}')
+        print(f'network output shape : {normed_output.shape}')
 
-        output_array = helpers_data.back_to_input_format(params=params,output=denormed_output)
+        output_array = helpers_data.back_to_input_format(params=params,output=normed_output)
         print(f'final output shape : {output_array.shape}')
 
 
