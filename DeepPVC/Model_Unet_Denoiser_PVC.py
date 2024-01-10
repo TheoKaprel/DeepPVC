@@ -338,9 +338,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.mean_unet_denoiser_loss += self.unet_denoiser_loss.item()
         self.mean_unet_pvc_loss += self.unet_pvc_loss.item()
-        print(self.unet_denoiser_loss.item(), self.unet_pvc_loss.item())
         self.current_iteration += 1
-
 
         # self.iter_loss.append((self.unet_denoiser_loss + self.unet_pvc_loss).item())
 
