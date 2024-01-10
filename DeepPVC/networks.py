@@ -55,7 +55,7 @@ class DownSamplingBlock(nn.Module):
                     sequenceDownBlock.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padding))
                     first_conv = True
             elif elmt=="relu":
-                sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val, True))
+                sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
             elif elmt=='pool':
                 sequenceDownBlock.append(pool(kernel_size=kernel_size,stride=stride, padding=padding))
             elif elmt=="norm":
@@ -118,7 +118,7 @@ class UpSamplingBlock(nn.Module):
             elif (elmt=="conv"):
                 sequenceUpBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
             elif (elmt=="relu"):
-                sequenceUpBlock.append(nn.LeakyReLU(leaky_relu_val,True))
+                sequenceUpBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
             elif (elmt=="norm"):
                 sequenceUpBlock.append(norm_layer(output_nc))
 
@@ -154,7 +154,7 @@ def get_activation(activation):
     elif activation == "tanh":
         return nn.Tanh()
     elif activation == "relu":
-        return nn.ReLU()
+        return nn.ReLU(inplace=False)
     elif activation == "softplus":
         return nn.Softplus()
     elif activation == "linear":
