@@ -66,7 +66,7 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
         mean = torch.mean(dataset_or_img, dim=(1, 2, 3))
         norm = [mean]
     elif data_normalisation=="3d_max":
-        max = torch.amax(dataset_or_img[0], dim=(1,2,3), keepdim=False)
+        max = torch.amax(dataset_or_img['rec_fp'], dim=(1,2,3), keepdim=False)
         return [max]
     elif data_normalisation=="3d_mean":
         mean = torch.mean(dataset_or_img[0], dim=(1,2,3), keepdim=False)
@@ -106,10 +106,15 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
         out = dataset_or_img / mean_per_img
     elif data_normalisation=="3d_max":
         max= norm[0]
-        if type(dataset_or_img)==tuple:
-            out = tuple([input_i/max[:,None,None,None] for input_i in dataset_or_img])
-        else:
-            out = dataset_or_img / max[:,None,None,None]
+        for key in dataset_or_img.keys():
+            if key=="attmap_fp":
+                max_attmap = dataset_or_img[key].amax(dim=(1,2,3), keepdim=False)
+                dataset_or_img[key] = dataset_or_img[key]/ max_attmap[:,None,None,None]
+            elif key=="lesion_mask":
+                pass
+            else:
+                dataset_or_img[key] = dataset_or_img[key] / max[:,None,None,None]
+        out = dataset_or_img
     elif data_normalisation=="3d_mean":
         mean= norm[0]
         if type(dataset_or_img)==tuple:

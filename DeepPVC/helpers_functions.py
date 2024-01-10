@@ -21,13 +21,13 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
         ground_truth=batch_targets['PVfree']
 
         with torch.no_grad():
-            # norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            # batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
-            #                                            norm=norm_batch,params=model.params,to_torch=False)
+            norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
+            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
+                                                       norm=norm_batch,params=model.params,to_torch=False)
 
             fakePVfree = model.forward(batch_inputs)
-            # fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
-            #                                                     norm=norm_batch,params=model.params,to_numpy=False)
+            fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
+                                                                norm=norm_batch,params=model.params,to_numpy=False)
 
 
         if do_NRMSE:
