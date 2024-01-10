@@ -108,7 +108,7 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
         max= norm[0]
         for key in dataset_or_img.keys():
             if key=="attmap_fp":
-                max_attmap = dataset_or_img[key].amax(dim=(1,2,3), keepdim=False)
+                max_attmap = torch.amax(dataset_or_img['attmap_fp'], dim=(1, 2, 3), keepdim=False)
                 dataset_or_img[key] = dataset_or_img[key]/ max_attmap[:,None,None,None]
             elif key=="lesion_mask":
                 pass
