@@ -133,6 +133,15 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             # print(f"After batch->gpu ", torch.cuda.memory_allocated(device))
 
+            for key_inputs in batch_inputs.keys():
+                if torch.isnan(batch_inputs[key_inputs]).any():
+                    print(f"/§\ nan in {key_inputs}")
+
+            for key_targets in batch_targets.keys():
+                if torch.isnan(batch_targets[key_targets]).any():
+                    print(f"/§\ nan in {key_targets}")
+
+
             if debug:
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
