@@ -126,7 +126,7 @@ class UpSamplingBlock(nn.Module):
 
         if use_dropout:
             self.use_dropout=True
-            self.dropout = nn.Dropout(0.2,inplace=True)
+            self.dropout = nn.Dropout(0.2,inplace=False)
         else:
             self.use_dropout=False
 
