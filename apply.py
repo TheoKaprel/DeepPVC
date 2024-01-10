@@ -78,21 +78,20 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
         # normed_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
         #                                              norm=norm_input, params=model.params, to_torch=False)
 
-
+        normed_output=np.zeros((data_input['PVE_noisy'].shape[0], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
         if params['inputs']=='projs':
-            normed_output=np.zeros((data_input['PVE_noisy'].shape[0], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
             batch_size = 4
             for i in range(data_input['PVE_noisy'].shape[0]//batch_size):
                 print(i)
                 batch={}
                 for key in data_input.keys():
-                    batch[key] = data_input[key][i*batch_size:(i+1)*batch_size,:,:,:]
+                    batch[key] = data_input[key][i*batch_size:(i+1)*batch_size,:,48:208,16:240]
 
-                normed_output[i*batch_size:(i+1)*batch_size,:,:] = model.forward(batch=batch)[:,0,:,:].cpu().numpy()
+                normed_output[i*batch_size:(i+1)*batch_size,48:208,16:240] = model.forward(batch=batch)[:,0,:,:].cpu().numpy()
 
         elif params['inputs']=="full_sino":
 
-            normed_output = model.forward(data_input)
+            normed_output[:,48:208,16:240] = model.forward(data_input)
 
         # denormed_output = helpers_data.denormalize_eval(dataset_or_img=normed_output,
                                                           # data_normalisation=data_normalisation,
