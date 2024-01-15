@@ -382,7 +382,7 @@ def back_to_input_format(params,output):
         if params['sino']:
             output_array = output_array.transpose((1,0,2))[4:124,:,:]
     elif params['inputs']=="full_sino":
-        output_array = output.cpu().numpy()[0, :, :, :]
+        output_array = output.cpu().numpy().squeeze()
         if params['sino']:
             output_array = output_array.transpose((1,0,2))[4:124,:,:]
     return output_array
