@@ -446,15 +446,12 @@ class UNet_Denoiser_PVC(ModelBase):
             if (new_lr is not None):
                 print(f"NEW LEARNING RATE FOR RESUME TRAINING : {self.learning_rate}")
             else:
-                self.learning_rate = checkpoint['unet_denoiser_opt']['param_groups'][0]['lr']
+                self.learning_rate = checkpoint['double_optimizer']['param_groups'][0]['lr']
 
             self.init_optimization()
             self.init_losses()
-            self.unet_denoiser_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
-            self.unet_pvc_optimizer.load_state_dict(checkpoint['unet_pvc_opt'])
-            for g in self.unet_denoiser_optimizer.param_groups:
-                g['lr'] = self.learning_rate
-            for g in self.unet_pvc_optimizer.param_groups:
+            self.double_optimizer.load_state_dict(checkpoint['double_optimizer'])
+            for g in self.double_optimizer.param_groups:
                 g['lr'] = self.learning_rate
             self.start_epoch = self.current_epoch
 
