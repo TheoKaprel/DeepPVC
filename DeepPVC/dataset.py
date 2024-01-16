@@ -338,12 +338,73 @@ class SinoToSinoDataset(BaseDataset):
     def __getitem__(self, item):
         return self.get_item_h5_full_sino(item)
 
+class ImgToImgDataset(BaseDataset):
+    def __init__(self, params, paths, filetype=None, merged=None, test=False):
+        super().__init__(params, paths, filetype, merged, test)
+
+        self.dim=3
+
+        self.init_h5()
+
+    def init_h5(self):
+        self.datasetfn = self.dataset_path[0]
+        self.dataseth5 = h5py.File(self.datasetfn, 'r')
+        self.keys = sorted(list(self.dataseth5.keys()))
+
+        first_data = np.array(self.dataseth5[self.keys[0]]['rec'],dtype=self.dtype)
+        self.nb_pix_x, self.nb_pix_y, self.nb_pix_z = first_data.shape[0], first_data.shape[1], \
+                                                              first_data.shape[2]
+
+        if (self.max_nb_data > 0 and len(self.keys)> self.max_nb_data):
+            self.keys = self.keys[:int(self.max_nb_data)]
+
+        if (self.params['split_dataset'] and not self.test):
+            self.gpu_id, self.number_gpu = helpers_data_parallelism.get_gpu_id_nb_gpu(jean_zay=self.params['jean_zay'])
+            self.keys = list(np.array_split(self.keys, self.number_gpu)[self.gpu_id])
+
+        if self.verbose > 1:
+            print(f'First : {self.keys[0]}')
+            print(f'Shape : {first_data.shape}')
+        self.nb_src = len(self.keys)
+
+        self.len_dataset = self.nb_src
+
+    def get_item_h5_img_to_img(self, item):
+        src_i=item
+        with h5py.File(self.datasetfn, 'r') as f:
+            data = f[self.keys[src_i]]
+
+            data_inputs, data_targets={}, {}
+
+            data_inputs['rec'] = np.array(data['rec'],dtype=self.dtype)
+            data_inputs['attmap_rec_fp'] = np.array(data['attmap_rec_fp'], dtype=self.dtype)
+
+
+            data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
+
+        for key_inputs in data_inputs.keys():
+            a = np.pad(data_inputs[key_inputs], ((2, 1), (3, 3), (3, 3)), 'constant')
+            data_inputs[key_inputs] = torch.from_numpy(a)
+        for key_targets in data_targets.keys():
+            b = np.pad(data_targets[key_targets], ((2, 1), (3, 3), (3, 3)), 'constant')
+            data_targets[key_targets] = torch.from_numpy(b)
+
+        return data_inputs,data_targets
+
+    def __len__(self):
+        return self.len_dataset
+
+    def __getitem__(self, item):
+        return self.get_item_h5_img_to_img(item)
+
+
 def get_dataset(params, paths,filetype=None,merged=None,test=False):
     if params['inputs']=="full_sino":
         return SinoToSinoDataset(params=params,paths=paths,filetype=filetype,merged=merged,test=test)
     elif params['inputs']=="projs":
         return ProjToProjDataset(params=params,paths=paths,filetype=filetype,merged=merged,test=test)
-
+    elif params['inputs']=="imgs":
+        return ImgToImgDataset(params=params, paths=paths, filetype=filetype, merged=merged, test=test)
 
 def load_data(params):
     jean_zay=params['jean_zay']
