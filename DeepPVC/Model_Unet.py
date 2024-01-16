@@ -46,6 +46,8 @@ class UNetModel(ModelBase):
 
         self.DCNN = params['DCNN'] if 'DCNN' in params else False
 
+        self.img = (params['inputs'] == "imgs")
+
         self.attention = False if 'attention' not in params else params['attention']
 
         if from_pth:
@@ -93,7 +95,7 @@ class UNetModel(ModelBase):
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer
                                       ).to(device=self.device)
-        elif True:
+        elif False:
             self.UNet = networks.UNET_3D_2D(input_channel=self.input_channels,residual_layer=self.residual_layer,
                                             final_2dchannels=2*self.params['nb_adj_angles']).to(device=self.device)
         else:
@@ -142,13 +144,13 @@ class UNetModel(ModelBase):
         self.losses = losses.UNetLosses(self.losses_params)
 
     def input_data(self, batch_inputs, batch_targets):
-        self.truePVE_noisy = batch_inputs['PVE_noisy']
-        self.truePVfree = batch_targets['PVfree']
+        self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img==False) else batch_inputs['rec']
+        self.truePVfree = batch_targets['PVfree'] if (self.img==False) else batch_targets['src_4mm']
 
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
-            self.attmap_fp = batch_inputs['attmap_fp']
+            self.attmap_fp = batch_inputs['attmap_fp'] if (self.img==False) else batch_inputs['attmap_rec_fp']
         if self.with_lesion:
             self.lesion_mask_fp = batch_targets['lesion_mask']
         else:
@@ -181,11 +183,11 @@ class UNetModel(ModelBase):
 
     def forward(self, batch):
 
-        truePVEnoisy = batch['PVE_noisy']
+        truePVEnoisy = batch['PVE_noisy'] if (self.img==False) else batch['rec']
         if self.with_rec_fp:
             true_rec_fp = batch['rec_fp']
         if self.with_att:
-            attmap_fp = batch['attmap_fp']
+            attmap_fp = batch['attmap_fp'] if (self.img==False) else batch['attmap_rec_fp']
 
         if self.with_rec_fp:
             # ----------------------------

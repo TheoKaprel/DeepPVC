@@ -98,6 +98,8 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                 batch[key] = data_input[key][:,:,48:208,16:240]
 
             output[:,48:208,16:240] = model.forward(batch)
+        elif params['inputs']=="imgs":
+            output=model.forward(data_input)
 
         output = helpers_data.denormalize_eval(dataset_or_img=output,
                                                           data_normalisation=data_normalisation,
