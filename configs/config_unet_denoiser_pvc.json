@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf_img.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf_img.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf.h5"],
   "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
@@ -9,9 +9,9 @@
   "num_workers": 4,
   "datatype": "h5",
   "dtype": "float",
-  "with_rec_fp": false,
+  "with_rec_fp": true,
   "with_att": true,
-  "inputs": "imgs",
+  "inputs": "full_sino",
   "sino": false,
   "input_eq_angles": 1,
   "with_adj_angles": true,
@@ -19,18 +19,18 @@
   "dim": "3d",
 
   "max_nb_data": 5,
-  "training_batchsize":5,
-  "test_batchsize":5,
-  "data_augmentation": ["noise"],
-  "data_normalisation": "none",
+  "training_batchsize":1,
+  "test_batchsize":1,
+  "data_augmentation": ["noise", "rot"],
+  "data_normalisation": "3d_max",
   "pad": "none",
   "amp": true,
   "verbose": 2,
 
-  "network": "unet",
+  "network": "unet_denoiser_pvc",
 
-  "n_epochs":50,
-  "learning_rate":0.0001,
+  "n_epochs":30,
+  "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.5, 100],
   "early_stopping": false,
 
@@ -53,8 +53,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 3,
-  "hidden_channels_unet":8  ,
+  "nb_ed_layers": 2,
+  "hidden_channels_unet":2,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]

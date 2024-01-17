@@ -204,8 +204,6 @@ class ProjToProjDataset(BaseDataset):
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
-        self.sino = params['sino']
-
         if params['pad']=="zero":
             self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if self.sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
         else:
@@ -302,16 +300,13 @@ class SinoToSinoDataset(BaseDataset):
             for key in data_targets.keys():
                 data_targets[key] = data_targets[key][(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
 
-        if self.sino:
-            for key in data_inputs.keys():
-                data_inputs[key] = data_inputs[key].transpose((1,0,2))
-            for key in data_targets.keys():
-                data_targets[key] = data_targets[key].transpose((1,0,2))
+        if "rot" in self.list_transforms:
+            random_proj_index=np.random.randint(self.nb_projs_per_img)
+            for key_inputs in data_inputs.keys():
+                data_inputs[key_inputs] = np.roll(data_inputs[key_inputs], -random_proj_index,axis=0)
+            for key_targets in data_targets.keys():
+                data_targets[key_targets] = np.roll(data_targets[key_targets], -random_proj_index,axis=0)
 
-        #--------------------
-        # data_inputs=tuple([self.pad(torch.from_numpy(u)) for u in data_inputs])
-        # data_target = tuple([self.pad(torch.from_numpy(u)) for u in data_target])
-        #--------------------
         for key_inputs in data_inputs.keys():
             data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
         for key_targets in data_targets.keys():
