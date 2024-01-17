@@ -158,11 +158,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                                 ax[kk,0].set_title(key)
 
                             for kk, key in enumerate(batch_targets.keys()):
-                                ax[kk,1].imshow(batch_targets[key][i,0,:,:].float().detach().cpu().numpy())
+                                ax[kk,1].imshow(batch_targets[key][i,j,:,:].float().detach().cpu().numpy())
                                 ax[kk,1].set_title(key)
 
 
-                            ax[0,2].imshow(debug_output[i,0,:,:].float().detach().cpu().numpy())
+                            ax[0,2].imshow(debug_output[i,j,:,:].float().detach().cpu().numpy())
                             ax[0,2].set_title('output')
                             plt.show()
 
