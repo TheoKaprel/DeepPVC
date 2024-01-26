@@ -48,6 +48,8 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.attention = False if 'attention' not in params else params['attention']
 
+        self.denoise = params['denoise'] if "denoise" in params else True
+
         if from_pth:
             self.for_training=False
             self.init_model()
@@ -231,7 +233,10 @@ class UNet_Denoiser_PVC(ModelBase):
     def backward_double_unet(self):
         # double_loss = self.unet_denoiser_loss + self.unet_pvc_loss
         if self.amp:
-            self.scaler.scale(self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+            if self.denoise:
+                self.scaler.scale(self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+            else:
+                self.scaler.scale(self.unet_pvc_loss).backward()
             # if (self.current_iteration%3==0):
             self.scaler.step(self.double_optimizer)
             self.scaler.update()
@@ -331,12 +336,14 @@ class UNet_Denoiser_PVC(ModelBase):
 
         with autocast(enabled=self.amp, dtype=torch.float16):
             self.forward_unet_denoiser()
-            self.losses_unet_denoiser()
+            if self.denoise:
+                self.losses_unet_denoiser()
             self.forward_unet_pvc()
             self.losses_unet_pvc()
         self.backward_double_unet()
 
-        self.mean_unet_denoiser_loss += self.unet_denoiser_loss.item()
+        if self.denoise:
+            self.mean_unet_denoiser_loss += self.unet_denoiser_loss.item()
         self.mean_unet_pvc_loss += self.unet_pvc_loss.item()
         self.current_iteration += 1
 

@@ -17,6 +17,7 @@
   "with_adj_angles": true,
   "nb_adj_angles": 16,
   "dim": "3d",
+  "denoise": false,
 
   "max_nb_data": 5,
   "training_batchsize":1,
