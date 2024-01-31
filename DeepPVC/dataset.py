@@ -214,6 +214,11 @@ class SinoToSinoDataset(BaseDataset):
         elif self.params['dim']=="3d":
             self.dim=3
 
+        if "finetuning" in params and params['finetuning']:
+            self.key_PVE_noisy = "gagarf_SC"
+        else:
+            self.key_PVE_noisy = "PVE_att_noisy"
+
         self.patches=params['patches']
         self.init_h5()
 
@@ -222,7 +227,7 @@ class SinoToSinoDataset(BaseDataset):
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
         self.keys = sorted(list(self.dataseth5.keys()))
 
-        first_data = np.array(self.dataseth5[self.keys[0]]['PVE_att_noisy'],dtype=self.dtype)
+        first_data = np.array(self.dataseth5[self.keys[0]][self.key_PVE_noisy],dtype=self.dtype)
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
                                                               first_data.shape[2]
 
@@ -275,10 +280,10 @@ class SinoToSinoDataset(BaseDataset):
 
             if (self.double_model and not self.test):
                 data_PVE = np.array(data['PVE_att'][:,48:208,16:240], dtype=self.dtype)
-                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data['PVE_att_noisy'][:,48:208,16:240], dtype=self.dtype)
+                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data[self.key_PVE_noisy][:,48:208,16:240], dtype=self.dtype)
                 data_targets['PVE'] = data_PVE
             else:
-                data_inputs['PVE_noisy'] = np.array(data['PVE_att_noisy'][:,48:208,16:240], dtype=self.dtype)
+                data_inputs['PVE_noisy'] = np.array(data[self.key_PVE_noisy][:,48:208,16:240], dtype=self.dtype)
 
 
             if self.with_rec_fp:
