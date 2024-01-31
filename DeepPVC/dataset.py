@@ -444,6 +444,7 @@ def load_data(params):
                                   sampler=test_sampler)
 
     if ("validation_dataset_path" in params):
+        params['finetuning']=False # FIXME tmp because no gagarf_SC data for validation dataset yet
         validation_dataset = get_dataset(params=params, paths=params['validation_dataset_path'], test=True)
         val_batchsize = params['test_batchsize']
 
