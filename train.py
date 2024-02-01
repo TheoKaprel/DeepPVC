@@ -150,7 +150,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
                         if (params['jean_zay']==False):
-                            fig,ax = plt.subplots(len(batch_inputs.keys()),3)
+                            fig,ax = plt.subplots(max(len(batch_inputs.keys()),len(batch_targets.keys())),3)
 
                             i,j=np.random.randint(batch_inputs['PVE_noisy'].shape[0]),params['nb_adj_angles']
                             for kk,key in enumerate(batch_inputs.keys()):
