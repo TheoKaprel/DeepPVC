@@ -66,7 +66,10 @@ def compute_norm_eval(dataset_or_img, data_normalisation):
         mean = torch.mean(dataset_or_img, dim=(1, 2, 3))
         norm = [mean]
     elif data_normalisation=="3d_max":
-        max = torch.amax(dataset_or_img['rec_fp'], dim=(1,2,3), keepdim=False)
+        if "rec_fp" in dataset_or_img.keys():
+            max = torch.amax(dataset_or_img['rec_fp'], dim=(1,2,3), keepdim=False)
+        else:
+            max = torch.amax(dataset_or_img['PVE_noisy'], dim=(1,2,3), keepdim=False)
         return [max]
     elif data_normalisation=="3d_mean":
         mean = torch.mean(dataset_or_img[0], dim=(1,2,3), keepdim=False)
