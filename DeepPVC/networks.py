@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch import Tensor
 from torch.nn import functional as F
 from torch.cuda.amp import custom_fwd
+from . import networks_attention_cbam
 
 class DownSamplingBlock(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (3,3), stride = (2,2), padding = 1,
@@ -187,13 +188,16 @@ class UNet(nn.Module):
 
         if paths:
             self.paths=True
-            nb_channels_per_paths = 8
-            self.inital_paths = nn.Sequential(*[
-                                    nn.Sequential(*[conv(1,nb_channels_per_paths,kernel_size=init_feature_kernel_size,stride=init_feature_stride, padding=init_feature_padding),
-                                                    nn.InstanceNorm3d(1),
-                                                    nn.ReLU()])
-                                                    for _ in range(self.input_channels)])
-            input_channel = self.input_channels * nb_channels_per_paths
+
+            self.inital_paths = nn.Sequential(*[networks_attention_cbam.CBAM(120, reduction = 8) for _ in range(self.input_channels)])
+
+            # nb_channels_per_paths = 8
+            # self.inital_paths = nn.Sequential(*[
+            #                         nn.Sequential(*[conv(1,nb_channels_per_paths,kernel_size=init_feature_kernel_size,stride=init_feature_stride, padding=init_feature_padding),
+            #                                         nn.InstanceNorm3d(1),
+            #                                         nn.ReLU()])
+            #                                         for _ in range(self.input_channels)])
+            # input_channel = self.input_channels * nb_channels_per_paths
         else:
             self.paths = False
 
@@ -243,7 +247,8 @@ class UNet(nn.Module):
             # different inital paths
             x_=[]
             for c in range(x.shape[1]):
-                x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
+                # x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
+                x_.append(self.inital_paths[c](x[:,c,:,:,:])[:,None,:,:,:])
             x = torch.concatenate(x_, dim=1)
 
 
