@@ -162,7 +162,7 @@ def get_activation(activation):
 
 
 class UNet(nn.Module):
-    def __init__(self,input_channel, ngc,init_feature_kernel,
+    def __init__(self,input_channel, ngc,init_feature_kernel, paths,
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=False, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
                  dim=2,final_2dconv=False, final_2dchannels=0):
@@ -171,7 +171,6 @@ class UNet(nn.Module):
         self.ResUnet = ResUnet
         self.input_channels = input_channel
         self.output_channels = output_channel
-
 
         if dim==2:
             self.dim = 2
@@ -186,6 +185,17 @@ class UNet(nn.Module):
 
         block_e,block_d = blocks[0], blocks[1]
 
+        if paths:
+            self.paths=True
+            nb_channels_per_paths = 8
+            self.inital_paths = nn.Sequential(*[
+                                    nn.Sequential(*[conv(1,nb_channels_per_paths,kernel_size=init_feature_kernel_size,stride=init_feature_stride, padding=init_feature_padding),
+                                                    nn.InstanceNorm3d(1),
+                                                    nn.ReLU()])
+                                                    for _ in range(self.input_channels)])
+            input_channel = self.input_channels * nb_channels_per_paths
+        else:
+            self.paths = False
 
         self.init_feature = conv(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=init_feature_stride, padding = init_feature_padding)
 
@@ -228,6 +238,14 @@ class UNet(nn.Module):
                 residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
             elif self.dim==3:
                 residual = x[:, 1:(1+self.output_channels),:,:,:] if self.input_channels != self.output_channels else x
+
+        if self.paths:
+            # different inital paths
+            x_=[]
+            for c in range(x.shape[1]):
+                x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
+            x = torch.concatenate(x_, dim=1)
+
 
         # ----------------------------------------------------------
         #first feature extraction

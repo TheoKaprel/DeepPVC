@@ -50,6 +50,8 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.denoise = params['denoise'] if "denoise" in params else True
 
+        self.paths= params['paths'] if "paths" in params else False
+
         if from_pth:
             self.for_training=False
             self.init_model()
@@ -106,7 +108,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=self.residual_layer
                                       ).to(device=self.device)
         else:
-            self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+            self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
                                     dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
@@ -114,7 +116,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                                final_2dconv=False).to(device=self.device)
-            self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+            self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
