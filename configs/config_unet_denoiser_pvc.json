@@ -18,7 +18,7 @@
   "nb_adj_angles": 16,
   "dim": "3d",
   "denoise": true,
-  "paths": true,
+  "paths": false,
   "finetuning": false,
 
   "max_nb_data": 5,
@@ -26,7 +26,7 @@
   "test_batchsize":1,
   "data_augmentation": ["noise"],
   "data_normalisation": "3d_max",
-  "pad": "none",
+  "pad": "circular",
   "amp": true,
   "verbose": 2,
 

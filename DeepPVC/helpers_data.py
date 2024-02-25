@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset,DataLoader, TensorDataset
 
+from . import dataset as pvc_dataset
 
 def compute_norm(dataset, data_normalisation):
     if ("global" not in data_normalisation):
@@ -362,10 +363,12 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
     elif params['inputs']=='full_sino':
         sino = params['sino']
         nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1],input_PVE_noisy_array.shape[2]
-        data_PVE_noisy = torch.Tensor(input_PVE_noisy_array[None,:,:,:])
+        data_PVE_noisy = torch.from_numpy(input_PVE_noisy_array)
 
         if params['pad']=="zero":
             pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
+        elif params['pad']=="circular":
+            pad = pvc_dataset.cirular_pad
         else:
             pad = torch.nn.Identity()
 
@@ -373,9 +376,14 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         data_inputs = {}
         data_inputs['PVE_noisy'] = data_PVE_noisy
         if with_rec_fp:
-            data_inputs['rec_fp'] = torch.Tensor(input_rec_fp_array[None,:,:,:])
+            data_inputs['rec_fp'] = torch.from_numpy(input_rec_fp_array)
         if with_att:
-            data_inputs['attmap_fp'] = torch.Tensor(attmap_fp_array[None,:,:,:])
+            data_inputs['attmap_fp'] = torch.from_numpy(attmap_fp_array)
+
+        for key_inputs in data_inputs.keys():
+            data_inputs[key_inputs] = pad(data_inputs[key_inputs])[None,:,:,:]
+
+
         return data_inputs
 
     elif params['inputs']=="imgs":

@@ -91,13 +91,16 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                 output[i*batch_size:(i+1)*batch_size,48:208,16:240] = model.forward(batch=batch)[:,0,:,:].cpu().numpy()
 
         elif params['inputs']=="full_sino":
-            output = torch.zeros((data_input['PVE_noisy'].shape[1], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
+            output = torch.zeros((input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[2]))
 
             batch = {}
             for key in data_input.keys():
                 batch[key] = data_input[key][:,:,48:208,16:240]
 
-            output[:,48:208,16:240] = model.forward(batch)
+            if params['pad']=="circular":
+                output[:,48:208,16:240] = model.forward(batch)[0,4:124,:,:]
+            else:
+                output[:,48:208,16:240] = model.forward(batch)
         elif params['inputs']=="imgs":
             output=model.forward(data_input)
 
