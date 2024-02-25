@@ -200,12 +200,19 @@ class ProjToProjDataset(BaseDataset):
 
         return data_inputs, data_targets
 
+def cirular_pad(input):
+    input_t = input.transpose(0,2)
+    input_t_p = torch.nn.functional.pad(input_t,(4,4), mode='circular')
+    input_t_p_t = input_t_p.transpose(0,2)
+    return input_t_p_t
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
         if params['pad']=="zero":
             self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if self.sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
+        elif params['pad']=='circular':
+            self.pad = cirular_pad
         else:
             self.pad = torch.nn.Identity()
 
