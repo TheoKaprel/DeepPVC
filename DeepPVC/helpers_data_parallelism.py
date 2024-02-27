@@ -25,7 +25,7 @@ def init_data_parallelism(model):
 def get_dataloader_params(dataset,jean_zay,split_dataset):
     if jean_zay:
         import idr_torch
-        pin_memory = False
+        pin_memory = True
         number_gpu = idr_torch.size
         if split_dataset:
             sampler=None
