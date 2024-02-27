@@ -32,7 +32,7 @@ def get_dataloader_params(dataset,jean_zay,split_dataset):
             shuffle=True
         else:
             sampler = torch.utils.data.distributed.DistributedSampler(dataset,
-                                                                        shuffle=True,
+                                                                        shuffle=False,
                                                                         num_replicas=idr_torch.size,
                                                                         rank=idr_torch.rank)
             shuffle = False
