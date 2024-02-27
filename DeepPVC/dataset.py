@@ -235,7 +235,7 @@ class SinoToSinoDataset(BaseDataset):
     def init_h5(self):
         self.datasetfn = self.dataset_path[0]
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
-        self.keys = np.array(sorted(list(self.dataseth5.keys())))
+        self.keys = np.array(sorted(list(self.dataseth5.keys()))).astype(np.string_)
 
         first_data = np.array(self.dataseth5[self.keys[0]][self.key_PVE_noisy],dtype=self.dtype)
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
