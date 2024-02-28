@@ -214,7 +214,10 @@ class CircularPadSino(torch.nn.Module):
         self.pad = pad
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        return torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]))
+        if input.dim()==3:
+            return torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]),dim=0)
+        elif input.dim()==4:
+            return torch.cat((input[:,-self.pad:,:,:], input, input[:,:self.pad,:,:]),dim=1)
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
@@ -329,10 +332,10 @@ class SinoToSinoDataset(BaseDataset):
             for key_targets in data_targets.keys():
                 data_targets[key_targets] = np.roll(data_targets[key_targets], -random_proj_index,axis=0)
 
-        for key_inputs in data_inputs.keys():
-            data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
-        for key_targets in data_targets.keys():
-            data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
+        # for key_inputs in data_inputs.keys():
+        #     data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
+        # for key_targets in data_targets.keys():
+        #     data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
         # if self.patches:
         #     # ----------------------------

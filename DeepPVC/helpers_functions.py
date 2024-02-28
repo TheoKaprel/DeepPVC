@@ -20,6 +20,11 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
         for key_targets in batch_targets.keys():
             batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
+        for key_inputs in batch_inputs.keys():
+            batch_inputs[key_inputs] = test_dataloader.dataset.pad(batch_inputs[key_inputs])
+        for key_targets in batch_targets.keys():
+            batch_targets[key_targets] = test_dataloader.dataset.pad(batch_targets[key_targets])
+
         ground_truth=batch_targets['PVfree'] if (img==False) else batch_targets['src_4mm']
 
         with torch.no_grad():

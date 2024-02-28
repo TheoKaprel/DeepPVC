@@ -130,6 +130,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             for key_targets in batch_targets.keys():
                 batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
+            for key_inputs in batch_inputs.keys():
+                batch_inputs[key_inputs] = train_dataloader.dataset.pad(batch_inputs[key_inputs])
+            for key_targets in batch_targets.keys():
+                batch_targets[key_targets] = train_dataloader.dataset.pad(batch_targets[key_targets])
+
             norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
             batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
             batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
@@ -175,11 +180,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             del batch_inputs
             del batch_targets
 
-            print(step)
-            current, peak = tracemalloc.get_traced_memory()
-            print(f"{step} : {current:0.2f}, {peak:0.2f}")
 
-            # print(f"After del input data ", torch.cuda.memory_allocated(device))
             DeepPVEModel.optimize_parameters()
 
 
