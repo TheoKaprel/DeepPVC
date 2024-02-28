@@ -208,6 +208,12 @@ class CircularPad(object):
         input_t_p_t = input_t_p.transpose(0, 2)
         return input_t_p_t
 
+class CircularPadSino(object):
+    def __init__(self, pad):
+        self.pad = pad
+    def __call__(self, input):
+        output = torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]))
+        return output
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
@@ -215,7 +221,7 @@ class SinoToSinoDataset(BaseDataset):
         if params['pad']=="zero":
             self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if self.sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
         elif params['pad']=='circular':
-            self.pad = CircularPad()
+            self.pad = CircularPadSino(4)
         else:
             self.pad = torch.nn.Identity()
 
