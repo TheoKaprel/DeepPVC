@@ -208,12 +208,13 @@ class CircularPad(object):
         input_t_p_t = input_t_p.transpose(0, 2)
         return input_t_p_t
 
-class CircularPadSino(object):
-    def __init__(self, pad):
+class CircularPadSino(torch.nn.Module):
+    def __init__(self, pad: int) -> None:
+        super().__init__()
         self.pad = pad
-    def __call__(self, input):
-        output = torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]))
-        return output
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]))
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
