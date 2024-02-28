@@ -368,7 +368,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         if params['pad']=="zero":
             pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
         elif params['pad']=="circular":
-            pad = pvc_dataset.cirular_pad
+            pad = pvc_dataset.CircularPadSino(4)
         else:
             pad = torch.nn.Identity()
 
