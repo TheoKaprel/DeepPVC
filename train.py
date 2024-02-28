@@ -9,6 +9,9 @@ import click
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 
+import tracemalloc
+
+
 from DeepPVC import dataset, Model_instance
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
 
@@ -47,7 +50,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     verbose=params['verbose']
 
     print(f"Initial mem ", torch.cuda.memory_allocated("cuda:0"))
-
+    tracemalloc.start()
 
     # Update parameters specified in command line
     user_param_list = helpers_params.format_list_option(user_params=user_param_list)
@@ -171,6 +174,10 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
             del batch_inputs
             del batch_targets
+
+            print(step)
+            current, peak = tracemalloc.get_traced_memory()
+            print(f"{step} : {current:0.2f}, {peak:0.2f}")
 
             # print(f"After del input data ", torch.cuda.memory_allocated(device))
             DeepPVEModel.optimize_parameters()
