@@ -52,10 +52,7 @@ class ModelBase(torch.nn.Module):
             else:
                 self.input_channels = 2 if params['with_rec_fp'] else 1
 
-            if self.params['inputs']=="projs":
-                self.output_channels = self.output_channels_denoiser = 1
-            else:
-                self.output_channels = self.output_channels_denoiser = 1
+            self.output_channels = self.output_channels_denoiser = 1
 
 
         self.with_lesion=("lesion" in params['recon_loss'])

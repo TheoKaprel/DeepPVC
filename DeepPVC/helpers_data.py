@@ -387,14 +387,17 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         return data_inputs
 
     elif params['inputs']=="imgs":
-        a = np.pad(input_PVE_noisy_array, ((8, 8), (3, 3), (3, 3)), 'constant')
-        data_PVE_noisy = torch.Tensor(a[None,:,:,:])
+        if params['pad']=="zero":
+            pad = pvc_dataset.ZeroPadImgs(112)
+        else:
+            pad = torch.nn.Identity()
 
+        data_PVE_noisy = pad(torch.from_numpy(input_PVE_noisy_array[None,:,:,:]))
         data_inputs = {}
         data_inputs['rec'] = data_PVE_noisy
         if with_att:
-            b = np.pad(attmap_fp_array, ((8, 8), (3, 3), (3, 3)), 'constant')
-            data_inputs['attmap_rec_fp'] = torch.Tensor(b[None,:,:,:])
+            data_inputs['attmap_rec_fp'] = pad(torch.from_numpy(attmap_fp_array[None,:,:,:]))
+
         return data_inputs
 
 
