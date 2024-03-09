@@ -201,13 +201,6 @@ class ProjToProjDataset(BaseDataset):
         return data_inputs, data_targets
 
 
-class CircularPad(object):
-    def __call__(self, input):
-        input_t = input.transpose(0, 2)
-        input_t_p = torch.nn.functional.pad(input_t, (4, 4), mode='circular')
-        input_t_p_t = input_t_p.transpose(0, 2)
-        return input_t_p_t
-
 class CircularPadSino(torch.nn.Module):
     def __init__(self, pad: int) -> None:
         super().__init__()
@@ -218,6 +211,25 @@ class CircularPadSino(torch.nn.Module):
             return torch.cat((input[-self.pad:,:,:], input, input[:self.pad,:,:]),dim=0)
         elif input.dim()==4:
             return torch.cat((input[:,-self.pad:,:,:], input, input[:,:self.pad,:,:]),dim=1)
+
+class ZeroPadImgs(torch.nn.Module):
+    def __init__(self, size: int) -> None:
+        super().__init__()
+        self.size = size
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        if input.dim()==3:
+            return torch.nn.functional.pad(input, ((self.size - input.shape[2])//2 + (self.size - input.shape[2])%2, (self.size - input.shape[2])//2,
+                                               (self.size - input.shape[1])//2 + (self.size - input.shape[1])%2, (self.size - input.shape[1])//2,
+                                               (self.size - input.shape[0])//2 + (self.size - input.shape[0])%2, (self.size - input.shape[0])//2),
+                                       mode="constant", value=0)
+        elif input.dim()==4:
+            return torch.nn.functional.pad(input, ((self.size - input.shape[3])//2 + (self.size - input.shape[3])%2, (self.size - input.shape[3])//2,
+                                               (self.size - input.shape[2])//2 + (self.size - input.shape[2])%2, (self.size - input.shape[2])//2,
+                                               (self.size - input.shape[1])//2 + (self.size - input.shape[1])%2, (self.size - input.shape[1])//2,
+                                                   0, 0),
+                                           mode="constant", value=0)
+
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
@@ -364,6 +376,11 @@ class ImgToImgDataset(BaseDataset):
 
         self.dim=3
 
+        if params['pad']=="zero":
+            self.pad = ZeroPadImgs(112)
+        else:
+            self.pad = torch.nn.Identity()
+
         self.init_h5()
 
     def init_h5(self):
@@ -398,16 +415,14 @@ class ImgToImgDataset(BaseDataset):
 
             data_inputs['rec'] = np.array(data['rec'],dtype=self.dtype)
             data_inputs['attmap_rec_fp'] = np.array(data['attmap_rec_fp'], dtype=self.dtype)
-
-
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
         for key_inputs in data_inputs.keys():
-            a = np.pad(data_inputs[key_inputs], ((2, 1), (3, 3), (3, 3)), 'constant')
-            data_inputs[key_inputs] = torch.from_numpy(a)
+            # a = np.pad(data_inputs[key_inputs], ((2, 1), (3, 3), (3, 3)), 'constant')
+            data_inputs[key_inputs] = torch.from_numpy(data_inputs[key_inputs])
         for key_targets in data_targets.keys():
-            b = np.pad(data_targets[key_targets], ((2, 1), (3, 3), (3, 3)), 'constant')
-            data_targets[key_targets] = torch.from_numpy(b)
+            # b = np.pad(data_targets[key_targets], ((2, 1), (3, 3), (3, 3)), 'constant')
+            data_targets[key_targets] = torch.from_numpy(data_targets[key_targets])
 
         return data_inputs,data_targets
 

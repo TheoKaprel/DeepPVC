@@ -46,7 +46,10 @@ class UNetModel(ModelBase):
 
         self.DCNN = params['DCNN'] if 'DCNN' in params else False
 
-        self.img = (params['inputs'] == "imgs")
+        self.img_to_img = (params['inputs'] == "imgs")
+
+        self.paths= params['paths'] if "paths" in params else False
+
 
         self.attention = False if 'attention' not in params else params['attention']
 
@@ -106,7 +109,8 @@ class UNetModel(ModelBase):
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
-                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
+                                      paths=self.paths).to(device=self.device)
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
@@ -144,17 +148,16 @@ class UNetModel(ModelBase):
         self.losses = losses.UNetLosses(self.losses_params)
 
     def input_data(self, batch_inputs, batch_targets):
-        self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img==False) else batch_inputs['rec']
-        self.truePVfree = batch_targets['PVfree'] if (self.img==False) else batch_targets['src_4mm']
+        self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img_to_img == False) else batch_inputs['rec']
+        self.truePVfree = batch_targets['PVfree'] if (self.img_to_img == False) else batch_targets['src_4mm']
 
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
-            self.attmap_fp = batch_inputs['attmap_fp'] if (self.img==False) else batch_inputs['attmap_rec_fp']
-        if self.with_lesion:
-            self.lesion_mask_fp = batch_targets['lesion_mask']
-        else:
-            self.lesion_mask_fp = None
+            self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_rec_fp']
+
+        self.lesion_mask_fp = batch_targets['lesion_mask'] if self.with_lesion else None
+
 
     def forward_unet(self):
         if self.dim==2:
@@ -183,11 +186,11 @@ class UNetModel(ModelBase):
 
     def forward(self, batch):
 
-        truePVEnoisy = batch['PVE_noisy'] if (self.img==False) else batch['rec']
+        truePVEnoisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
         if self.with_rec_fp:
             true_rec_fp = batch['rec_fp']
         if self.with_att:
-            attmap_fp = batch['attmap_fp'] if (self.img==False) else batch['attmap_rec_fp']
+            attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_rec_fp']
 
         if self.with_rec_fp:
             # ----------------------------

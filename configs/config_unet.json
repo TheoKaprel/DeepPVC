@@ -1,9 +1,12 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset/"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_dataset/img-to-img/img_to_img_temp.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_dataset/img-to-img/img_to_img_temp.h5"],
+  "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
+  "compile": false,
   "store_dataset": false,
   "split_dataset": false,
+<<<<<<< HEAD
 <<<<<<< HEAD
   "num_workers": 16,
   "datatype": "npy",
@@ -26,25 +29,55 @@
   "max_nb_data": 360,
   "training_batchsize":32,
   "test_batchsize":32,
+=======
+  "num_workers": 4,
+  "datatype": "h5",
+  "dtype": "float",
+  "with_rec_fp": false,
+  "with_att": true,
+  "inputs": "imgs",
+  "sino": false,
+  "input_eq_angles": 1,
+  "with_adj_angles": true,
+  "nb_adj_angles": 16,
+  "dim": "3d",
+  "paths": false,
+  "finetuning": false,
+
+  "max_nb_data": 20,
+  "training_batchsize":2,
+  "test_batchsize":2,
+>>>>>>> ea9523df27dcc867d9fe28eea851e6641772a3b9
   "data_augmentation": [],
-  "data_normalisation": "img_mean",
+  "data_normalisation": "none",
+  "pad": "zero",
   "amp": true,
   "verbose": 2,
 
   "network": "unet",
 
+<<<<<<< HEAD
   "n_epochs":50,
   "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 4],
   "input_eq_angles": 4,
   "with_adj_angles": true,
   "conv3d": false,
+=======
+  "n_epochs": 50,
+  "learning_rate":0.001,
+  "lr_policy": ["multiplicative",0.5, 100],
+  "early_stopping": false,
+
+>>>>>>> ea9523df27dcc867d9fe28eea851e6641772a3b9
   "layer_norm": "inst_norm",
   "use_dropout": true,
   "leaky_relu": 0.02,
-  "ed_blocks": "conv-norm-relu-conv-relu-norm",
+
+  "patches":false,
+  "ed_blocks": ["conv-norm-relu-conv-relu-pool", "convT-norm-relu-conv-relu"],
   "residual_layer": true,
-  "resunet": false,
+  "resunet": true,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
@@ -54,9 +87,10 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "init_feature_kernel": 5,
+  "DCNN": false,
+  "init_feature_kernel": 3,
   "nb_ed_layers": 3,
-  "hidden_channels_unet":32,
+  "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]
