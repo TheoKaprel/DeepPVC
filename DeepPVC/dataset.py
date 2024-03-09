@@ -418,11 +418,9 @@ class ImgToImgDataset(BaseDataset):
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
         for key_inputs in data_inputs.keys():
-            # a = np.pad(data_inputs[key_inputs], ((2, 1), (3, 3), (3, 3)), 'constant')
-            data_inputs[key_inputs] = torch.from_numpy(data_inputs[key_inputs])
+            data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
         for key_targets in data_targets.keys():
-            # b = np.pad(data_targets[key_targets], ((2, 1), (3, 3), (3, 3)), 'constant')
-            data_targets[key_targets] = torch.from_numpy(data_targets[key_targets])
+            data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
         return data_inputs,data_targets
 
