@@ -392,11 +392,11 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         else:
             pad = torch.nn.Identity()
 
-        data_PVE_noisy = pad(torch.from_numpy(input_PVE_noisy_array[None,:,:,:]))
+        data_PVE_noisy = pad(torch.from_numpy(input_PVE_noisy_array[None,:,:,:].astype(np.float32)))
         data_inputs = {}
         data_inputs['rec'] = data_PVE_noisy
         if with_att:
-            data_inputs['attmap_rec_fp'] = pad(torch.from_numpy(attmap_fp_array[None,:,:,:]))
+            data_inputs['attmap_rec_fp'] = pad(torch.from_numpy(attmap_fp_array[None,:,:,:].astype(np.float32)))
 
         return data_inputs
 
