@@ -113,7 +113,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
-                                      norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
+                                      norm=self.layer_norm, residual_layer=1 if self.residual_layer else -1, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                                final_2dconv=False).to(device=self.device)
             self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
@@ -121,7 +121,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
-                                      norm=self.layer_norm, residual_layer=self.residual_layer, blocks=self.ed_blocks,
+                                      norm=self.layer_norm, residual_layer=1 if self.residual_layer else -1, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
 
