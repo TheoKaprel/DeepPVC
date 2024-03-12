@@ -189,7 +189,7 @@ class UNet(nn.Module):
         if paths:
             self.paths=True
 
-            self.inital_paths = nn.Sequential(*[networks_attention_cbam.CBAM(120, reduction = 8) for _ in range(self.input_channels)])
+            self.inital_paths = nn.Sequential(*[networks_attention_cbam.CBAM(112, reduction = 8) for _ in range(self.input_channels)])
 
             # nb_channels_per_paths = 8
             # self.inital_paths = nn.Sequential(*[
@@ -273,7 +273,7 @@ class UNet(nn.Module):
         y = self.final_feature(xy) # output_channel
 
         # # residual
-        if self.residual_layer:
+        if self.residual_layer>=0:
             y += residual
 
         if self.do_final_2d_conv:
