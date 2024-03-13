@@ -156,9 +156,9 @@ def main():
     loss = torch.nn.L1Loss()
 
     print('req grad : ')
-    print(photopeak.requires_grad)
-    photopeak.requires_grad_(True)
-    print(photopeak.requires_grad)
+    print(photopeak_normed.requires_grad)
+    photopeak_normed.requires_grad_(True)
+    print(photopeak_normed.requires_grad)
 
     for k in range(niter):
         print(k)
