@@ -15,8 +15,8 @@ sys.path.append(str(path_root))
 from PVE_data.Analytical_data.parameters import get_psf_params
 
 import pytomography
-from pytomography.transforms import SPECTAttenuationTransform, SPECTPSFTransform
-from pytomography.projectors import SPECTSystemMatrix
+from pytomography.transforms.SPECT import SPECTAttenuationTransform, SPECTPSFTransform
+from pytomography.projectors.SPECT import SPECTSystemMatrix
 from pytomography.metadata.SPECT import SPECTPSFMeta,SPECTProjMeta,SPECTObjectMeta
 
 
