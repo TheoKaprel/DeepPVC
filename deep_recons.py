@@ -72,7 +72,7 @@ def get_system_matrix(projs, attmap,sigma, alpha, sid, nprojs):
     att_transform = SPECTAttenuationTransform(attenuation_map=tpadded)
 
     system_matrix = SPECTSystemMatrix(
-        obj2obj_transforms=[psf_transform],
+        obj2obj_transforms=[att_transform,psf_transform],
         proj2proj_transforms=[],
         object_meta=object_meta,
         proj_meta=proj_meta)
@@ -129,15 +129,15 @@ def main():
     matrix_no_RM,_ = get_system_matrix(projs=projs_itk, attmap=attmap_itk, sigma=0, alpha=0, sid=sid, nprojs=nprojs)
     matrix_RM,photopeak = get_system_matrix(projs=projs_itk, attmap=attmap_itk, sigma=sigma0_psf/10, alpha=alpha_psf, sid=sid, nprojs=nprojs)
 
-    # reconstruction_algorithm = OSEM(
-    #     projections=photopeak,
-    #     system_matrix=matrix_RM)
-    # reconstructed_object = reconstruction_algorithm(n_iters=2, n_subsets=15)
-    # itk.imwrite(itk.image_from_array(reconstructed_object.cpu().numpy()),args.output)
-    # reconstructed_object_fp = matrix_no_RM.forward(reconstructed_object)
-    # print("projections after forward : ")
-    # print(reconstructed_object_fp.shape)
-    # itk.imwrite(itk.image_from_array(reconstructed_object_fp.squeeze().cpu().numpy()),args.output.replace('.mhd', '_fp.mhd'))
+    reconstruction_algorithm = OSEM(
+        projections=photopeak,
+        system_matrix=matrix_RM)
+    reconstructed_object = reconstruction_algorithm(n_iters=niter, n_subsets=15)
+    itk.imwrite(itk.image_from_array(reconstructed_object.cpu().numpy()),args.output)
+    reconstructed_object_fp = matrix_no_RM.forward(reconstructed_object)
+    print("projections after forward : ")
+    print(reconstructed_object_fp.shape)
+    itk.imwrite(itk.image_from_array(reconstructed_object_fp.squeeze().cpu().numpy()),args.output.replace('.mhd', '_fp.mhd'))
 
     # -------------------------------------------------#
     # model
