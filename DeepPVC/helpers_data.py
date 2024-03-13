@@ -363,7 +363,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
     elif params['inputs']=='full_sino':
         sino = params['sino']
         nb_projs_per_img, nb_pix_x, nb_pix_y = input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1],input_PVE_noisy_array.shape[2]
-        data_PVE_noisy = torch.from_numpy(input_PVE_noisy_array)
+        data_PVE_noisy = torch.from_numpy(input_PVE_noisy_array.astype(np.float32))
 
         if params['pad']=="zero":
             pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
@@ -376,9 +376,9 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         data_inputs = {}
         data_inputs['PVE_noisy'] = data_PVE_noisy
         if with_rec_fp:
-            data_inputs['rec_fp'] = torch.from_numpy(input_rec_fp_array)
+            data_inputs['rec_fp'] = torch.from_numpy(input_rec_fp_array.astype(np.float32))
         if with_att:
-            data_inputs['attmap_fp'] = torch.from_numpy(attmap_fp_array)
+            data_inputs['attmap_fp'] = torch.from_numpy(attmap_fp_array.astype(np.float32))
 
         for key_inputs in data_inputs.keys():
             data_inputs[key_inputs] = pad(data_inputs[key_inputs])[None,:,:,:]
