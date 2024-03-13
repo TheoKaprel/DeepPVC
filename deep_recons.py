@@ -3,7 +3,6 @@
 import argparse
 import numpy as np
 import itk
-from itk import RTK as rtk
 
 import torch
 from torch import optim
@@ -15,12 +14,8 @@ path_root = Path(__file__).parents[1]
 sys.path.append(str(path_root))
 from PVE_data.Analytical_data.parameters import get_psf_params
 
-from DeepPVC.networks import UNet
-
-
 import pytomography
 from pytomography.transforms import SPECTAttenuationTransform, SPECTPSFTransform
-from pytomography.algorithms import OSEM,FilteredBackProjection
 from pytomography.projectors import SPECTSystemMatrix
 from pytomography.metadata.SPECT import SPECTPSFMeta,SPECTProjMeta,SPECTObjectMeta
 
