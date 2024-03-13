@@ -124,6 +124,9 @@ def main():
     matrix_no_RM,_ = get_system_matrix(projs=projs_itk, attmap=attmap_itk, sigma=0, alpha=0, sid=sid, nprojs=nprojs)
     matrix_RM,photopeak = get_system_matrix(projs=projs_itk, attmap=attmap_itk, sigma=sigma0_psf/10, alpha=alpha_psf, sid=sid, nprojs=nprojs)
 
+    photopeak_max = photopeak.max()
+    photopeak_normed = photopeak / photopeak_max
+
     # reconstruction_algorithm = OSEM(
     #     projections=photopeak,
     #     system_matrix=matrix_RM)
@@ -165,10 +168,12 @@ def main():
         # loss = loss(projs, recons_corrected_fp)
         # update h
 
-        projs_corrected = unet(photopeak[None,:,:,:,:])[0,:,:,:,:]
+        projs_corrected = unet(photopeak_normed[None,:,:,:,:])[0,:,:,:,:]
+        projs_corrected = projs_corrected * photopeak_max
         recons_corrected = matrix_no_RM.backward(projs_corrected)
         recons_corrected_fp = matrix_RM.forward(recons_corrected)
-        loss_k = loss(recons_corrected_fp, photopeak)
+        recons_corrected_fp_normed = recons_corrected_fp / photopeak_max
+        loss_k = loss(recons_corrected_fp_normed, photopeak_normed)
 
         (loss_k).backward()
         optimizer.step()
