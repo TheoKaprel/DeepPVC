@@ -149,7 +149,7 @@ def main():
 
     #-------------------------------------------------#
     # loss,optimizer
-    optimizer = optim.Adam(unet.parameters(), lr=0.001)
+    optimizer = optim.Adam(unet.parameters(), lr=args.lr)
     loss = torch.nn.L1Loss()
 
     print('req grad : ')
@@ -188,6 +188,7 @@ if __name__ == '__main__':
     parser.add_argument("--attmap")
     parser.add_argument("--spect_system")
     parser.add_argument("--output")
+    parser.add_argument("--lr", type = float, default=0.0001)
     args = parser.parse_args()
 
     main()
