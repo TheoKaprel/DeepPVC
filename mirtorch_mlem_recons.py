@@ -120,11 +120,9 @@ def main():
     A = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
               mumap=attmap_tensor, psfs=psf, dy=dy)
 
-    x0 = torch.ones(nx, ny, nz) # initial uniform image
     # MLEM reconstruction after 20 iterations
     print(f"p shape : {projs_tensor_mir.shape}")
 
-    x0 = x0.to(device)
     projs_tensor_mir = projs_tensor_mir.to(device)
 
     unet = CNN().to(device=device)
