@@ -18,7 +18,7 @@ import pytomography
 from pytomography.transforms.SPECT import SPECTAttenuationTransform, SPECTPSFTransform
 from pytomography.projectors.SPECT import SPECTSystemMatrix
 from pytomography.metadata.SPECT import SPECTPSFMeta,SPECTProjMeta,SPECTObjectMeta
-
+from pytomography.algorithms.preconditioned_gradient_ascent import  OSEM
 
 def get_system_matrix(projs, attmap,sigma, alpha, sid, nprojs):
     print("--------projs meta data-------")
@@ -67,7 +67,7 @@ def get_system_matrix(projs, attmap,sigma, alpha, sid, nprojs):
     att_transform = SPECTAttenuationTransform(attenuation_map=tpadded)
 
     system_matrix = SPECTSystemMatrix(
-        obj2obj_transforms=[att_transform,psf_transform],
+        obj2obj_transforms=[],
         proj2proj_transforms=[],
         object_meta=object_meta,
         proj_meta=proj_meta)
@@ -80,7 +80,8 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         sequence = []
 
-        list_channels = [1, 8, 8, 8, 8, 8, 8]
+        # list_channels = [1, 8, 8, 8, 8, 8, 8]
+        list_channels = [1, 8, 8]
 
         for k in range(len(list_channels)-1):
             sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
@@ -139,7 +140,7 @@ def main():
 
     # -------------------------------------------------#
     # model
-    device = torch.device("cuda")
+    device = torch.device("cpu")
     # unet = UNet(input_channel=1,ngc=2,init_feature_kernel=3,paths=False,output_channel=1,nb_ed_layers=3,
     #             generator_activation="relu", use_dropout=True,leaky_relu=0.2,norm="inst_norm",
     #             residual_layer=0,blocks=("conv-norm-relu-pool", "convT-norm-relu"),ResUnet=False,
@@ -167,18 +168,24 @@ def main():
         # recons_corrected_fp = FP_rm(recons_corrected)
         # loss = loss(projs, recons_corrected_fp)
         # update h
-
+        print(photopeak_normed.grad_fn)
         projs_corrected = unet(photopeak_normed[None,:,:,:,:])[0,:,:,:,:]
+        print(projs_corrected.grad_fn)
         projs_corrected = projs_corrected * photopeak_max
         recons_corrected = matrix_no_RM.backward(projs_corrected)
+        print(recons_corrected.grad_fn)
         recons_corrected_fp = matrix_RM.forward(recons_corrected)
+        print(recons_corrected_fp.grad_fn)
+
         recons_corrected_fp_normed = recons_corrected_fp / photopeak_max
         loss_k = loss(recons_corrected_fp_normed, photopeak_normed)
+        print(loss_k.grad_fn)
 
-        (loss_k).backward()
+
+        loss_k.backward(retain_graph=True)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
-        print(f"loss {k} : {loss_k:.5f}")
+        print(f"loss {k} : {loss_k}")
 
 
     itk.imwrite(itk.image_from_array(recons_corrected.squeeze().cpu().numpy()),args.output)

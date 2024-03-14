@@ -263,6 +263,17 @@ class SinoToSinoDataset(BaseDataset):
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
                                                               first_data.shape[2]
 
+        if ((self.nb_pix_x==256) and (self.nb_pix_y==256)):
+            self.fovi1,self.fovi2 = 48,208
+            self.fovj1,self.fovj2 = 16,240
+        elif ((self.nb_pix_x==128) and (self.nb_pix_y==128)):
+            self.fovi1,self.fovi2 = 24,104
+            self.fovj1,self.fovj2 = 8,120
+        else:
+            print(f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({self.nb_pix_x}x{self.nb_pix_y})")
+            exit(0)
+
+        print(f"fov pixels : {[[self.fovi1,self.fovi2], [self.fovj1,self.fovj2]]}")
 
         if self.patches:
             self.patch_size=(32,64,64)
@@ -308,26 +319,26 @@ class SinoToSinoDataset(BaseDataset):
 
             data_inputs, data_targets={}, {}
 
-            data_targets['PVfree'] = np.array(data['PVfree_att'][:,48:208,16:240],dtype=self.dtype)
+            data_targets['PVfree'] = np.array(data['PVfree_att'][:,:,:],dtype=self.dtype)
 
             if (self.double_model and not self.test):
-                data_PVE = np.array(data['PVE_att'][:,48:208,16:240], dtype=self.dtype)
-                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data[self.key_PVE_noisy][:,48:208,16:240], dtype=self.dtype)
+                data_PVE = np.array(data['PVE_att'][:,:,:], dtype=self.dtype)
+                data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if 'noise' in self.list_transforms else np.array(data[self.key_PVE_noisy][:,:,:], dtype=self.dtype)
                 data_targets['PVE'] = data_PVE
             else:
-                data_inputs['PVE_noisy'] = np.array(data[self.key_PVE_noisy][:,48:208,16:240], dtype=self.dtype)
+                data_inputs['PVE_noisy'] = np.array(data[self.key_PVE_noisy][:,:,:], dtype=self.dtype)
 
 
             if self.with_rec_fp:
-                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,48:208,16:240], dtype=self.dtype) # (120,256,256)
+                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
 
             if (self.with_lesion and not self.test):
-                data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,48:208,16:240], dtype=self.dtype).astype(bool)
+                data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,:,:], dtype=self.dtype).astype(bool)
 
 
             if self.with_att:
                 # (forward_projected) attenuation
-                data_inputs['attmap_fp'] = np.array(data['attmap_fp'][:,48:208,16:240], dtype=self.dtype)
+                data_inputs['attmap_fp'] = np.array(data['attmap_fp'][:,:,:], dtype=self.dtype)
 
 
         if (self.dim==2 and not self.test):
@@ -349,18 +360,11 @@ class SinoToSinoDataset(BaseDataset):
         # for key_targets in data_targets.keys():
         #     data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
-        # if self.patches:
-        #     # ----------------------------
-        #     data_inputs = tuple([
-        #         data[None,:,:,:]
-        #             .unfold(1, self.patch_size[0], self.patch_size[0])
-        #             .unfold(2, self.patch_size[1], self.patch_size[1])
-        #             .unfold(3, self.patch_size[2], self.patch_size[2])[0,i,j,k,:,:,:] for data in data_inputs])
-        #     data_target=data_target[None,:,:,:].unfold(1, self.patch_size[0], self.patch_size[0]
-        #                                                ).unfold(2, self.patch_size[1], self.patch_size[1]
-        #                                                         ).unfold(3, self.patch_size[2], self.patch_size[2]
-        #                                                                  )[0,i,j,k,:,:,:]
-        #     # ----------------------------
+        for key_inputs in data_inputs.keys():
+            data_inputs[key_inputs] = data_inputs[key_inputs][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
+        for key_targets in data_targets.keys():
+            data_targets[key_targets] = data_targets[key_targets][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
+
 
         return data_inputs,data_targets
 

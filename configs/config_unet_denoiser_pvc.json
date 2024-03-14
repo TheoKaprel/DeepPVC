@@ -8,7 +8,7 @@
   "split_dataset": false,
   "num_workers": 4,
   "datatype": "h5",
-  "dtype": "float",
+  "dtype": "float32",
   "with_rec_fp": true,
   "with_att": true,
   "inputs": "full_sino",
