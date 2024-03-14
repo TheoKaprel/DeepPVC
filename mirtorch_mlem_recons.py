@@ -9,7 +9,11 @@ if (host !='siullus'):
 else:
     sys.path.append("/export/home/tkaprelian/Desktop/External_repositories/MIRTorch")
 from mirtorch.linear.spect import SPECT
+
 import torch
+from torch import optim
+import torch.nn as nn
+
 import itk
 import numpy as np
 
@@ -27,7 +31,7 @@ def projs_mir_to_rtk(projs):
         projs_[k,:,:] = projs[k,:,:].transpose()
     return projs_
 
-def mlem(x, p, SPECT_sys, niter=20):
+def mlem(x, p, SPECT_sys, niter):
     asum = SPECT_sys._apply_adjoint(torch.ones_like(p))
     asum[asum == 0] = float('Inf')
     out = torch.clone(x)
@@ -38,6 +42,50 @@ def mlem(x, p, SPECT_sys, niter=20):
         back = SPECT_sys._apply_adjoint(yratio)
         out = torch.multiply(out, torch.div(back, asum))
     return out
+
+def deep_mlem(x, p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
+    # projs_corrected = h(projs)
+    # recons_corrected = BP(projs_corrected)
+    # recons_corrected_fp = FP_rm(recons_corrected)
+    # loss = loss(projs, recons_corrected_fp)
+    # update h
+    for k in range(niter):
+        p_hat = net(p)
+        rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
+        rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
+        loss_k = loss(p, rec_corrected_fp)
+        loss_k.backward(retain_graph=True)
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        print(f"loss {k} : {loss_k}")
+
+    p_hat = net(p)
+    out = SPECT_sys_noRM._apply_adjoint(p_hat)
+    return out
+
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        sequence = []
+
+        list_channels = [1, 8, 8, 8, 8, 8, 8]
+
+        for k in range(len(list_channels)-1):
+            sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
+                                           kernel_size=(3,3,3),stride=(1,1,1),padding=1))
+            sequence.append(nn.ReLU(inplace=True))
+
+        sequence.append(nn.Conv3d(in_channels=list_channels[-1], out_channels=1,
+                                  kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=1))
+
+        self.sequenceCNN = nn.Sequential(*sequence)
+        self.activation= nn.ReLU(inplace=True)
+
+    def forward(self,x):
+        res = x
+        y = self.sequenceCNN(x)
+        y = y + res
+        return self.activation(y)
 
 
 def main():
@@ -79,7 +127,20 @@ def main():
     x0 = x0.to(device)
     projs_tensor_mir = projs_tensor_mir.to(device)
 
-    xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter)
+    unet = CNN().to(device=device)
+    print(unet)
+    nb_params = sum(p.numel() for p in unet.parameters())
+    print(f'NUMBER OF PARAMERS : {nb_params}')
+    # loss,optimizer
+    optimizer = optim.Adam(unet.parameters(), lr=args.lr)
+    loss = torch.nn.L1Loss()
+
+
+    # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
+    xn = deep_mlem(x=x0, p = projs_tensor_mir,
+                   SPECT_sys_RM=A, SPECT_sys_noRM=A,
+                   niter=args.niter,net=unet,
+                   loss = loss,optimizer=optimizer)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
