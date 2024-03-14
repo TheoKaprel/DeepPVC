@@ -43,14 +43,14 @@ def mlem(x, p, SPECT_sys, niter):
         out = torch.multiply(out, torch.div(back, asum))
     return out
 
-def deep_mlem(x, p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
+def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # projs_corrected = h(projs)
     # recons_corrected = BP(projs_corrected)
     # recons_corrected_fp = FP_rm(recons_corrected)
     # loss = loss(projs, recons_corrected_fp)
     # update h
     for k in range(niter):
-        p_hat = net(p)
+        p_hat = net(p[None,None,:,:,:].float())[0,0,:,:,:]
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
         loss_k = loss(p, rec_corrected_fp)
@@ -137,7 +137,7 @@ def main():
 
 
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
-    xn = deep_mlem(x=x0, p = projs_tensor_mir,
+    xn = deep_mlem(p = projs_tensor_mir,
                    SPECT_sys_RM=A, SPECT_sys_noRM=A,
                    niter=args.niter,net=unet,
                    loss = loss,optimizer=optimizer)
@@ -153,6 +153,7 @@ if __name__ == '__main__':
     parser.add_argument("--projs")
     parser.add_argument("--attmap")
     parser.add_argument("--niter", type =int)
+    parser.add_argument("--lr", type =float, default=0.001)
     parser.add_argument("--output")
     args = parser.parse_args()
 
