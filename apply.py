@@ -92,14 +92,25 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
         elif params['inputs']=="full_sino":
             output = torch.zeros((input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[2]))
 
+            if (input_PVE_noisy_array.shape[1]==256):
+                fovi1, fovi2 = 48, 208
+                fovj1, fovj2 = 16, 240
+            elif (input_PVE_noisy_array.shape[1]==128):
+                fovi1, fovi2 = 24, 104
+                fovj1, fovj2 = 8, 120
+            else:
+                print(
+                    f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({self.nb_pix_x}x{self.nb_pix_y})")
+                exit(0)
+
             batch = {}
             for key in data_input.keys():
-                batch[key] = data_input[key][:,:,48:208,16:240]
+                batch[key] = data_input[key][:,:,fovi1:fovi2,fovj1:fovj2]
 
             if params['pad']=="circular":
-                output[:,48:208,16:240] = model.forward(batch)[0,4:124,:,:]
+                output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)[0,4:124,:,:]
             else:
-                output[:,48:208,16:240] = model.forward(batch)
+                output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)
         elif params['inputs']=="imgs":
             output=model.forward(data_input)
 
