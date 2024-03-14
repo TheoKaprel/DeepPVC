@@ -18,7 +18,7 @@ import itk
 import numpy as np
 
 def projs_rtk_to_mir(projs):
-    projs_ = np.zeros((projs.shape[0], projs.shape[2], projs.shape[1]))
+    projs_ = np.zeros((projs.shape[0], projs.shape[2], projs.shape[1]), dtype = projs.dtype)
     for k in range(projs.shape[0]):
         projs_[k,:,:] = projs[k,:,:].transpose()
     projs_ = np.transpose(projs_, (1, 2, 0))
@@ -50,7 +50,7 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # loss = loss(projs, recons_corrected_fp)
     # update h
     for k in range(niter):
-        p_hat = net(p[None,None,:,:,:].float())[0,0,:,:,:]
+        p_hat = net(p[None,None,:,:,:])[0,0,:,:,:]
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
         loss_k = loss(p, rec_corrected_fp)
@@ -133,7 +133,7 @@ def main():
     optimizer = optim.Adam(unet.parameters(), lr=args.lr)
     loss = torch.nn.L1Loss()
 
-
+    print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
     xn = deep_mlem(p = projs_tensor_mir,
                    SPECT_sys_RM=A, SPECT_sys_noRM=A,
