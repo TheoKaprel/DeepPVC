@@ -49,18 +49,24 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # recons_corrected_fp = FP_rm(recons_corrected)
     # loss = loss(projs, recons_corrected_fp)
     # update h
+
+    p_max = p.max()
+    pn = p / p_max
+
     for k in range(niter):
-        p_hat = net(p[None,None,:,:,:])[0,0,:,:,:]
+        p_hatn = net(pn[None,None,:,:,:])[0,0,:,:,:]
+        p_hat = p_hatn * p_max
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
-        loss_k = loss(p, rec_corrected_fp)
+        rec_corrected_fpn = rec_corrected_fp / p_max
+        loss_k = loss(pn, rec_corrected_fpn)
         loss_k.backward(retain_graph=False)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         print(f"loss {k} : {loss_k}")
         del rec_corrected,rec_corrected_fp
 
-    p_hat = net(p)
+    p_hat = net(pn[None,None,:,:,:])[0,0,:,:,:] * p_max
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
     return out
 
