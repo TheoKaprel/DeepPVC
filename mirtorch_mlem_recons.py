@@ -2,7 +2,12 @@
 
 import argparse
 import sys
-sys.path.append("~/Desktop/External_repositories/MIRTorch")
+import os
+host = os.uname()[1]
+if (host !='siullus'):
+    sys.path.append("/linkhome/rech/gencre01/uyo34ub/homeMocamed/WORK/PVE/MIRTorch")
+else:
+    sys.path.append("/export/home/tkaprelian/Desktop/External_repositories/MIRTorch")
 from mirtorch.linear.spect import SPECT
 import torch
 import itk
@@ -39,13 +44,13 @@ def main():
     print(args)
 
     projs = itk.imread(args.projs)
-    projs_array = itk.array_from_image(projs).astype(np.float16)
+    projs_array = itk.array_from_image(projs).astype(np.float32)
     projs_array_mir = projs_rtk_to_mir(projs_array)
     projs_tensor_mir = torch.from_numpy(projs_array_mir)
 
 
     attmap = itk.imread(args.attmap)
-    attmap_tensor = torch.from_numpy(itk.array_from_image(attmap).astype(np.float16))
+    attmap_tensor = torch.from_numpy(itk.array_from_image(attmap).astype(np.float32))
     attmap_tensor = attmap_tensor.permute(2,0,1)
     spacing = np.array(attmap.GetSpacing())
     spx,spy,spz = spacing[0], spacing[1], spacing[2]
@@ -54,9 +59,15 @@ def main():
     nprojs = 120
     dy = spy
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device : {device}")
+    attmap_tensor = attmap_tensor.to(device)
+
+
     kernel_size = 3
-    psf = torch.zeros((kernel_size, kernel_size, ny,nprojs), dtype = torch.float16)
+    psf = torch.zeros((kernel_size, kernel_size, ny,nprojs), dtype = torch.float32).to(device)
     psf[1,1,:,:]=1
+    psf = psf.to(device)
 
     A = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
               mumap=attmap_tensor, psfs=psf, dy=dy)
@@ -65,8 +76,6 @@ def main():
     # MLEM reconstruction after 20 iterations
     print(f"p shape : {projs_tensor_mir.shape}")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device : {device}")
     x0 = x0.to(device)
     projs_tensor_mir = projs_tensor_mir.to(device)
 
