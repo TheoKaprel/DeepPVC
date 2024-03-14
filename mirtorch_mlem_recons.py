@@ -54,10 +54,11 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
         loss_k = loss(p, rec_corrected_fp)
-        loss_k.backward(retain_graph=True)
+        loss_k.backward(retain_graph=False)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         print(f"loss {k} : {loss_k}")
+        del rec_corrected,rec_corrected_fp
 
     p_hat = net(p)
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
@@ -115,7 +116,6 @@ def main():
     kernel_size = 3
     psf = torch.zeros((kernel_size, kernel_size, ny,nprojs), dtype = torch.float32).to(device)
     psf[1,1,:,:]=1
-    psf = psf.to(device)
 
     A = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
               mumap=attmap_tensor, psfs=psf, dy=dy)
