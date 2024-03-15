@@ -65,6 +65,8 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         optimizer.zero_grad(set_to_none=True)
         print(f"loss {k} : {loss_k}")
         del rec_corrected,rec_corrected_fp
+        itk.imwrite(itk.image_from_array(projs_mir_to_rtk(p_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{k}.mhd"))
+
 
     p_hat = net(pn[None,None,:,:,:])[0,0,:,:,:] * p_max
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
@@ -216,6 +218,7 @@ if __name__ == '__main__':
     parser.add_argument("--niter", type =int)
     parser.add_argument("--lr", type =float, default=0.001)
     parser.add_argument("--output")
+    parser.add_argument("--iter")
     args = parser.parse_args()
 
     main()
