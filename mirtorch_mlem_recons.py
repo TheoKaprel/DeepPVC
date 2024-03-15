@@ -78,6 +78,33 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
     return out
 
+def deep_mlem_v2(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
+    asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
+    asum[asum == 0] = float('Inf')
+    out = torch.ones_like(asum)
+
+    for iter in range(niter):
+        print(f'iter : {iter}')
+
+        outhat = net(out[None,None,:,:,:])[0,0,:,:,:]
+
+        ybar = SPECT_sys_RM._apply(outhat)
+
+        loss_k = loss(ybar, p)
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        print(f"loss {iter} : {loss_k}")
+
+        yratio = torch.div(p, ybar)
+        back = SPECT_sys_noRM._apply_adjoint(yratio)
+        out = torch.multiply(out, torch.div(back, asum))
+        itk.imwrite(itk.image_from_array((out.detach().cpu().numpy())),
+                    os.path.join(args.iter, f"iter_{iter}.mhd"))
+
+    return out
+
+
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
         super(CNN, self).__init__()
@@ -220,7 +247,7 @@ def main():
 
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
-    xn = deep_mlem(p = projs_tensor_mir,
+    xn = deep_mlem_v2(p = projs_tensor_mir,
                    SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,
                    niter=args.niter,net=unet,
                    loss = loss,optimizer=optimizer)
