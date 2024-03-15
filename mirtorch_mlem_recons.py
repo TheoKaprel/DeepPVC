@@ -13,7 +13,7 @@ from mirtorch.linear.spect import SPECT
 import torch
 from torch import optim
 import torch.nn as nn
-
+import math
 import itk
 import numpy as np
 
@@ -94,6 +94,51 @@ class CNN(nn.Module):
         y = y + res
         return self.activation(y)
 
+def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
+    # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
+    x_cord = torch.arange(kernel_size)
+    x_grid = x_cord.repeat(kernel_size).view(kernel_size, kernel_size)
+    y_grid = x_grid.t()
+    xy_grid = torch.stack([x_grid, y_grid], dim=-1)
+
+    mean = (kernel_size - 1) / 2.
+
+
+    # # Calculate the 2-dimensional gaussian kernel which is
+    # # the product of two gaussian distributions for two different
+    # # variables (in this case called x and y)
+    # gaussian_kernel = (1. / (2. * math.pi * variance)) * \
+    #                   torch.exp(
+    #                       -torch.sum((xy_grid - mean) ** 2., dim=-1) / \
+    #                       (2 * variance)
+    #                   )
+    # # Make sure sum of values in gaussian kernel equals 1.
+    # gaussian_kernel = gaussian_kernel / torch.sum(gaussian_kernel)
+    # psf = gaussian_kernel.repeat(ny, nview, 1, 1).permute(2, 3, 0, 1)
+
+    psf = torch.zeros((kernel_size, kernel_size, ny,nview), dtype = torch.float32)
+
+    if (alpha>0 and sigma0>0):
+        for iv in range(nview):
+            dist = ny * sy + (sid - ny * sy / 2)
+            for iy in range(ny):
+                if iy<ny-1:
+                    sigma = dist * 2 * sy * (alpha)**2 + (2* sy * alpha * sigma0) - alpha**2 * sy**2
+                else:
+                    sigma = alpha * dist + sigma0
+
+                variance = sigma ** 2.
+
+                gaussian_kernel=(1. / (2. * math.pi * variance)) * torch.exp(
+                              -torch.sum((xy_grid - mean) ** 2., dim=-1) / \
+                              (2 * variance)
+                          )
+                psf[:,:,iy,iv] =gaussian_kernel / torch.sum(gaussian_kernel)
+
+                dist = dist - sy
+    else:
+        psf[kernel_size//2, kernel_size//2, :, :] = 1
+    return psf
 
 def main():
     print(args)
@@ -119,12 +164,24 @@ def main():
     attmap_tensor = attmap_tensor.to(device)
 
 
-    kernel_size = 3
-    psf = torch.zeros((kernel_size, kernel_size, ny,nprojs), dtype = torch.float32).to(device)
-    psf[1,1,:,:]=1
+    psf_RM = get_psf(kernel_size=7,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
+                  ny=ny,sy=dy,sid = 280).to(device)
 
-    A = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
-              mumap=attmap_tensor, psfs=psf, dy=dy)
+    psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
+                  ny=ny,sy=dy,sid=280).to(device)
+
+    A_RM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+              mumap=attmap_tensor, psfs=psf_RM, dy=dy)
+    A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+              mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
+
+
+    # input = itk.imread(args.input)
+    # input_tensor = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
+    # input_tensor = input_tensor.permute(2,0,1)
+    # input_tensor_fp = A._apply(input_tensor)
+    # input_tensor_fp_rtk = projs_mir_to_rtk(input_tensor_fp.detach().cpu().numpy())
+    # itk.imwrite(itk.image_from_array(input_tensor_fp_rtk), args.output)
 
     # MLEM reconstruction after 20 iterations
     print(f"p shape : {projs_tensor_mir.shape}")
@@ -142,7 +199,7 @@ def main():
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
     xn = deep_mlem(p = projs_tensor_mir,
-                   SPECT_sys_RM=A, SPECT_sys_noRM=A,
+                   SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,
                    niter=args.niter,net=unet,
                    loss = loss,optimizer=optimizer)
 
