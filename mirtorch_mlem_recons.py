@@ -79,19 +79,23 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     return out
 
 class CNN(nn.Module):
-    def __init__(self, nc=8):
+    def __init__(self, nc=8, ks = 3, nl = 6):
         super(CNN, self).__init__()
         sequence = []
 
-        list_channels = [1, nc, nc, nc, nc, nc, nc]
+        list_channels = [1]
+        for _ in range(nl):
+            list_channels.append(nc)
+
+        p = (ks-1)//2
 
         for k in range(len(list_channels)-1):
             sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
-                                           kernel_size=(3,3,3),stride=(1,1,1),padding=1))
+                                           kernel_size=(ks,ks,ks),stride=(1,1,1),padding=p))
             sequence.append(nn.ReLU(inplace=True))
 
         sequence.append(nn.Conv3d(in_channels=list_channels[-1], out_channels=1,
-                                  kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=1))
+                                  kernel_size=(ks, ks, ks), stride=(1, 1, 1), padding=p))
 
         self.sequenceCNN = nn.Sequential(*sequence)
         self.activation= nn.ReLU(inplace=True)
@@ -196,7 +200,7 @@ def main():
 
     projs_tensor_mir = projs_tensor_mir.to(device)
 
-    unet = CNN(nc=args.nc).to(device=device)
+    unet = CNN(nc=args.nc,ks=args.ks,nl=args.nl).to(device=device)
     print(unet)
     nb_params = sum(p.numel() for p in unet.parameters())
     print(f'NUMBER OF PARAMERS : {nb_params}')
@@ -233,7 +237,9 @@ if __name__ == '__main__':
     parser.add_argument("--niter", type =int)
     parser.add_argument("--lr", type =float, default=0.001)
     parser.add_argument("--loss", type =str)
-    parser.add_argument("--nc", type =int)
+    parser.add_argument("--nc", type =int, default=8)
+    parser.add_argument("--ks", type =int, default=3)
+    parser.add_argument("--nl", type =int, default=6)
     parser.add_argument("--output")
     parser.add_argument("--iter")
     args = parser.parse_args()
