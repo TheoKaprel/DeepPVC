@@ -85,6 +85,7 @@ def deep_mlem_v2(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
 
     for iter in range(niter):
         print(f'iter : {iter}')
+        optimizer.zero_grad(set_to_none=True)
 
         outhat = net(out[None,None,:,:,:])[0,0,:,:,:]
 
@@ -93,7 +94,6 @@ def deep_mlem_v2(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         loss_k = loss(ybar, p)
         loss_k.backward()
         optimizer.step()
-        optimizer.zero_grad(set_to_none=True)
         print(f"loss {iter} : {loss_k}")
 
         yratio = torch.div(p, ybar)
