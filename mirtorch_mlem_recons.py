@@ -54,17 +54,19 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         p_max = p.max()
         p = p / p_max
         norm = "max"
-    elif ((loss.__class__==torch.nn.KLDivLoss) or loss.__class__==torch.nn.PoissonNLLLoss):
+    elif ((loss.__class__==torch.nn.KLDivLoss) or (loss.__class__==torch.nn.PoissonNLLLoss)):
         norm = "log"
+
+    print(f"NORM : {norm}")
 
     for k in range(niter):
         p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
-        p_hat = p_hatn * p_max if norm=="max" else p_hatn
+        p_hat = p_hatn * p_max if (norm=="max") else p_hatn
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
-        rec_corrected_fpn = rec_corrected_fp / p_max if norm=="max" else torch.log(rec_corrected_fp+1e-8)
+        rec_corrected_fpn = (rec_corrected_fp / p_max) if (norm=="max") else torch.log(rec_corrected_fp+1e-8)
         loss_k = loss(rec_corrected_fpn, p)
-        loss_k.backward(retain_graph=False)
+        loss_k.backward()
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         print(f"loss {k} : {loss_k}")
@@ -207,7 +209,9 @@ def main():
         loss = torch.nn.KLDivLoss()
     elif args.loss=="PNLL":
         loss = torch.nn.PoissonNLLLoss(log_input=True)
-
+    else:
+        print(f"ERROR: unrecognized loss ({args.loss})")
+        exit(0)
 
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
