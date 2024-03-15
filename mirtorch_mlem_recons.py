@@ -73,11 +73,11 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     return out
 
 class CNN(nn.Module):
-    def __init__(self):
+    def __init__(self, nc=8):
         super(CNN, self).__init__()
         sequence = []
 
-        list_channels = [1, 8, 8, 8, 8, 8, 8]
+        list_channels = [1, nc, nc, nc, nc, nc, nc]
 
         for k in range(len(list_channels)-1):
             sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
@@ -190,13 +190,18 @@ def main():
 
     projs_tensor_mir = projs_tensor_mir.to(device)
 
-    unet = CNN().to(device=device)
+    unet = CNN(nc=args.nc).to(device=device)
     print(unet)
     nb_params = sum(p.numel() for p in unet.parameters())
     print(f'NUMBER OF PARAMERS : {nb_params}')
     # loss,optimizer
     optimizer = optim.Adam(unet.parameters(), lr=args.lr)
-    loss = torch.nn.L1Loss()
+
+    if args.loss == "L1":
+        loss = torch.nn.L1Loss()
+    elif args.loss=="KL":
+        loss = torch.nn.KLDivLoss()
+
 
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
@@ -217,6 +222,8 @@ if __name__ == '__main__':
     parser.add_argument("--attmap")
     parser.add_argument("--niter", type =int)
     parser.add_argument("--lr", type =float, default=0.001)
+    parser.add_argument("--loss", type =str)
+    parser.add_argument("--nc", type =int)
     parser.add_argument("--output")
     parser.add_argument("--iter")
     args = parser.parse_args()
