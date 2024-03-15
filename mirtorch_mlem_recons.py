@@ -96,12 +96,13 @@ def deep_mlem_v2(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         optimizer.step()
         print(f"loss {iter} : {loss_k}")
 
-        yratio = torch.div(p, ybar)
-        back = SPECT_sys_noRM._apply_adjoint(yratio)
-        out = torch.multiply(out, torch.div(back, asum))
-        outk = out.clone()
-        itk.imwrite(itk.image_from_array((outk.detach().cpu().numpy())),
-                    os.path.join(args.iter, f"iter_{iter}.mhd"))
+        with torch.no_grad():
+            yratio = torch.div(p, ybar)
+            back = SPECT_sys_noRM._apply_adjoint(yratio)
+            out = torch.multiply(out, torch.div(back, asum))
+            outk = out.clone()
+            itk.imwrite(itk.image_from_array((outk.detach().cpu().numpy())),
+                        os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     return out
 
