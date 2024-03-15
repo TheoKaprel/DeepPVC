@@ -50,7 +50,7 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # loss = loss(projs, recons_corrected_fp)
     # update h
 
-    if loss.__class__==torch.nn.L1:
+    if loss.__class__==torch.nn.L1Loss:
         p_max = p.max()
         p = p / p_max
         norm = "max"
