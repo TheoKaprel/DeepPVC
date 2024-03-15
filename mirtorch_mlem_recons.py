@@ -101,9 +101,9 @@ class CNN(nn.Module):
         self.activation= nn.ReLU(inplace=True)
 
     def forward(self,x):
-        res = x
+        # res = x
         y = self.sequenceCNN(x)
-        y = y + res
+        # y = y + res
         return self.activation(y)
 
 def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
