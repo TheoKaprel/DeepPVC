@@ -50,16 +50,20 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # loss = loss(projs, recons_corrected_fp)
     # update h
 
-    p_max = p.max()
-    pn = p / p_max
+    if loss.__class__==torch.nn.L1:
+        p_max = p.max()
+        p = p / p_max
+        norm = "max"
+    elif loss.__class__==torch.nn.KLDivLoss:
+        norm = "log"
 
     for k in range(niter):
-        p_hatn = net(pn[None,None,:,:,:])[0,0,:,:,:]
-        p_hat = p_hatn * p_max
+        p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
+        p_hat = p_hatn * p_max if norm=="max" else p_hatn
         rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
-        rec_corrected_fpn = rec_corrected_fp / p_max
-        loss_k = loss(pn, rec_corrected_fpn)
+        rec_corrected_fpn = rec_corrected_fp / p_max if norm=="max" else torch.log(rec_corrected_fp+1e-8)
+        loss_k = loss(rec_corrected_fpn, p)
         loss_k.backward(retain_graph=False)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
@@ -68,7 +72,7 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         itk.imwrite(itk.image_from_array(projs_mir_to_rtk(p_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{k}.mhd"))
 
 
-    p_hat = net(pn[None,None,:,:,:])[0,0,:,:,:] * p_max
+    p_hat = net(p[None,None,:,:,:])[0,0,:,:,:] * p_max if norm=="max" else net(p[None,None,:,:,:])[0,0,:,:,:]
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
     return out
 
