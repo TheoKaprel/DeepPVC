@@ -54,7 +54,7 @@ def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         p_max = p.max()
         p = p / p_max
         norm = "max"
-    elif loss.__class__==torch.nn.KLDivLoss:
+    elif ((loss.__class__==torch.nn.KLDivLoss) or loss.__class__==torch.nn.PoissonNLLLoss):
         norm = "log"
 
     for k in range(niter):
@@ -205,6 +205,8 @@ def main():
         loss = torch.nn.L1Loss()
     elif args.loss=="KL":
         loss = torch.nn.KLDivLoss()
+    elif args.loss=="PNLL":
+        loss = torch.nn.PoissonNLLLoss(log_input=True)
 
 
     print(projs_tensor_mir.dtype)
