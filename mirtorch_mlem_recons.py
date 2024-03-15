@@ -92,6 +92,7 @@ class CNN(nn.Module):
         for k in range(len(list_channels)-1):
             sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
                                            kernel_size=(ks,ks,ks),stride=(1,1,1),padding=p))
+            sequence.append(nn.BatchNorm3d(list_channels[k+1]))
             sequence.append(nn.ReLU(inplace=True))
 
         sequence.append(nn.Conv3d(in_channels=list_channels[-1], out_channels=1,
