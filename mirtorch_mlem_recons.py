@@ -186,13 +186,15 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
     return out_hat
 
 
-def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer):
+def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input=None):
     print('OSEM-RM')
-    with torch.no_grad():
-        x0 = torch.ones_like(SPECT_sys_RM.mumap)
-        x_RM = mlem(x=x0, p=p, SPECT_sys=SPECT_sys_RM, niter=20)
-        itk.imwrite(itk.image_from_array((x_RM.cpu().numpy())), os.path.join(args.iter, f"x_RM.mhd"))
-
+    if input is None:
+        with torch.no_grad():
+            x0 = torch.ones_like(SPECT_sys_RM.mumap)
+            x_RM = mlem(x=x0, p=p, SPECT_sys=SPECT_sys_RM, niter=20)
+            itk.imwrite(itk.image_from_array((x_RM.cpu().numpy())), os.path.join(args.iter, f"x_RM.mhd"))
+    else:
+        x_RM = input
 
     print("Training")
     for iter in range(niter):
@@ -200,10 +202,13 @@ def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer):
 
         ybar = SPECT_sys_RM._apply(out_hat)
         loss_k = loss(ybar, p)
+        print(f"loss {iter} : {loss_k}")
+        print(f"    nan in p : {torch.isnan(p).any()}")
+        print(f"    nan in out_hat : {torch.isnan(out_hat).any()}")
+        print(f"    nan in ybar : {torch.isnan(ybar).any()}")
         loss_k.backward()
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
-        print(f"loss {iter} : {loss_k}")
         itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     return out_hat
@@ -358,7 +363,10 @@ def main():
     #                loss = loss,optimizer=optimizer)
 
     # xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
-    xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
+
+    input = itk.imread(args.input)
+    input = torch.from_numpy(itk.array_from_image(input).astype(np.float32))
+    xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
@@ -368,6 +376,7 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--input")
     parser.add_argument("--projs")
     parser.add_argument("--attmap")
     parser.add_argument("--niter", type =int)
