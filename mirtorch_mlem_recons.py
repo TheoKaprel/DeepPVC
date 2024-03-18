@@ -181,9 +181,9 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
         out = torch.multiply(out, torch.div(back, asum))
 
         out_hat = net(out[None,None,:,:,:])[0,0,:,:,:]
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
 
-
-    return out
+    return out_hat
 
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
