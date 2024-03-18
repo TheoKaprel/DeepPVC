@@ -132,6 +132,7 @@ def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
         # rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         rec_corrected = torch.ones_like(asum)
         for _ in range(5):
+            print(f"    inner {_}")
             ybar = SPECT_sys_noRM._apply(rec_corrected)
             ybar[ybar == 0] = 1
             yratio = torch.div(p_hat, ybar)
