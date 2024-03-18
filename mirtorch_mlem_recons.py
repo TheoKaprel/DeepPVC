@@ -124,18 +124,19 @@ def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
 
     asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
     asum[asum == 0] = float('Inf')
-    out = torch.ones_like(asum)
-    ybar = SPECT_sys_noRM._apply(out)
 
     for k in range(niter):
         p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
         p_hat = p_hatn * p_max if (norm=="max") else p_hatn
 
         # rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
-
-        yratio = torch.div(p_hat, ybar)
-        back = SPECT_sys_noRM._apply_adjoint(yratio)
-        rec_corrected = torch.multiply(out, torch.div(back, asum))
+        rec_corrected = torch.ones_like(asum)
+        for _ in range(5):
+            ybar = SPECT_sys_noRM._apply(rec_corrected)
+            ybar[ybar == 0] = 1
+            yratio = torch.div(p_hat, ybar)
+            back = SPECT_sys_noRM._apply_adjoint(yratio)
+            rec_corrected = torch.multiply(rec_corrected, torch.div(back, asum))
 
         rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
         rec_corrected_fpn = (rec_corrected_fp / p_max) if (norm=="max") else torch.log(rec_corrected_fp+1e-8)
