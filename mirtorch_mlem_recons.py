@@ -165,11 +165,11 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
     for iter in range(niter):
         print(f'iter : {iter}')
 
-
+        asuml = asum.detach()
         if iter>0:
             ybar = SPECT_sys_RM._apply(out_hat)
             loss_k = loss(ybar, p)
-            loss_k.backward(retain_graph=True)
+            loss_k.backward()
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             print(f"loss {iter} : {loss_k}")
@@ -180,10 +180,10 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
 
         yratio = torch.div(p, ybar)
         back = SPECT_sys_RM._apply_adjoint(yratio)
-        out = torch.multiply(out_hat, torch.div(back, asum))
+        out = torch.multiply(out_hat, torch.div(back, asuml))
 
         out_hat = net(out[None,None,:,:,:])[0,0,:,:,:]
-        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+        # itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     return out_hat
 
