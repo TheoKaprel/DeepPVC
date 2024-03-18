@@ -164,8 +164,6 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
     out = torch.ones_like(asum)
 
     for iter in range(niter):
-        print(f'iter : {iter}')
-
         out_hat = net(out[None, None, :, :, :])[0, 0, :, :, :]
 
         ybar = SPECT_sys_RM._apply(out_hat)
@@ -181,9 +179,9 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
             yratio = torch.div(p, ybar)
             back = SPECT_sys_RM._apply_adjoint(yratio)
             out = torch.multiply(out_hat, torch.div(back, asum))
+            itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     out_hat = net(out[None, None, :, :, :])[0, 0, :, :, :]
-        # itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     return out_hat
 
