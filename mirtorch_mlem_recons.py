@@ -122,14 +122,10 @@ def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
 
     print(f"NORM : {norm}")
 
-    # asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
-    # asum[asum == 0] = float('Inf')
-
     for k in range(niter):
         p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
         p_hat = p_hatn * p_max if (norm=="max") else p_hatn
         del p_hatn
-        # rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
         asum[asum == 0] = float('Inf')
         rec_corrected = torch.ones_like(asum)
@@ -159,6 +155,34 @@ def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
 
     p_hat = net(p[None,None,:,:,:])[0,0,:,:,:] * p_max if norm=="max" else net(p[None,None,:,:,:])[0,0,:,:,:]
     out = SPECT_sys_noRM._apply_adjoint(p_hat)
+    return out
+
+
+def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
+    asum = SPECT_sys_RM._apply_adjoint(torch.ones_like(p))
+    asum[asum == 0] = float('Inf')
+    out = torch.zeros_like(asum)
+    for iter in range(niter):
+        print(f'iter : {iter}')
+
+
+        if iter>0:
+            ybar = SPECT_sys_RM._apply(out_hat)
+            loss_k = loss(ybar, p)
+            loss_k.backward()
+            optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+            print(f"loss {iter} : {loss_k}")
+        else:
+            ybar = SPECT_sys_RM._apply(out)
+
+        yratio = torch.div(p, ybar)
+        back = SPECT_sys_RM._apply_adjoint(yratio)
+        out = torch.multiply(out, torch.div(back, asum))
+
+        out_hat = net(out[None,None,:,:,:])[0,0,:,:,:]
+
+
     return out
 
 class CNN(nn.Module):
@@ -263,14 +287,14 @@ def main():
     psf_RM = get_psf(kernel_size=7,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
                   ny=ny,sy=dy,sid = 280).to(device)
 
-    psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
-                  ny=ny,sy=dy,sid=280).to(device)
+    # psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
+    #               ny=ny,sy=dy,sid=280).to(device)
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
               mumap=attmap_tensor, psfs=psf_RM, dy=dy)
-    A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
-              mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
-
+    # A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+    #           mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
+    #
 
     # input = itk.imread(args.input)
     # input_tensor = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
@@ -303,10 +327,12 @@ def main():
 
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
-    xn = deep_mlem_v3(p = projs_tensor_mir,
-                   SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,
-                   niter=args.niter,net=unet,
-                   loss = loss,optimizer=optimizer)
+    # xn = deep_mlem_v3(p = projs_tensor_mir,
+    #                SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,
+    #                niter=args.niter,net=unet,
+    #                loss = loss,optimizer=optimizer)
+
+    xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
