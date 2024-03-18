@@ -191,6 +191,8 @@ def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer):
     with torch.no_grad():
         x0 = torch.ones_like(SPECT_sys_RM.mumap)
         x_RM = mlem(x=x0, p=p, SPECT_sys=SPECT_sys_RM, niter=20)
+        itk.imwrite(itk.image_from_array((x_RM.cpu().numpy())), os.path.join(args.iter, f"x_RM.mhd"))
+
 
     print("Training")
     for iter in range(niter):
