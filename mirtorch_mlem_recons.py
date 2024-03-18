@@ -128,7 +128,7 @@ def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     for k in range(niter):
         p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
         p_hat = p_hatn * p_max if (norm=="max") else p_hatn
-
+        del p_hatn
         # rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
         asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
         asum[asum == 0] = float('Inf')
