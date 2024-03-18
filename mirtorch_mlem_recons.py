@@ -176,6 +176,8 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
         else:
             ybar = SPECT_sys_RM._apply(out)
 
+        ybar[ybar == 0] = float('Inf')
+
         yratio = torch.div(p, ybar)
         back = SPECT_sys_RM._apply_adjoint(yratio)
         out = torch.multiply(out, torch.div(back, asum))
