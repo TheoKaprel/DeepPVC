@@ -169,7 +169,7 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
         if iter>0:
             ybar = SPECT_sys_RM._apply(out_hat)
             loss_k = loss(ybar, p)
-            loss_k.backward()
+            loss_k.backward(retain_graph=True)
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             print(f"loss {iter} : {loss_k}")
