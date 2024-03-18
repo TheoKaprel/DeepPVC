@@ -185,6 +185,29 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
 
     return out_hat
 
+
+def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer):
+    print('OSEM-RM')
+    with torch.no_grad():
+        x0 = torch.ones_like(SPECT_sys_RM.mumap)
+        x_RM = mlem(x=x0, p=p, SPECT_sys=SPECT_sys_RM, niter=20)
+
+    print("Training")
+    for iter in range(niter):
+        out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
+
+        ybar = SPECT_sys_RM._apply(out_hat)
+        loss_k = loss(ybar, p)
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        print(f"loss {iter} : {loss_k}")
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+
+    return out_hat
+
+
+
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
         super(CNN, self).__init__()
@@ -332,7 +355,8 @@ def main():
     #                niter=args.niter,net=unet,
     #                loss = loss,optimizer=optimizer)
 
-    xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
+    # xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
+    xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
