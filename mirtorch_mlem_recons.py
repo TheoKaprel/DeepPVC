@@ -165,6 +165,7 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
     for iter in range(niter):
         print(f'iter : {iter}')
 
+        p = p.detach()
         asuml = asum.detach()
         if iter>0:
             ybar = SPECT_sys_RM._apply(out_hat)
