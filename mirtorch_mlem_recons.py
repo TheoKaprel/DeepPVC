@@ -106,6 +106,51 @@ def deep_mlem_v2(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
 
     return out
 
+def deep_mlem_v3(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
+    # projs_corrected = h(projs)
+    # recons_corrected = rec_no_rm(projs_corrected)
+    # recons_corrected_fp = FP_rm(recons_corrected)
+    # loss = loss(projs, recons_corrected_fp)
+    # update h
+
+    if loss.__class__==torch.nn.L1Loss:
+        p_max = p.max()
+        p = p / p_max
+        norm = "max"
+    elif ((loss.__class__==torch.nn.KLDivLoss) or (loss.__class__==torch.nn.PoissonNLLLoss)):
+        norm = "log"
+
+    print(f"NORM : {norm}")
+
+    asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
+    asum[asum == 0] = float('Inf')
+    out = torch.ones_like(asum)
+    ybar = SPECT_sys_noRM._apply(out)
+
+    for k in range(niter):
+        p_hatn = net(p[None,None,:,:,:])[0,0,:,:,:]
+        p_hat = p_hatn * p_max if (norm=="max") else p_hatn
+
+        # rec_corrected = SPECT_sys_noRM._apply_adjoint(p_hat)
+
+        yratio = torch.div(p_hat, ybar)
+        back = SPECT_sys_noRM._apply_adjoint(yratio)
+        rec_corrected = torch.multiply(out, torch.div(back, asum))
+
+        rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected)
+        rec_corrected_fpn = (rec_corrected_fp / p_max) if (norm=="max") else torch.log(rec_corrected_fp+1e-8)
+        loss_k = loss(rec_corrected_fpn, p)
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        print(f"loss {k} : {loss_k}")
+        del rec_corrected,rec_corrected_fp
+        itk.imwrite(itk.image_from_array(projs_mir_to_rtk(p_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{k}.mhd"))
+
+
+    p_hat = net(p[None,None,:,:,:])[0,0,:,:,:] * p_max if norm=="max" else net(p[None,None,:,:,:])[0,0,:,:,:]
+    out = SPECT_sys_noRM._apply_adjoint(p_hat)
+    return out
 
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
@@ -249,7 +294,7 @@ def main():
 
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
-    xn = deep_mlem_v2(p = projs_tensor_mir,
+    xn = deep_mlem_v3(p = projs_tensor_mir,
                    SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,
                    niter=args.niter,net=unet,
                    loss = loss,optimizer=optimizer)
