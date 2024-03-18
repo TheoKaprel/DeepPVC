@@ -345,7 +345,7 @@ def main():
     elif args.loss=="KL":
         loss = torch.nn.KLDivLoss()
     elif args.loss=="PNLL":
-        loss = torch.nn.PoissonNLLLoss(log_input=True)
+        loss = torch.nn.PoissonNLLLoss(log_input=False)
     else:
         print(f"ERROR: unrecognized loss ({args.loss})")
         exit(0)
