@@ -43,7 +43,7 @@ def mlem(x, p, SPECT_sys, niter):
         out = torch.multiply(out, torch.div(back, asum))
     return out
 
-def deep_mlem(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
+def deep_mlem_v1(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # projs_corrected = h(projs)
     # recons_corrected = BP(projs_corrected)
     # recons_corrected_fp = FP_rm(recons_corrected)
@@ -213,7 +213,50 @@ def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input=None):
 
     return out_hat
 
+def deep_mlem_v6(p, SPECT_sys_noRM, SPECT_sys_RM, niter,nosem, net1,net2, loss, optimizer):
+    if loss.__class__==torch.nn.L1Loss:
+        p_max = p.max()
+        p = p / p_max
+        norm = "max"
+    elif ((loss.__class__==torch.nn.KLDivLoss) or (loss.__class__==torch.nn.PoissonNLLLoss)):
+        norm = "log"
 
+    print(f"NORM : {norm}")
+
+    for k in range(niter):
+        p_hatn = net1(p[None,None,:,:,:])[0,0,:,:,:]
+        p_hat = p_hatn * p_max if (norm=="max") else p_hatn
+        del p_hatn
+        asum = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
+        asum[asum == 0] = float('Inf')
+        rec_corrected = torch.ones_like(asum)
+        for _ in range(nosem):
+            print(f"    inner {_}")
+            ybar = SPECT_sys_noRM._apply(rec_corrected)
+            ybar[ybar == 0] = float('Inf')
+            yratio = torch.div(p_hat, ybar)
+            del ybar
+            back = SPECT_sys_noRM._apply_adjoint(yratio)
+            del yratio
+            rec_corrected = torch.multiply(rec_corrected, torch.div(back, asum))
+            del back
+
+        del asum
+
+        rec_corrected_corrected = net2(rec_corrected[None,None,:,:,:])[0,0,:,:,:]
+
+
+        rec_corrected_fp = SPECT_sys_RM._apply(rec_corrected_corrected)
+        rec_corrected_fpn = (rec_corrected_fp / p_max) if (norm=="max") else torch.log(rec_corrected_fp+1e-8)
+        loss_k = loss(rec_corrected_fpn, p)
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        print(f"loss {k} : {loss_k}")
+        del rec_corrected,rec_corrected_fp
+        itk.imwrite(itk.image_from_array(rec_corrected_corrected.detach().cpu().numpy()), os.path.join(args.iter, f"iter_{k}.mhd"))
+
+    return rec_corrected_corrected
 
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
@@ -317,14 +360,10 @@ def main():
     psf_RM = get_psf(kernel_size=7,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
                   ny=ny,sy=dy,sid = 280).to(device)
 
-    # psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
-    #               ny=ny,sy=dy,sid=280).to(device)
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
               mumap=attmap_tensor, psfs=psf_RM, dy=dy)
-    # A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
-    #           mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
-    #
+
 
     # input = itk.imread(args.input)
     # input_tensor = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
@@ -338,12 +377,6 @@ def main():
 
     projs_tensor_mir = projs_tensor_mir.to(device)
 
-    unet = CNN(nc=args.nc,ks=args.ks,nl=args.nl).to(device=device)
-    print(unet)
-    nb_params = sum(p.numel() for p in unet.parameters())
-    print(f'NUMBER OF PARAMERS : {nb_params}')
-    # loss,optimizer
-    optimizer = optim.Adam(unet.parameters(), lr=args.lr)
 
     if args.loss == "L1":
         loss = torch.nn.L1Loss()
@@ -355,6 +388,36 @@ def main():
         print(f"ERROR: unrecognized loss ({args.loss})")
         exit(0)
 
+    if args.version!=6:
+        unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        print(unet)
+        nb_params = sum(p.numel() for p in unet.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
+        # loss,optimizer
+        optimizer = optim.Adam(unet.parameters(), lr=args.lr)
+    else:
+        unet1 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        unet2 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        print("------------ unet 1 -----------------")
+        print(unet1)
+        nb_params = sum(p.numel() for p in unet1.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
+        print("------------ unet 2 -----------------")
+        print(unet2)
+        nb_params = sum(p.numel() for p in unet2.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
+
+        # loss,optimizer
+        optimizer = optim.Adam(list(unet1.parameters())+list(unet2.parameters()), lr=args.lr)
+
+    if args.version in [0,1,2,3,6]:
+        psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
+                      ny=ny,sy=dy,sid=280).to(device)
+
+        A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+                  mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
+
+
     print(projs_tensor_mir.dtype)
     # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A,niter=args.niter, net = unet)
     # xn = deep_mlem_v3(p = projs_tensor_mir,
@@ -364,9 +427,14 @@ def main():
 
     # xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
 
-    input = itk.imread(args.input)
-    input = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
-    xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
+    if args.version==5:
+        input = itk.imread(args.input)
+        input = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
+        xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
+    elif args.version == 6:
+        xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=5,
+                     net1=unet1,net2=unet2,loss=loss,optimizer=optimizer)
+
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
@@ -387,6 +455,7 @@ if __name__ == '__main__':
     parser.add_argument("--nl", type =int, default=6)
     parser.add_argument("--output")
     parser.add_argument("--iter")
+    parser.add_argument("--version", type = int)
     args = parser.parse_args()
 
     main()
