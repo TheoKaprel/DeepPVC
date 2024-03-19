@@ -455,7 +455,7 @@ if __name__ == '__main__':
     parser.add_argument("--nl", type =int, default=6)
     parser.add_argument("--output")
     parser.add_argument("--iter")
-    parser.add_argument("--nosem")
+    parser.add_argument("--nosem" ,type = int)
     parser.add_argument("--version", type = int)
     args = parser.parse_args()
 
