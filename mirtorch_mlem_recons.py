@@ -432,7 +432,7 @@ def main():
         input = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
         xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
     elif args.version == 6:
-        xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=5,
+        xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=args.nosem,
                      net1=unet1,net2=unet2,loss=loss,optimizer=optimizer)
 
 
@@ -455,6 +455,7 @@ if __name__ == '__main__':
     parser.add_argument("--nl", type =int, default=6)
     parser.add_argument("--output")
     parser.add_argument("--iter")
+    parser.add_argument("--nosem")
     parser.add_argument("--version", type = int)
     args = parser.parse_args()
 
