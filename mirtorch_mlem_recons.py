@@ -203,9 +203,6 @@ def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input=None):
         ybar = SPECT_sys_RM._apply(out_hat)
         loss_k = loss(ybar, p)
         print(f"loss {iter} : {loss_k}")
-        print(f"    nan in p : {torch.isnan(p).any()}")
-        print(f"    nan in out_hat : {torch.isnan(out_hat).any()}")
-        print(f"    nan in ybar : {torch.isnan(ybar).any()}")
         loss_k.backward()
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
@@ -272,7 +269,7 @@ class CNN(nn.Module):
         for k in range(len(list_channels)-1):
             sequence.append(nn.Conv3d(in_channels=list_channels[k], out_channels=list_channels[k+1],
                                            kernel_size=(ks,ks,ks),stride=(1,1,1),padding=p))
-            sequence.append(nn.BatchNorm3d(list_channels[k+1]))
+            # sequence.append(nn.BatchNorm3d(list_channels[k+1]))
             sequence.append(nn.ReLU(inplace=True))
 
         sequence.append(nn.Conv3d(in_channels=list_channels[-1], out_channels=1,
