@@ -338,23 +338,53 @@ class CNN(nn.Module):
         block = blocks[0]
         self.nb_ed_layers = nb_ed_layers
 
-        CNN_sequence = []
-        CNN_sequence.append(CNN_block(
-            ic=input_channel, oc=ngc, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
-            block=block, res_unit=False,
-        ))
-        for _ in range(self.nb_ed_layers-2):
+        if paths==False:
+            self.paths = False
+            CNN_sequence = []
             CNN_sequence.append(CNN_block(
-                ic=ngc,oc=ngc,k = kernel, norm=norm, leaky_relu_val=leaky_relu,
-                block=block,res_unit=ResUnet,
+                ic=input_channel, oc=ngc, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                block=block, res_unit=False,
             ))
-        CNN_sequence.append(CNN_block(
-            ic=ngc, oc=output_channel, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
-            block=block, res_unit=False,
-        ))
+            for _ in range(self.nb_ed_layers-2):
+                CNN_sequence.append(CNN_block(
+                    ic=ngc,oc=ngc,k = kernel, norm=norm, leaky_relu_val=leaky_relu,
+                    block=block,res_unit=ResUnet,
+                ))
+            CNN_sequence.append(CNN_block(
+                ic=ngc, oc=output_channel, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                block=block, res_unit=False,
+            ))
+            self.CNN_sequence = nn.Sequential(*CNN_sequence)
+        else:
+            self.paths = True
+            indiv_paths = []
+            for _ in range(self.input_channels):
+                indiv_path = []
+                indiv_path.append(CNN_block(
+                    ic=1, oc=ngc//2, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                    block=block, res_unit=False))
+                for __ in range(self.nb_ed_layers//2):
+                    indiv_path.append(CNN_block(
+                        ic=ngc//2, oc=ngc//2, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                        block=block, res_unit=ResUnet))
+                indiv_paths.append(nn.Sequential(*indiv_path))
 
-        self.CNN_sequence = nn.Sequential(*CNN_sequence)
+            self.indiv_paths = nn.Sequential(*indiv_paths)
 
+            common_path = []
+            for _ in range(self.nb_ed_layers // 2):
+                common_path.append(CNN_block(
+                    ic=ngc, oc=ngc, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                    block=block, res_unit=ResUnet))
+
+            common_path.append(CNN_block(
+                ic=ngc, oc=output_channel, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+                block=block, res_unit=False,
+            ))
+            self.common_path = nn.Sequential(*common_path)
+            print("oooo"*20)
+            print(self.indiv_paths)
+            print('oooo'*20)
         self.residual_layer= residual_layer
         self.activation = get_activation(generator_activation)
 
@@ -363,7 +393,11 @@ class CNN(nn.Module):
             residual = x[:, self.residual_layer:self.residual_layer + 1, :, :, :]
 
         # ----------------------------------------------------------
-        y = self.CNN_sequence(x)
+        if self.paths==False:
+            y = self.CNN_sequence(x)
+        else:
+            paths_output = torch.concat(tuple([self.indiv_paths[k](x[:,k:k+1,:,:,:]) for k in range(self.input_channels)]),dim=1)
+            y = self.common_path(paths_output)
         # ----------------------------------------------------------
         if self.residual_layer >= 0:
             y += residual
