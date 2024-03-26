@@ -284,6 +284,92 @@ class UNet(nn.Module):
         # ----------------------------------------------------------
         return(y)
 
+class CNN_block(nn.Module):
+    def __init__(self, ic, oc,k,norm,leaky_relu_val=0.2, block="conv-norm-relu", res_unit=False):
+        super(CNN_block, self).__init__()
+        sequence = []
+        splited_block = block.split('-')
+
+        self.dim = 3
+        conv = nn.Conv3d
+        kernel_size = (k,k,k)
+        stride = (1,1,1)
+        padding = (int(k-1)//2, int(k-1)//2, int(k-1)//2)
+
+
+        if norm == "batch_norm":
+            norm_layer = nn.BatchNorm3d
+        elif norm == "inst_norm":
+            norm_layer = nn.InstanceNorm3d
+        else:
+            norm_layer = nn.Identity
+
+        self.res_unit = res_unit
+
+
+        for elmt in splited_block:
+            if (elmt == 'conv'):
+                sequence.append(
+                    conv(ic, oc, kernel_size=kernel_size, stride=stride, padding=padding))
+            elif elmt == "relu":
+                sequence.append(nn.LeakyReLU(leaky_relu_val, inplace=False))
+            elif elmt == "norm":
+                sequence.append(norm_layer(oc))
+
+        self.sequenceBlock = nn.Sequential(*sequence)
+
+    def forward(self, x):
+        if self.res_unit:
+            return (x + self.sequenceBlock(x))
+        else:
+            return self.sequenceBlock(x)
+
+
+class CNN(nn.Module):
+    def __init__(self, input_channel, ngc, kernel, paths,
+                 output_channel, nb_ed_layers, generator_activation,
+                 leaky_relu, norm, residual_layer=-1, blocks=("conv-norm-relu"),
+                 ResUnet=False):
+        super(CNN, self).__init__()
+
+        self.ResUnet = ResUnet
+        self.input_channels = input_channel
+        self.output_channels = output_channel
+        block = blocks[0]
+        self.nb_ed_layers = nb_ed_layers
+
+        CNN_sequence = []
+        CNN_sequence.append(CNN_block(
+            ic=input_channel, oc=ngc, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+            block=block, res_unit=False,
+        ))
+        for _ in range(self.nb_ed_layers-2):
+            CNN_sequence.append(CNN_block(
+                ic=ngc,oc=ngc,k = kernel, norm=norm, leaky_relu_val=leaky_relu,
+                block=block,res_unit=ResUnet,
+            ))
+        CNN_sequence.append(CNN_block(
+            ic=ngc, oc=output_channel, k=kernel, norm=norm, leaky_relu_val=leaky_relu,
+            block=block, res_unit=False,
+        ))
+
+        self.CNN_sequence = nn.Sequential(*CNN_sequence)
+
+        self.residual_layer= residual_layer
+        self.activation = get_activation(generator_activation)
+
+    def forward(self, x):
+        if self.residual_layer >= 0:
+            residual = x[:, self.residual_layer:self.residual_layer + 1, :, :, :]
+
+        # ----------------------------------------------------------
+        y = self.CNN_sequence(x)
+        # ----------------------------------------------------------
+        if self.residual_layer >= 0:
+            y += residual
+
+        y = self.activation(y)
+        return (y)
 
 
 class UNET_3D_2D(nn.Module):

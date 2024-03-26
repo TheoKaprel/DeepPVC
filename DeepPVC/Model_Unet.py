@@ -91,13 +91,24 @@ class UNetModel(ModelBase):
             #     device=self.device)
             self.UNet = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(device=self.device)
         elif self.DCNN:
-            self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
-                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+            # self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+            #                           dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+            #                           nb_ed_layers=self.nb_ed_layers,
+            #                           output_channel=self.output_channels, generator_activation=self.unet_activation,
+            #                           use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+            #                           norm=self.layer_norm, residual_layer=self.residual_layer
+            #                           ).to(device=self.device)
+            self.UNet = networks.CNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                      kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
-                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
-                                      norm=self.layer_norm, residual_layer=self.residual_layer
-                                      ).to(device=self.device)
+                                      leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1,
+                                      blocks=self.ed_blocks,
+                                      ResUnet=self.ResUnet,
+                                      paths=self.paths).to(device=self.device)
+
+
         elif False:
             self.UNet = networks.UNET_3D_2D(input_channel=self.input_channels,residual_layer=self.residual_layer,
                                             final_2dchannels=2*self.params['nb_adj_angles']).to(device=self.device)
