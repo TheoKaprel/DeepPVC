@@ -41,9 +41,9 @@
   "leaky_relu": 0.02,
 
   "patches":false,
-  "ed_blocks": ["conv-norm-relu"],
+  "ed_blocks": ["conv-norm-relu-pool", "convT-norm-relu"],
   "residual_layer": true,
-  "resunet": true,
+  "resunet": false,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
@@ -53,9 +53,9 @@
   "validation_norm": "L1",
   "comment": "",
 
-  "DCNN": true,
+  "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 9,
+  "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
