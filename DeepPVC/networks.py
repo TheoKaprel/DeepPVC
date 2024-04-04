@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from pydispatch.dispatcher import _Any
 from torch import Tensor
 from torch.nn import functional as F
 from torch.cuda.amp import custom_fwd

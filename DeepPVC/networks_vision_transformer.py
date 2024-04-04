@@ -11,10 +11,7 @@ import copy
 import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as nnf
-from torch.nn import Dropout, Softmax, Linear, Conv3d, LayerNorm
-from torch.nn.modules.utils import _triple
-from torch.distributions.normal import Normal
+from torch.nn import Dropout, Softmax, Linear, LayerNorm
 import ml_collections
 
 def get_3DReg_config():
