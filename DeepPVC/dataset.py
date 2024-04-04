@@ -381,7 +381,7 @@ class ImgToImgDataset(BaseDataset):
         self.dim=3
 
         if params['pad']=="zero":
-            self.pad = ZeroPadImgs(112)
+            self.pad = ZeroPadImgs(128)
         else:
             self.pad = torch.nn.Identity()
 

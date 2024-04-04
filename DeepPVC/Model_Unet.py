@@ -1,7 +1,5 @@
 import os.path
 import time
-
-import matplotlib.pyplot as plt
 import torch
 from torch import optim
 
@@ -89,7 +87,16 @@ class UNetModel(ModelBase):
             # self.UNet = networks_diff.AttentionResUnet(init_dim=self.hidden_channels_unet, out_dim=1,
             #                                            channels=self.input_channels, dim_mults=(1, 2, 4, 8)).to(
             #     device=self.device)
-            self.UNet = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(device=self.device)
+            # self.UNet = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(device=self.device)
+            self.UNet = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1, blocks=self.ed_blocks,
+                                      ResUnet=self.ResUnet,AttentionUnet = True,
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
+                                      paths=self.paths).to(device=self.device)
         elif self.DCNN:
             # self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
             #                           dim=self.dim,init_feature_kernel=self.init_feature_kernel,
@@ -119,7 +126,7 @@ class UNetModel(ModelBase):
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet,
+                                      ResUnet=self.ResUnet,AttentionUnet=False,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
 

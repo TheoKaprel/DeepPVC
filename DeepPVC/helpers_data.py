@@ -390,7 +390,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
 
     elif params['inputs']=="imgs":
         if params['pad']=="zero":
-            pad = pvc_dataset.ZeroPadImgs(112)
+            pad = pvc_dataset.ZeroPadImgs(128)
         else:
             pad = torch.nn.Identity()
 

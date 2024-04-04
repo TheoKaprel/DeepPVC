@@ -1,9 +1,13 @@
 import torch
 import torch.nn as nn
+from pydispatch.dispatcher import _Any
 from torch import Tensor
 from torch.nn import functional as F
 from torch.cuda.amp import custom_fwd
+from torch.nn.modules.utils import _triple
+
 from . import networks_attention_cbam
+from .networks_vision_transformer import VisionTransformer,get_3DReg_config
 
 class DownSamplingBlock(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (3,3), stride = (2,2), padding = 1,
@@ -166,10 +170,12 @@ class UNet(nn.Module):
     def __init__(self,input_channel, ngc,init_feature_kernel, paths,
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=-1, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
+                 AttentionUnet=False,
                  dim=2,final_2dconv=False, final_2dchannels=0):
         super(UNet, self).__init__()
 
         self.ResUnet = ResUnet
+        self.AttentionUnet = AttentionUnet
         self.input_channels = input_channel
         self.output_channels = output_channel
 
@@ -236,6 +242,20 @@ class UNet(nn.Module):
         else:
             self.do_final_2d_conv=False
 
+        if self.AttentionUnet:
+            config = get_3DReg_config()
+            patch_size =_triple(config.patches["size"])
+            self.patch_embeddings = nn.Conv3d(in_channels=ngc*(2**self.nb_ed_layers),
+                                       out_channels=config.hidden_size,
+                                       kernel_size=patch_size,
+                                       stride=patch_size)
+            S = config.patches["size"][0]
+            self.patch_de_embeddings = nn.ConvTranspose3d(in_channels=config.hidden_size,
+                                                                  out_channels=ngc*(2**self.nb_ed_layers),
+                                                                  kernel_size=(S,S,S),
+                                                                  stride=(S,S,S))
+            self.VisTrans = VisionTransformer(config=config,vis=False)
+
     def forward(self, x):
         if self.residual_layer>=0:
             if self.dim==2:
@@ -262,8 +282,21 @@ class UNet(nn.Module):
         for l in range(self.nb_ed_layers):
             xk.append(self.down_layers[l](xk[-1]))
         # ----------------------------------------------------------
-        # Extracting layers :
         xy = xk[-1]
+        if self.AttentionUnet:
+            B = xy.shape[0]
+            p = self.patch_embeddings(xy)
+            NP = p.shape[-1]
+            p = p.flatten(2)
+            p = p.transpose(-1,-2)
+            p,_ = self.VisTrans(p)
+            p = p.permute(0,2,1)
+            H = p.shape[1]
+            p = p.contiguous().view(B,H,NP,NP,NP)
+            xy = self.patch_de_embeddings(p)
+        # ----------------------------------------------------------
+        # Extracting layers :
+
         for l in range(self.nb_ed_layers):
             y = self.up_layers[l](xy)
             xy = torch.cat([xk[-l-2],y],1)

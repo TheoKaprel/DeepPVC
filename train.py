@@ -145,7 +145,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 t_preopt+=time.time()-timer_preopt1
                 timer_opt1=time.time()
 
-                if (step==0):
+                if (step==0) and (epoch%10==0):
                     print(f'(gpu {rank}) batch_inputs shape : {[(k, v.shape) for (k,v) in batch_inputs.items()]}')
                     print(f'(gpu {rank}) batch_tagets shape : {[(k, v.shape) for (k,v) in batch_targets.items()]}')
                     print(f"(gpu {rank}) batch type : {batch_inputs[list(batch_inputs.keys())[0]].dtype}")

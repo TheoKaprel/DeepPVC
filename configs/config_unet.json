@@ -55,7 +55,7 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 2,
+  "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
