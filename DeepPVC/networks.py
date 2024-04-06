@@ -121,6 +121,9 @@ class UpSamplingBlock(nn.Module):
                 sequenceUpBlock.append(convT(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padd, output_padding=outpadd))
             elif (elmt=="conv"):
                 sequenceUpBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
+            elif (elmt=="upconv"):
+                sequenceUpBlock.append(nn.Upsample(scale_factor=2))
+                sequenceUpBlock.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
             elif (elmt=="relu"):
                 sequenceUpBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
             elif (elmt=="norm"):

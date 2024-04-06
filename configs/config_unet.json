@@ -41,7 +41,7 @@
   "leaky_relu": 0.02,
 
   "patches":false,
-  "ed_blocks": ["conv-norm-relu-pool", "convT-norm-relu"],
+  "ed_blocks": ["conv-norm-relu-pool-conv-norm-relu", "upconv-norm-relu-conv-norm-relu"],
   "residual_layer": true,
   "resunet": false,
   "attention": false,
@@ -56,7 +56,7 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "nb_ed_layers": 3,
-  "hidden_channels_unet":8,
+  "hidden_channels_unet":16,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]
