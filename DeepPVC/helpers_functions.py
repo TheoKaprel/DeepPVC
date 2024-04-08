@@ -1,8 +1,5 @@
-import numpy as np
 import torch
-
 from . import helpers_data
-from torch.cuda.amp import autocast
 import torch.distributed as dist
 
 def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):

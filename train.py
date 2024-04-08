@@ -202,11 +202,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                 print("(end) step {}   /   gpu {} ({})".format(step,rank, t_step_end-t_step_begin))
 
 
-            if ((params['jean_zay']) and (time.time() - t0 >= 0.97*TIME_LIMIT_s) and (idr_torch.rank == 0)): # sauvegarde d'urgence
-                print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
-                DeepPVEModel.params['training_duration'] = round(time.time() - t0)
-                emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
-                DeepPVEModel.save_model(output_path=emergency_output_filename)
+            if ((params['jean_zay']) and (time.time() - t0 >= 0.97*TIME_LIMIT_s)): # sauvegarde d'urgence
+                if (idr_torch.rank == 0):
+                    print('TIME LIMIT is close ! /!\ EMERGENCY SAVING /!\ ')
+                    DeepPVEModel.params['training_duration'] = round(time.time() - t0)
+                    emergency_output_filename = os.path.join(DeepPVEModel.output_folder, DeepPVEModel.output_pth.replace(".pth", f"_{DeepPVEModel.current_epoch}_emergency_saving.pth"))
+                    DeepPVEModel.save_model(output_path=emergency_output_filename)
                 exit(0)
 
             torch.cuda.empty_cache()
@@ -227,9 +228,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             if (validation_dataloader is not None):
                 MSE_val,MAE_val = helpers_functions.validation_errors(validation_dataloader,DeepPVEModel,do_NRMSE=True, do_NMAE=True)
                 RMSE_val,MAE_val = torch.sqrt(MSE_val).item(),MAE_val.item()
-                print(f'valRMSE : {RMSE_val},  val MAE : {MAE_val}')
                 DeepPVEModel.val_error_MSE.append([DeepPVEModel.current_epoch, RMSE_val])
                 DeepPVEModel.val_error_MAE.append([DeepPVEModel.current_epoch, MAE_val])
+
+                if rank==0:
+                    print(f'valRMSE : {RMSE_val},  val MAE : {MAE_val}')
 
                 if (MAE_val<min_val_mae and params['early_stopping'] and rank==0):
                     min_val_mae=MAE_val
