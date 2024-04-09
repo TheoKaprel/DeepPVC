@@ -100,7 +100,7 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                 fovj1, fovj2 = 8, 120
             else:
                 print(
-                    f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({self.nb_pix_x}x{self.nb_pix_y})")
+                    f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({input_PVE_noisy_array.shape[1]}x{input_PVE_noisy_array.shape[2]})")
                 exit(0)
 
             batch = {}
