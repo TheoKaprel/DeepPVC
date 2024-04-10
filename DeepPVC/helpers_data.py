@@ -403,7 +403,7 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         return data_inputs
 
 
-def back_to_input_format(params,output):
+def back_to_input_format(params,output, initial_shape= None):
     if params['inputs']=="projs":
         output_array = output
         if params['sino']:
@@ -413,7 +413,13 @@ def back_to_input_format(params,output):
         if params['sino']:
             output_array = output_array.transpose((1,0,2))[4:124,:,:]
     elif params['inputs']=="imgs":
-        output_array=output.cpu().numpy().squeeze()
+
+        if params['pad']=="zero":
+            output_array = output.squeeze()
+            unpad = pvc_dataset.ZeroUNPadImgs(pad_size=128,inital_shape=initial_shape)
+            output_array = unpad(output_array)
+        output_array = output_array.cpu().numpy()
+
     return output_array
 
 

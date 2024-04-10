@@ -120,7 +120,7 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
         print(f'network output shape : {output.shape}')
 
-        output_array = helpers_data.back_to_input_format(params=params,output=output)
+        output_array = helpers_data.back_to_input_format(params=params,output=output, initial_shape = list(input_PVE_noisy_array.shape))
         print(f'final output shape : {output_array.shape}')
 
 

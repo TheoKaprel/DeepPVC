@@ -230,6 +230,22 @@ class ZeroPadImgs(torch.nn.Module):
                                                    0, 0),
                                            mode="constant", value=0)
 
+class ZeroUNPadImgs(torch.nn.Module):
+    def __init__(self, pad_size, inital_shape):
+        super().__init__()
+        self.pad_size = pad_size
+        self.initial_shape = inital_shape
+
+        self.first_0,self.first_1, self.first_2 = ((self.pad_size - self.initial_shape[0]) // 2 + (self.pad_size - self.initial_shape[0]) % 2,
+        (self.pad_size - self.initial_shape[1]) // 2 + (self.pad_size - self.initial_shape[1]) % 2,
+        (self.pad_size - self.initial_shape[2]) // 2 + (self.pad_size - self.initial_shape[2]) % 2)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        if input.dim()==3:
+            return input[self.first_0:self.initial_shape[0]+self.first_0,
+                   self.first_1:self.initial_shape[1]+self.first_1,
+                   self.first_2:self.initial_shape[2]+self.first_2]
+
 
 class SinoToSinoDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
