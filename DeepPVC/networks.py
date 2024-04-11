@@ -145,6 +145,31 @@ class UpSamplingBlock(nn.Module):
         else:
             return self.sequenceUpBlock(x)
 
+class PathsBlock(nn.Module):
+    def __init__(self, input_channels, nb_channels_per_paths, nconv,kernel_size,stride, padding):
+        super(PathsBlock, self).__init__()
+        self.input_channels = input_channels
+
+        init_paths = []
+        for _ in range(input_channels):
+            path = [torch.nn.Conv3d(1, nb_channels_per_paths, kernel_size=kernel_size, stride=stride,
+                                 padding=padding),
+                            nn.InstanceNorm3d(1),
+                            nn.ReLU()]
+            for __ in range(nconv-1):
+                path = path + [torch.nn.Conv3d(nb_channels_per_paths, nb_channels_per_paths, kernel_size=kernel_size, stride=stride,
+                                 padding=padding),nn.InstanceNorm3d(1),nn.ReLU()]
+            print(path)
+            init_paths.append(nn.Sequential(*path))
+        self.init_paths = nn.Sequential(*init_paths)
+    def forward(self, input):
+        inputs = [input[:,k:k+1,:,:,:] for k in range(self.input_channels)]
+        outputs = [self.init_paths[k](input_k) for k,input_k in enumerate(inputs)]
+        return torch.concat(outputs,dim=1)
+
+
+
+
 
 class myminRelu(nn.ReLU):
     def __init__(self, vmin):
@@ -197,19 +222,14 @@ class UNet(nn.Module):
         if paths:
             self.paths=True
 
-            self.inital_paths = nn.Sequential(*[networks_attention_cbam.CBAM(112, reduction = 8) for _ in range(self.input_channels)])
-
-            # nb_channels_per_paths = 8
-            # self.inital_paths = nn.Sequential(*[
-            #                         nn.Sequential(*[conv(1,nb_channels_per_paths,kernel_size=init_feature_kernel_size,stride=init_feature_stride, padding=init_feature_padding),
-            #                                         nn.InstanceNorm3d(1),
-            #                                         nn.ReLU()])
-            #                                         for _ in range(self.input_channels)])
-            # input_channel = self.input_channels * nb_channels_per_paths
+            # self.inital_paths = nn.Sequential(*[networks_attention_cbam.CBAM(112, reduction = 8) for _ in range(self.input_channels)])
+            nb_channels_per_paths = ngc // input_channel
+            self.init_feature = PathsBlock(input_channels=input_channel,nb_channels_per_paths=nb_channels_per_paths,
+                                           nconv=2,
+                                           kernel_size=init_feature_kernel_size, stride=init_feature_stride,padding=init_feature_padding)
         else:
             self.paths = False
-
-        self.init_feature = conv(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=init_feature_stride, padding = init_feature_padding)
+            self.init_feature = conv(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=init_feature_stride, padding = init_feature_padding)
 
         self.nb_ed_layers = nb_ed_layers
         down_layers = []
@@ -266,13 +286,13 @@ class UNet(nn.Module):
                 residual = x[:,self.residual_layer:self.residual_layer+1,:,:,:]
 
 
-        if self.paths:
-            # different inital paths
-            x_=[]
-            for c in range(x.shape[1]):
-                # x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
-                x_.append(self.inital_paths[c](x[:,c,:,:,:])[:,None,:,:,:])
-            x = torch.concatenate(x_, dim=1)
+        # if self.paths:
+        #     # different inital paths
+        #     x_=[]
+        #     for c in range(x.shape[1]):
+        #         # x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
+        #         x_.append(self.inital_paths[c](x[:,c,:,:,:])[:,None,:,:,:])
+        #     x = torch.concatenate(x_, dim=1)
 
 
         # ----------------------------------------------------------
