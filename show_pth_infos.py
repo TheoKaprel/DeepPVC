@@ -81,7 +81,7 @@ def show_pth(lpth, losses, legend):
         fig_test,ax_test=plt.subplots()
         # cm = plt.get_cmap('gist_rainbow')
         # NUM_COLORS=len(dict_test.items())
-        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink']
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
