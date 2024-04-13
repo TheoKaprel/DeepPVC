@@ -23,7 +23,7 @@
   "max_nb_data": 20,
   "training_batchsize":2,
   "test_batchsize":2,
-  "data_augmentation": [],
+  "data_augmentation": ["vol"],
   "data_normalisation": "none",
   "pad": "zero",
   "amp": true,

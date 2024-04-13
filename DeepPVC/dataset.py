@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import h5py
 from torch.utils.data import Dataset,DataLoader
+from volumentations import *
 
 
 from . import helpers_data_parallelism, helpers,helpers_data
@@ -403,6 +404,19 @@ class ImgToImgDataset(BaseDataset):
 
         self.init_h5()
 
+        if "vol" in self.list_transforms:
+            self.get_augmentation = lambda img_size: Compose([
+                    Rotate((-5, 5), (0, 0), (0, 0), p=0.5),
+                    Rotate((0, 0), (-5, 5), (0, 0), p=0.5),
+                    Rotate((0, 0), (0, 0), (-5, 5), p=0.5),
+                    RandomCropFromBorders(crop_value=0.1, p=0.3),
+                    Resize(img_size, interpolation=1, resize_type=0, always_apply=True, p=1.0),
+                    Flip(0, p=0.5),
+                    Flip(1, p=0.5),
+                    Flip(2, p=0.5),
+                    RandomRotate90((1, 2), p=0.5),
+                ], p=1.0)
+
     def init_h5(self):
         self.datasetfn = self.dataset_path[0]
         self.dataseth5 = h5py.File(self.datasetfn, 'r')
@@ -436,6 +450,16 @@ class ImgToImgDataset(BaseDataset):
             data_inputs['rec'] = np.array(data['rec'],dtype=self.dtype)
             data_inputs['attmap_rec_fp'] = np.array(data['attmap_rec_fp'], dtype=self.dtype)
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
+
+
+        if "vol" in self.list_transforms:
+            augmentation = self.get_augmentation(data_inputs['rec'].shape)
+            data = {'image': data_inputs['rec'], "image2": data_inputs['attmap_rec_fp'],
+                    "image3": data_targets['src_4mm']}
+            aug_data = augmentation(**data)
+            data_inputs['rec'] = aug_data['image']
+            data_inputs['attmap_rec_fp'] = aug_data["image2"]
+            data_targets['src_4mm'] = aug_data["image3"]
 
         for key_inputs in data_inputs.keys():
             data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
