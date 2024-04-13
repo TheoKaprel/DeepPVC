@@ -155,11 +155,12 @@ class PathsBlock(nn.Module):
             path = [torch.nn.Conv3d(1, nb_channels_per_paths, kernel_size=kernel_size, stride=stride,
                                  padding=padding),
                             nn.InstanceNorm3d(nb_channels_per_paths),
-                            nn.ReLU()]
+                            nn.LeakyReLU(0.02)]
             for __ in range(nconv-1):
                 path = path + [torch.nn.Conv3d(nb_channels_per_paths, nb_channels_per_paths, kernel_size=kernel_size, stride=stride,
-                                 padding=padding),nn.InstanceNorm3d(nb_channels_per_paths),nn.ReLU()]
-            print(path)
+                                 padding=padding),
+                               nn.InstanceNorm3d(nb_channels_per_paths),
+                               nn.LeakyReLU(0.02)]
             init_paths.append(nn.Sequential(*path))
         self.init_paths = nn.Sequential(*init_paths)
     def forward(self, input):

@@ -113,8 +113,8 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
     elif data_normalisation=="3d_max":
         max= norm[0]
         for key in dataset_or_img.keys():
-            if key=="attmap_fp":
-                max_attmap = torch.amax(dataset_or_img['attmap_fp'], dim=(1, 2, 3), keepdim=False)
+            if (key=="attmap_fp" or key=="attmap_rec_fp"):
+                max_attmap = torch.amax(dataset_or_img[key], dim=(1, 2, 3), keepdim=False)
                 max_attmap[max_attmap==0]=1 # avoids nan after division by max
                 dataset_or_img[key] = dataset_or_img[key]/ max_attmap[:,None,None,None]
             elif key=="lesion_mask":
