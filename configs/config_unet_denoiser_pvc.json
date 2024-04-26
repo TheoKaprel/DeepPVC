@@ -42,7 +42,7 @@
   "leaky_relu": 0.02,
 
   "patches":false,
-  "ed_blocks": ["conv-norm-relu-pool", "convT-norm-relu"],
+  "ed_blocks": ["conv-norm-relu-pool", "upconv-norm-relu"],
   "residual_layer": true,
   "resunet": true,
   "attention": false,

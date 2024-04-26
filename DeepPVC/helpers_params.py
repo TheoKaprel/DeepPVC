@@ -33,7 +33,7 @@ option_unet_denoiser_pvc = ["lambda_losses_denoiser", "lambda_losses_pvc"]
 
 activation_functions = ["sigmoid", "tanh", "relu","softplus", "linear", "none", "relu_min"]
 pre_layer_normalisations = ["batch_norm", "inst_norm", "none"]
-losses = ["L1", "L2", "BCE", "Wasserstein", "Poisson", "Sum", "SmoothL1", "lesion"]
+losses = ["L1", "L2", "BCE", "Wasserstein", "Poisson", "Sum", "SmoothL1", "lesion", "conv"]
 lr_policies = ["multiplicative"]
 
 

@@ -1,5 +1,7 @@
 import os.path
 import time
+
+import itk
 import torch
 from torch import optim
 
@@ -161,6 +163,17 @@ class UNetModel(ModelBase):
             self.scheduler = optim.lr_scheduler.MultiplicativeLR(self.double_optimizer, lbda)
 
     def init_losses(self):
+
+        if self.with_conv_loss:
+            psf_itk = itk.imread(self.params['psf'])
+            psf_torch = torch.Tensor(itk.array_from_image(psf_itk)).to(self.device)
+            self.conv_psf = torch.nn.Conv3d(in_channels=1, out_channels=1, kernel_size=psf_torch.shape, stride=(1, 1, 1),
+                                   padding=((psf_torch.shape[0] - 1) // 2, (psf_torch.shape[1] - 1) // 2,
+                                            (psf_torch.shape[2] - 1) // 2), bias=False).to(device)
+            self.conv_psf.weight.data = psf_torch[None, None, :, :, :]
+        else:
+            self.conv_psf = None
+
         self.losses_params = {'recon_loss': self.params['recon_loss'],
                               'lambda_recon': self.params['lambda_recon'], 'device': self.device}
         self.losses = losses.UNetLosses(self.losses_params)
@@ -189,7 +202,11 @@ class UNetModel(ModelBase):
         self.fakePVfree = self.UNet(input)
 
     def losses_unet(self):
-        self.unet_loss = self.losses.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:], lesion_mask=self.lesion_mask_fp)
+        self.unet_loss = self.losses.get_unet_loss(target=self.truePVfree,
+                                                   output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:],
+                                                   lesion_mask=self.lesion_mask_fp,
+                                                   conv_psf=self.conv_psf,
+                                                   input_rec = self.truePVE_noisy)
 
     def backward_unet(self):
         if self.amp:

@@ -20,6 +20,8 @@ def get_nn_loss(loss_name):
         return nn.SmoothL1Loss()
     elif loss_name=="lesion":
         return nn.L1Loss()
+    elif loss_name=="conv":
+        return nn.L1Loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -154,11 +156,13 @@ class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
         super().__init__(losses_params)
 
-    def get_unet_loss(self, target, output, lesion_mask):
+    def get_unet_loss(self, target, output, lesion_mask, conv_psf, input_rec):
         unet_loss = 0
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if type(loss_name)=="lesion":
                 unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
+            elif type(loss_name)=="conv":
+                unet_loss+= lbda * loss(input_rec, conv_psf(output))
             else:
                 unet_loss+= lbda * loss(target, output)
         return unet_loss
