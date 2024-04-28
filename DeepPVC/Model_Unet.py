@@ -185,7 +185,7 @@ class UNetModel(ModelBase):
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
-            self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_rec_fp']
+            self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_4mm']
 
         self.lesion_mask_fp = batch_targets['lesion_mask'] if self.with_lesion else None
 
@@ -225,7 +225,7 @@ class UNetModel(ModelBase):
         if self.with_rec_fp:
             true_rec_fp = batch['rec_fp']
         if self.with_att:
-            attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_rec_fp']
+            attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_4mm']
 
         if self.with_rec_fp:
             # ----------------------------

@@ -113,7 +113,7 @@ def normalize_eval(dataset_or_img, data_normalisation, norm, params, to_torch):
     elif data_normalisation=="3d_max":
         max= norm[0]
         for key in dataset_or_img.keys():
-            if (key=="attmap_fp" or key=="attmap_rec_fp"):
+            if (key=="attmap_fp" or key=="attmap_4mm"):
                 max_attmap = torch.amax(dataset_or_img[key], dim=(1, 2, 3), keepdim=False)
                 max_attmap[max_attmap==0]=1 # avoids nan after division by max
                 dataset_or_img[key] = dataset_or_img[key]/ max_attmap[:,None,None,None]
@@ -394,11 +394,11 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         else:
             pad = torch.nn.Identity()
 
-        data_PVE_noisy = pad(torch.from_numpy(input_PVE_noisy_array[None,:,:,:].astype(np.float32)))
+        data_PVE_noisy = pad(torch.Tensor(input_PVE_noisy_array[None,:,:,:]))
         data_inputs = {}
         data_inputs['rec'] = data_PVE_noisy
         if with_att:
-            data_inputs['attmap_rec_fp'] = pad(torch.from_numpy(attmap_fp_array[None,:,:,:].astype(np.float32)))
+            data_inputs['attmap_4mm'] = pad(torch.Tensor(attmap_fp_array[None,:,:,:]))
 
         return data_inputs
 

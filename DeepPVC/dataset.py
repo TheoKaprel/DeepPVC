@@ -448,17 +448,17 @@ class ImgToImgDataset(BaseDataset):
             data_inputs, data_targets={}, {}
 
             data_inputs['rec'] = np.array(data['rec'],dtype=self.dtype)
-            data_inputs['attmap_rec_fp'] = np.array(data['attmap_rec_fp'], dtype=self.dtype)
+            data_inputs['attmap_4mm'] = np.array(data['attmap_4mm'], dtype=self.dtype)
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
 
         if "vol" in self.list_transforms:
             augmentation = self.get_augmentation(data_inputs['rec'].shape)
-            data = {'image': data_inputs['rec'], "image2": data_inputs['attmap_rec_fp'],
+            data = {'image': data_inputs['rec'], "image2": data_inputs['attmap_4mm'],
                     "image3": data_targets['src_4mm']}
             aug_data = augmentation(**data)
             data_inputs['rec'] = aug_data['image']
-            data_inputs['attmap_rec_fp'] = aug_data["image2"]
+            data_inputs['attmap_4mm'] = aug_data["image2"]
             data_targets['src_4mm'] = aug_data["image3"]
 
         for key_inputs in data_inputs.keys():
