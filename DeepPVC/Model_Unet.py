@@ -169,7 +169,7 @@ class UNetModel(ModelBase):
             psf_torch = torch.Tensor(itk.array_from_image(psf_itk)).to(self.device)
             self.conv_psf = torch.nn.Conv3d(in_channels=1, out_channels=1, kernel_size=psf_torch.shape, stride=(1, 1, 1),
                                    padding=((psf_torch.shape[0] - 1) // 2, (psf_torch.shape[1] - 1) // 2,
-                                            (psf_torch.shape[2] - 1) // 2), bias=False).to(device)
+                                            (psf_torch.shape[2] - 1) // 2), bias=False).to(self.device)
             self.conv_psf.weight.data = psf_torch[None, None, :, :, :]
         else:
             self.conv_psf = None

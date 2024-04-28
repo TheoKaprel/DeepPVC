@@ -156,7 +156,7 @@ class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
         super().__init__(losses_params)
 
-    def get_unet_loss(self, target, output, lesion_mask, conv_psf, input_rec):
+    def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None):
         unet_loss = 0
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if type(loss_name)=="lesion":
