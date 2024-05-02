@@ -56,7 +56,7 @@ class ModelBase(torch.nn.Module):
 
 
         self.with_lesion=("lesion" in params['recon_loss'])
-        self.with_conv_loss = ("lesion" in params['recon_loss'])
+        self.with_conv_loss = ("conv" in params['recon_loss'])
 
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
         self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None

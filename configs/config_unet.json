@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_dataset/img-to-img/img_to_img_temp.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_dataset/img-to-img/img_to_img_temp.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_sample_dataset_img.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_sample_dataset_img.h5"],
   "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
@@ -17,14 +17,14 @@
   "with_adj_angles": true,
   "nb_adj_angles": 16,
   "dim": "3d",
-  "paths": true,
+  "paths": false,
   "finetuning": false,
 
   "max_nb_data": 20,
   "training_batchsize":2,
   "test_batchsize":2,
   "data_augmentation": [],
-  "data_normalisation": "3d_max",
+  "data_normalisation": "none",
   "pad": "zero",
   "amp": true,
   "verbose": 2,
@@ -58,8 +58,8 @@
   "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1", "conv"],
-  "lambda_recon":[1, 1],
+  "recon_loss":["L1"],
+  "lambda_recon":[1],
   "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
 }
 
