@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/test_dataset_psf/test_dataset_psf.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample_sino.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample_sino.h5"],
   "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
@@ -32,7 +32,7 @@
 
   "network": "unet_denoiser_pvc",
 
-  "n_epochs":10,
+  "n_epochs":50,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.5, 100],
   "early_stopping": false,

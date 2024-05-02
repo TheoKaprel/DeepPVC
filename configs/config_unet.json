@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_sample_dataset_img.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_sample_dataset_img.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample.h5"],
   "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
@@ -58,8 +58,8 @@
   "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
-  "lambda_recon":[1],
+  "recon_loss":["L1", "conv"],
+  "lambda_recon":[1, 1],
   "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
 }
 

@@ -159,10 +159,10 @@ class UNetLosses(Model_Loss):
     def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None):
         unet_loss = 0
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
-            if type(loss_name)=="lesion":
+            if loss_name=="lesion":
                 unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
-            elif type(loss_name)=="conv":
-                unet_loss+= lbda * loss(input_rec, conv_psf(output))
+            elif loss_name=="conv":
+                unet_loss+= lbda * loss(input_rec[:,None,:,:,:], conv_psf(output[:,None,:,:,:]))
             else:
                 unet_loss+= lbda * loss(target, output)
         return unet_loss
