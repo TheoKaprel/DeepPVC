@@ -353,11 +353,11 @@ class UNetModel(ModelBase):
             if (new_lr is not None):
                 print(f"NEW LEARNING RATE FOR RESUME TRAINING : {self.learning_rate}")
             else:
-                self.learning_rate = checkpoint['unet_denoiser_opt']['param_groups'][0]['lr']
+                self.learning_rate = checkpoint['double_optimizer']['param_groups'][0]['lr']
 
             self.init_optimization()
             self.init_losses()
-            self.double_optimizer.load_state_dict(checkpoint['unet_denoiser_opt'])
+            self.double_optimizer.load_state_dict(checkpoint['double_optimizer'])
             for g in self.double_optimizer.param_groups:
                 g['lr'] = self.learning_rate
             self.start_epoch = self.current_epoch
