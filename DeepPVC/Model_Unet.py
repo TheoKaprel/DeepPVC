@@ -182,11 +182,17 @@ class UNetModel(ModelBase):
         self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img_to_img == False) else batch_inputs['rec']
         self.truePVfree = batch_targets['PVfree'] if (self.img_to_img == False) else batch_targets['src_4mm']
 
+        if self.params['data_normalisation']=="3d_sum":
+            self.norm = self.truePVE_noisy.sum((1,2,3))
+            self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+
+
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
             self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_4mm']
-
+            if self.params['data_normalisation'] == "3d_sum":
+                self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
         self.lesion_mask_fp = batch_targets['lesion_mask'] if self.with_lesion else None
 
 
@@ -200,6 +206,9 @@ class UNetModel(ModelBase):
                 input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
 
         self.fakePVfree = self.UNet(input)
+
+        if self.params['data_normalisation'] == "3d_sum":
+            self.fakePVfree = self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None] * self.norm[:,None,None,None]
 
     def losses_unet(self):
         self.unet_loss = self.losses.get_unet_loss(target=self.truePVfree,
@@ -222,10 +231,19 @@ class UNetModel(ModelBase):
     def forward(self, batch):
 
         truePVEnoisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
+
+        if self.params['data_normalisation']=="3d_sum":
+            norm = truePVEnoisy.sum((1,2,3))
+            truePVEnoisy = truePVEnoisy / truePVEnoisy.amax((1,2,3))[:,None,None,None]
+
+
+
         if self.with_rec_fp:
             true_rec_fp = batch['rec_fp']
         if self.with_att:
             attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_4mm']
+            if self.params['data_normalisation']=="3d_sum":
+                attmap_fp = attmap_fp / attmap_fp.amax((1,2,3))[:,None,None,None]
 
         if self.with_rec_fp:
             # ----------------------------
@@ -247,7 +265,8 @@ class UNetModel(ModelBase):
 
         with autocast(enabled=self.amp,dtype=torch.float16):
             fakePVfree = self.UNet(input)
-
+            if self.params['data_normalisation'] == "3d_sum":
+                fakePVfree = fakePVfree / fakePVfree.sum((1, 2, 3, 4))[:,None,None,None,None] * norm[:,None,None,None]
 
         if self.dim==2:
             return fakePVfree

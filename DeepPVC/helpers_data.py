@@ -53,7 +53,7 @@ def normalize(dataset_or_img,normtype,norm, to_torch, device):
 
 
 def compute_norm_eval(dataset_or_img, data_normalisation):
-    if ('global' in data_normalisation or data_normalisation=='none'):
+    if ('global' in data_normalisation or data_normalisation=='none' or data_normalisation=="3d_sum"):
         norm = None
     elif data_normalisation == 'img_standard':
         mean = torch.mean(dataset_or_img[:, 0:1, :, :, :], dim=(1, 2, 3,4), keepdim=True)
