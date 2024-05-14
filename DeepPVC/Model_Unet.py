@@ -185,7 +185,7 @@ class UNetModel(ModelBase):
         if self.params['data_normalisation']=="3d_sum":
             self.norm = self.truePVE_noisy.sum((1,2,3))
             self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
-
+            self.truePVfree = self.truePVfree / self.truePVE_noisy.sum((1,2,3))[:,None,None,None] * self.norm
 
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
@@ -208,7 +208,7 @@ class UNetModel(ModelBase):
         self.fakePVfree = self.UNet(input)
 
         if self.params['data_normalisation'] == "3d_sum":
-            self.fakePVfree = self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None] * self.norm[:,None,None,None]
+            self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None]) * self.norm[:,None,None,None]
 
     def losses_unet(self):
         self.unet_loss = self.losses.get_unet_loss(target=self.truePVfree,
@@ -266,7 +266,7 @@ class UNetModel(ModelBase):
         with autocast(enabled=self.amp,dtype=torch.float16):
             fakePVfree = self.UNet(input)
             if self.params['data_normalisation'] == "3d_sum":
-                fakePVfree = fakePVfree / fakePVfree.sum((1, 2, 3, 4))[:,None,None,None,None] * norm[:,None,None,None]
+                fakePVfree = fakePVfree / fakePVfree.sum((1,2,3,4))[:,None,None,None,None] * norm[:,None,None,None]
 
         if self.dim==2:
             return fakePVfree
