@@ -58,8 +58,8 @@
   "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1", "conv"],
-  "lambda_recon":[1, 1],
+  "recon_loss":["L1"],
+  "lambda_recon":[1],
   "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
 }
 

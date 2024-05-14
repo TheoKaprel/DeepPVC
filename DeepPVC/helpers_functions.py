@@ -32,7 +32,8 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
             fakePVfree = model.forward(batch_inputs)
             fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
                                                                 norm=norm_batch,params=model.params,to_numpy=False)
-
+            if data_normalisation == "3d_sum":
+                ground_truth = ground_truth / ground_truth.sum((1,2,3))[:,None,None,None] * batch_inputs['rec'].sum((1,2,3))[:,None,None,None]
 
         if do_NRMSE:
             MSE_batch = torch.mean((fakePVfree-ground_truth)**2)

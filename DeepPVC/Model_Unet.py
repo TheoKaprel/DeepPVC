@@ -185,7 +185,7 @@ class UNetModel(ModelBase):
         if self.params['data_normalisation']=="3d_sum":
             self.norm = self.truePVE_noisy.sum((1,2,3))
             self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
-            self.truePVfree = self.truePVfree / self.truePVE_noisy.sum((1,2,3))[:,None,None,None] * self.norm
+            self.truePVfree = self.truePVfree / self.truePVE_noisy.sum((1,2,3))[:,None,None,None] * self.norm[:,None,None,None]
 
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
