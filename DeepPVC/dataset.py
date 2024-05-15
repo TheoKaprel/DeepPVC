@@ -29,6 +29,8 @@ class BaseDataset(Dataset):
         self.with_lesion=("lesion" in params["recon_loss"])
 
         self.dtype=self.get_dtype(params['dtype'])
+        print(f"DTYYYYYYYYYYYYYYYYYYYYYYYYYYYYYPE : {self.dtype} ")
+
 
     def get_dtype(self,opt_dtype):
         if opt_dtype == 'float64':

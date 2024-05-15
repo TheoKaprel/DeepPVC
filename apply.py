@@ -71,12 +71,12 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
         print(f'input shape :  {[(k, v.shape) for (k,v) in data_input.items()]}')
 
-        data_normalisation = params['data_normalisation']
-        norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
-        if (data_normalisation!='none'):
-            print(f'norm : {norm_input}')
-        data_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
-                                                     norm=norm_input, params=model.params, to_torch=False)
+        # data_normalisation = params['data_normalisation']
+        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
+        # if (data_normalisation!='none'):
+        #     print(f'norm : {norm_input}')
+        # data_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
+        #                                              norm=norm_input, params=model.params, to_torch=False)
 
         if params['inputs']=='projs':
             output = np.zeros((data_input['PVE_noisy'].shape[0], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
@@ -114,9 +114,9 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
         elif params['inputs']=="imgs":
             output=model.forward(data_input)
 
-        output = helpers_data.denormalize_eval(dataset_or_img=output,
-                                                          data_normalisation=data_normalisation,
-                                                          norm=norm_input, params=model.params, to_numpy=False)
+        # output = helpers_data.denormalize_eval(dataset_or_img=output,
+        #                                                   data_normalisation=data_normalisation,
+        #                                                   norm=norm_input, params=model.params, to_numpy=False)
 
         print(f'network output shape : {output.shape}')
 
