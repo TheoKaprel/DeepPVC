@@ -182,18 +182,39 @@ class UNetModel(ModelBase):
         self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img_to_img == False) else batch_inputs['rec']
         self.truePVfree = batch_targets['PVfree'] if (self.img_to_img == False) else batch_targets['src_4mm']
 
-        if self.params['data_normalisation']=="3d_sum":
-            self.norm = self.truePVE_noisy.sum((1,2,3))
-            self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
-            self.truePVfree = self.truePVfree / self.truePVE_noisy.sum((1,2,3))[:,None,None,None] * self.norm[:,None,None,None]
-
         if self.with_rec_fp:
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
             self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_4mm']
-            if self.params['data_normalisation'] == "3d_sum":
-                self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
         self.lesion_mask_fp = batch_targets['lesion_mask'] if self.with_lesion else None
+
+        self.normalize_data()
+
+    def normalize_data(self):
+        if self.params['data_normalisation']=="3d_max":
+            self.norm = self.truePVE_noisy.amax((1,2,3))
+
+            self.truePVE_noisy = self.truePVE_noisy / self.norm[:,None,None,None]
+            if self.with_att:
+                self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
+
+        elif self.params['data_normalisation'] in ["3d_sum", "3d_softmax"]:
+            self.norm = self.truePVE_noisy.sum((1,2,3))
+
+            self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+            if self.with_att:
+                self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
+        else:
+            self.norm = None
+
+
+    def denormalize_data(self):
+        if self.params['data_normalisation'] == "3d_max":
+            self.fakePVfree = self.fakePVfree  * self.norm[:,None,None,None,None]
+        elif self.params['data_normalisation'] == "3d_sum":
+            self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
+        elif self.params['data_normalisation'] == "3d_softmax":
+            self.fakePVfree = torch.exp(self.fakePVfree) / torch.exp(self.fakePVfree).sum((1,2,3,4))[:,None,None,None,None]  * self.norm[:,None,None,None,None]
 
 
     def forward_unet(self):
@@ -206,9 +227,7 @@ class UNetModel(ModelBase):
                 input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
 
         self.fakePVfree = self.UNet(input)
-
-        if self.params['data_normalisation'] == "3d_sum":
-            self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None]) * self.norm[:,None,None,None]
+        self.denormalize_data()
 
     def losses_unet(self):
         self.unet_loss = self.losses.get_unet_loss(target=self.truePVfree,
@@ -229,49 +248,41 @@ class UNetModel(ModelBase):
             self.double_optimizer.zero_grad(set_to_none=True)
 
     def forward(self, batch):
-
-        truePVEnoisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
-
-        if self.params['data_normalisation']=="3d_sum":
-            norm = truePVEnoisy.sum((1,2,3))
-            truePVEnoisy = truePVEnoisy / truePVEnoisy.amax((1,2,3))[:,None,None,None]
-
-
+        self.truePVE_noisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
 
         if self.with_rec_fp:
-            true_rec_fp = batch['rec_fp']
+            self.true_rec_fp = batch['rec_fp']
         if self.with_att:
-            attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_4mm']
-            if self.params['data_normalisation']=="3d_sum":
-                attmap_fp = attmap_fp / attmap_fp.amax((1,2,3))[:,None,None,None]
+            self.attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_4mm']
+
+        self.normalize_data()
 
         if self.with_rec_fp:
             # ----------------------------
             if self.dim==2:
-                input = torch.concat((truePVEnoisy, true_rec_fp), dim=1)
+                input = torch.concat((self.truePVE_noisy, self.true_rec_fp), dim=1)
             elif self.dim==3:
                 if self.with_att:
-                    input = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:], attmap_fp[:,None,:,:,:]),dim=1)
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
                 else:
-                    input = torch.concat((truePVEnoisy[:,None,:,:,:], true_rec_fp[:,None,:,:,:]),dim=1)
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]),dim=1)
         else:
             if self.dim==2:
                 input = batch[0]
             elif self.dim==3:
                 if self.with_att:
-                    input = torch.concat((truePVEnoisy[:,None,:,:,:], attmap_fp[:,None,:,:,:]),dim=1)
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
                 else:
-                    input = truePVEnoisy[:,None,:,:,:]
+                    input = self.truePVE_noisy[:,None,:,:,:]
 
         with autocast(enabled=self.amp,dtype=torch.float16):
-            fakePVfree = self.UNet(input)
-            if self.params['data_normalisation'] == "3d_sum":
-                fakePVfree = fakePVfree / fakePVfree.sum((1,2,3,4))[:,None,None,None,None] * norm[:,None,None,None]
+            self.fakePVfree = self.UNet(input)
+            self.denormalize_data()
 
         if self.dim==2:
-            return fakePVfree
+            return self.fakePVfree
         elif self.dim==3:
-            return fakePVfree[:,0,:,:,:]
+            return self.fakePVfree[:,0,:,:,:]
 
 
     def optimize_parameters(self):

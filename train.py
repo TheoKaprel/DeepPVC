@@ -135,9 +135,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
             # for key_targets in batch_targets.keys():
             #     batch_targets[key_targets] = train_dataloader.dataset.pad(batch_targets[key_targets])
 
-            norm = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
-            batch_targets = helpers_data.normalize_eval(dataset_or_img=batch_targets,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
 
             # print(f"After batch->gpu ", torch.cuda.memory_allocated(device))
 
@@ -151,8 +148,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                     print(f"(gpu {rank}) batch type : {batch_inputs[list(batch_inputs.keys())[0]].dtype}")
                     print(f' batch_inputs size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_inputs.values()])}')
                     print(f' batch_targets size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in batch_targets.values()])}')
-                    print(f'norm : {norm}')
-                    # print(f' unet_denoiser size (GiB) : {sum([b.element_size()*b.nelement()* 7.4506e-9 for b in DeepPVEModel.UNet_denoiser.parameters()])}')
 
                     with torch.no_grad():
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)

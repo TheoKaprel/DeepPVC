@@ -3,7 +3,6 @@ from . import helpers_data
 import torch.distributed as dist
 
 def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
-    data_normalisation = model.params['data_normalisation']
     img = (model.params['inputs'] == "imgs")
 
     device = model.device
@@ -25,15 +24,7 @@ def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
         ground_truth=batch_targets['PVfree'] if (img==False) else batch_targets['src_4mm']
 
         with torch.no_grad():
-            norm_batch = helpers_data.compute_norm_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation)
-            batch_inputs = helpers_data.normalize_eval(dataset_or_img=batch_inputs,data_normalisation=data_normalisation,
-                                                       norm=norm_batch,params=model.params,to_torch=False)
-
             fakePVfree = model.forward(batch_inputs)
-            fakePVfree = helpers_data.denormalize_eval(dataset_or_img=fakePVfree,data_normalisation=data_normalisation,
-                                                                norm=norm_batch,params=model.params,to_numpy=False)
-            if data_normalisation == "3d_sum":
-                ground_truth = ground_truth / ground_truth.sum((1,2,3))[:,None,None,None] * batch_inputs['rec'].sum((1,2,3))[:,None,None,None]
 
         if do_NRMSE:
             MSE_batch = torch.mean((fakePVfree-ground_truth)**2)
