@@ -29,7 +29,7 @@ class BaseDataset(Dataset):
         self.with_lesion=("lesion" in params["recon_loss"])
 
         self.dtype=self.get_dtype(params['dtype'])
-        print(f"DTYYYYYYYYYYYYYYYYYYYYYYYYYYYYYPE : {self.dtype} ")
+        print(f"DTYPE : {self.dtype} ")
 
 
     def get_dtype(self,opt_dtype):
