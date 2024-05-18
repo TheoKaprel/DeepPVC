@@ -286,6 +286,8 @@ class UNetModel(ModelBase):
 
 
     def optimize_parameters(self):
+        self.double_optimizer.zero_grad(set_to_none=True)
+
         # Unet denoiser update
         self.set_requires_grad(self.UNet, requires_grad=True)
 
