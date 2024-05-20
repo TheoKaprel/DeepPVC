@@ -226,9 +226,7 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             self.norm = None
 
-        if ((self.norm is not None) and ((self.norm==0).sum()>0)):
-            print('HA BOOON')
-            print(self.norm)
+        print(self.norm)
 
     def normalize_data_pvc(self):
         if self.params['data_normalisation'] == "3d_max":
