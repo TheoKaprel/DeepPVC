@@ -44,7 +44,7 @@
   "patches":false,
   "ed_blocks": ["conv-norm-relu-pool", "upconv-norm-relu"],
   "residual_layer": true,
-  "resunet": false,
+  "resunet": true,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,

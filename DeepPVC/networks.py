@@ -114,7 +114,13 @@ class UpSamplingBlock(nn.Module):
 
         self.res_unit = res_unit
         if self.res_unit:
-            self.res_conv = convT(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padd, output_padding=outpadd)
+            if splited_block[0]=="convT":
+                self.res_conv = convT(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padd, output_padding=outpadd)
+            elif splited_block[0]=="upconv":
+                res_conv = []
+                res_conv.append(nn.Upsample(scale_factor=2))
+                res_conv.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
+                self.res_conv = nn.Sequential(*res_conv)
 
         for elmt in splited_block:
             if (elmt=="convT"):
