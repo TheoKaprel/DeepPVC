@@ -44,7 +44,7 @@
   "patches":false,
   "ed_blocks": ["conv-norm-relu-pool", "upconv-norm-relu"],
   "residual_layer": true,
-  "resunet": true,
+  "resunet": false,
   "attention": false,
   "save_every_n_epoch": 9999,
   "show_every_n_epoch": 999,
@@ -59,6 +59,6 @@
   "nb_ed_layers": 2,
   "hidden_channels_unet":2,
   "unet_activation": "relu",
-  "recon_loss":["L1", "lesion"],
-  "lambda_recon":[1, 100]
+  "recon_loss":["L1"],
+  "lambda_recon":[1]
 }
