@@ -226,8 +226,6 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             self.norm = None
 
-        print(self.norm)
-
     def normalize_data_pvc(self):
         if self.params['data_normalisation'] == "3d_max":
             self.fakePVE = self.fakePVE / self.norm[:, None, None, None]
