@@ -199,7 +199,7 @@ class UNet_Denoiser_PVC(ModelBase):
                 self.attmap_fp = self.attmap_fp / max_attmap[:, None, None, None]
 
             if self.with_rec_fp:
-                self.true_rec_fp = self.true_rec_fp / self.norm[:, None, None, None]
+                self.true_rec_fp = self.true_rec_fp / torch.amax(self.true_rec_fp, dim=(1, 2, 3))[:, None, None, None]
 
         elif self.params['data_normalisation'] in ["3d_sum", "3d_softmax"]:
             self.norm = self.truePVE_noisy.sum((1, 2, 3))
