@@ -22,8 +22,8 @@
   "finetuning": false,
 
   "max_nb_data": 5,
-  "training_batchsize":1,
-  "test_batchsize":1,
+  "training_batchsize":2,
+  "test_batchsize":2,
   "data_augmentation": ["noise"],
   "data_normalisation": "3d_max",
   "pad": "circular",
