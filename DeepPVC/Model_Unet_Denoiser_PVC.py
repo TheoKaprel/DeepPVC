@@ -192,6 +192,8 @@ class UNet_Denoiser_PVC(ModelBase):
     def normalize_data(self):
         if self.params['data_normalisation'] == "3d_max":
             self.norm = self.truePVE_noisy.amax((1, 2, 3))
+            self.norm[self.norm == 0] = 1  # avoids nan after division by max
+
             self.truePVE_noisy = self.truePVE_noisy / self.norm[:, None, None, None]
             if self.with_att:
                 max_attmap = torch.amax(self.attmap_fp, dim=(1, 2, 3))

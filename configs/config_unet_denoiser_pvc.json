@@ -22,8 +22,8 @@
   "finetuning": false,
 
   "max_nb_data": 5,
-  "training_batchsize":2,
-  "test_batchsize":2,
+  "training_batchsize":1,
+  "test_batchsize":1,
   "data_augmentation": ["noise"],
   "data_normalisation": "3d_max",
   "pad": "circular",
@@ -33,7 +33,7 @@
   "network": "unet_denoiser_pvc",
 
   "n_epochs":50,
-  "learning_rate":0.001,
+  "learning_rate":0.0001,
   "lr_policy": ["multiplicative",0.5, 100],
   "early_stopping": false,
 
@@ -56,8 +56,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 2,
-  "hidden_channels_unet":2,
+  "nb_ed_layers": 3,
+  "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]
