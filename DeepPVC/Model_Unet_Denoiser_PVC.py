@@ -187,11 +187,27 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             self.lesion_mask_fp = None
 
+        # print('--------------')
+        # print(f"max PVE_noisy : {torch.amax(self.truePVE_noisy, dim=(1, 2, 3))}")
+        # print(f"max PVE : {torch.amax(self.truePVE, dim=(1, 2, 3))}")
+        # print(f"max PVfree : {torch.amax(self.truePVfree, dim=(1, 2, 3))}")
+        # print(f"max rec_fp : {torch.amax(self.true_rec_fp, dim=(1, 2, 3))}")
+        # print(f"max att : {torch.amax(self.attmap_fp, dim=(1, 2, 3))}")
+
         self.normalize_data()
+        # print(f"max PVE_noisy normed: {torch.amax(self.truePVE_noisy, dim=(1, 2, 3))}")
+        # print(f"max rec_fp normed: {torch.amax(self.true_rec_fp, dim=(1, 2, 3))}")
+        # print(f"max att normed: {torch.amax(self.attmap_fp, dim=(1, 2, 3))}")
 
     def normalize_data(self):
         if self.params['data_normalisation'] == "3d_max":
-            self.norm = self.truePVE_noisy.amax((1, 2, 3))
+            if self.with_rec_fp:
+                self.norm = self.true_rec_fp.amax((1, 2, 3))
+            else:
+                self.norm = self.truePVE_noisy.amax((1, 2, 3))
+
+            self.input_max = self.truePVE_noisy.amax((1, 2, 3))
+
             self.norm[self.norm == 0] = 1  # avoids nan after division by max
 
             self.truePVE_noisy = self.truePVE_noisy / self.norm[:, None, None, None]
@@ -228,27 +244,28 @@ class UNet_Denoiser_PVC(ModelBase):
         else:
             self.norm = None
 
-    def normalize_data_pvc(self):
-        if self.params['data_normalisation'] == "3d_max":
-            self.fakePVE = self.fakePVE / self.norm[:,None, None, None, None]
-        elif self.params['data_normalisation'] in ["3d_sum", "3d_softmax", "sino_sum"]:
-            self.fakePVE = self.fakePVE / self.input_max
-        else:
-            self.norm = None
     def denormalize_data_denoiser(self):
         if self.params['data_normalisation'] == "3d_max":
-            self.fakePVE = self.fakePVE * self.norm[:, None, None, None, None]
+            self.fakePVE = self.fakePVE * self.input_max[:,None,None,None,None] / self.fakePVE.amax((1,2,3,4))[:,None,None,None,None]
         elif self.params['data_normalisation'] == "3d_sum":
-            self.fakePVE = (self.fakePVE / self.fakePVE.sum((1, 2, 3, 4))[:, None, None, None,
-                                                 None]) * self.norm[:, None, None, None, None]
+            self.fakePVE = (self.fakePVE / self.fakePVE.sum((1, 2, 3, 4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
         elif self.params['data_normalisation'] == "sino_sum":
             self.fakePVE = (self.fakePVE / self.fakePVE.sum((3, 4))[:,:,:,None,None]) * self.norm[:, None, :, None, None]
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVE = torch.exp(self.fakePVE) / torch.exp(self.fakePVE).sum((1, 2, 3, 4))[:, None, None,
                                                            None, None] * self.norm[:, None, None, None, None]
+
+    def normalize_data_pvc(self):
+        if self.params['data_normalisation'] == "3d_max":
+            self.fakePVE = self.fakePVE / self.norm[:,None, None, None, None]
+        elif self.params['data_normalisation'] in ["3d_sum", "3d_softmax", "sino_sum"]:
+            self.fakePVE = self.fakePVE / self.input_max[:,:,:,:,None]
+        else:
+            self.norm = None
+
     def denormalize_data_pvc(self):
         if self.params['data_normalisation'] == "3d_max":
-            self.fakePVfree = self.fakePVfree * self.norm[:, None, None, None, None]
+            self.fakePVfree = self.fakePVfree * self.norm[:, None, None, None, None] / self.fakePVfree.amax((1,2,3,4))[:,None,None,None,None]
         elif self.params['data_normalisation'] == "3d_sum":
             self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1, 2, 3, 4))[:, None, None, None,
                                                  None]) * self.norm[:, None, None, None, None]
@@ -270,10 +287,13 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.fakePVE = self.UNet_denoiser(input_denoiser)
 
+        # print(f"max fakePVE normed: {torch.amax(self.fakePVE, dim=(1,2,3,4))}")
         self.denormalize_data_denoiser()
+        # print(f"max fakePVE denormed: {torch.amax(self.fakePVE, dim=(1,2,3,4))}")
 
     def forward_unet_pvc(self):
         self.normalize_data_pvc()
+        # print(f"max fakePVE re-normed: {torch.amax(self.fakePVE, dim=(1, 2, 3,4))}")
 
         if self.dim==2:
             input_pvc = torch.concat((self.fakePVE,self.true_rec_fp),dim=1) if self.with_rec_fp else self.fakePVE
@@ -285,8 +305,11 @@ class UNet_Denoiser_PVC(ModelBase):
 
         # self.fakePVfree = self.UNet_pvc(input_pvc.detach())
         self.fakePVfree = self.UNet_pvc(input_pvc)
-
+        # print(f"max fakePVfree normed: {torch.amax(self.fakePVfree, dim=(1, 2, 3,4))}")
+        #
         self.denormalize_data_pvc()
+        # print(f"max fakePVfree de-normed: {torch.amax(self.fakePVfree, dim=(1, 2, 3,4))}")
+
 
     def losses_unet_denoiser(self):
         self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:],lesion_mask=self.lesion_mask_fp)
@@ -322,7 +345,10 @@ class UNet_Denoiser_PVC(ModelBase):
             self.scaler.update()
             self.double_optimizer.zero_grad(set_to_none=True)
         else:
-            (self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+            if self.denoise:
+                (self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+            else:
+                self.unet_pvc_loss.backward()
             self.double_optimizer.step()
             self.double_optimizer.zero_grad(set_to_none=True)
 
@@ -366,7 +392,6 @@ class UNet_Denoiser_PVC(ModelBase):
 
         with autocast(enabled=self.amp,dtype=torch.float16):
             self.fakePVE = self.UNet_denoiser(input_denoiser)
-
             self.denormalize_data_denoiser()
             self.normalize_data_pvc()
 
