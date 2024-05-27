@@ -10,7 +10,7 @@ from .networks_vision_transformer import VisionTransformer,get_3DReg_config
 
 class DownSamplingBlock(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (3,3), stride = (2,2), padding = 1,
-                 norm="batch_norm", block="conv-relu-norm", res_unit=False,dim=2):
+                 norm="batch_norm", block="conv-relu-norm", res_unit=False,dim=2, last=False):
         super(DownSamplingBlock, self).__init__()
         sequenceDownBlock = []
         splited_block = block.split('-')
@@ -47,20 +47,20 @@ class DownSamplingBlock(nn.Module):
         if self.res_unit:
             self.res_conv = conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padding)
 
-        first_conv = False
+        first_conv = True
         for elmt in splited_block:
             if (elmt=='downconv'):
                 sequenceDownBlock.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding=padding))
                 first_conv = True
             elif (elmt=="conv"):
                 if first_conv:
-                    sequenceDownBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padding))
-                else:
                     sequenceDownBlock.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padding))
-                    first_conv = True
+                    first_conv=False
+                else:
+                    sequenceDownBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padding))
             elif elmt=="relu":
                 sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
-            elif elmt=='pool':
+            elif (elmt=='pool' and last==False):
                 sequenceDownBlock.append(pool(kernel_size=kernel_size,stride=stride, padding=padding))
             elif elmt=="norm":
                 sequenceDownBlock.append(norm_layer(output_nc))
@@ -150,6 +150,89 @@ class UpSamplingBlock(nn.Module):
             return self.res_conv(x)+self.sequenceUpBlock(x)
         else:
             return self.sequenceUpBlock(x)
+
+
+class UpSamplingBlockBis(nn.Module):
+    def __init__(self, input_nc, output_nc,leaky_relu_val=0.2,
+                 norm="batch_norm", use_dropout = False, block="conv-relu-norm", res_unit = False,dim=2):
+        super(UpSamplingBlockBis, self).__init__()
+        sequenceUpBlock = []
+        splited_block = block.split('-')
+
+        if dim==2:
+            self.dim = 2
+            conv = nn.Conv2d
+            convT = nn.ConvTranspose2d
+            kernel_size = (3,3)
+            stride=(2,2)
+            stride_one = (1,1)
+            padd = (1,1)
+            outpadd=(1,1)
+            if norm=="batch_norm":
+                norm_layer = nn.BatchNorm2d
+            elif norm=="inst_norm":
+                norm_layer = nn.InstanceNorm2d
+            else:
+                norm_layer = nn.Identity
+        elif dim==3:
+            self.dim=3
+            conv=nn.Conv3d
+            kernel_size = (3,3,3)
+            padd = (1,1,1)
+            outpadd=(1,1,1)
+            stride_one = (1,1,1)
+            if norm=="batch_norm":
+                norm_layer = nn.BatchNorm3d
+            elif norm=="inst_norm":
+                norm_layer = nn.InstanceNorm3d
+            else:
+                norm_layer = nn.Identity
+
+        self.res_unit = res_unit
+        if self.res_unit:
+            if splited_block[0]=="convT":
+                self.res_conv = convT(input_nc, output_nc, kernel_size=kernel_size, stride=stride, padding = padd, output_padding=outpadd)
+            elif splited_block[0]=="upconv":
+                res_conv = []
+                res_conv.append(nn.Upsample(scale_factor=2))
+                res_conv.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
+                self.res_conv = nn.Sequential(*res_conv)
+
+        self.up = nn.Upsample(scale_factor=2)
+        self.up_conv = nn.Conv3d(input_nc, input_nc//2,(3,3,3),(1,1,1),(1,1,1))
+
+        first = True
+        for elmt in splited_block:
+            if (elmt=="conv"):
+                if first==True:
+                    sequenceUpBlock.append(conv(input_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
+                    first=False
+                else:
+                    sequenceUpBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
+            elif (elmt=="relu"):
+                sequenceUpBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
+            elif (elmt=="norm"):
+                sequenceUpBlock.append(norm_layer(output_nc))
+
+        self.sequenceUpBlock = nn.Sequential(*sequenceUpBlock)
+
+        if use_dropout:
+            self.use_dropout=True
+            self.dropout = nn.Dropout(0.2,inplace=False)
+        else:
+            self.use_dropout=False
+
+    def forward(self, x,y):
+
+        if self.use_dropout:
+            x = self.dropout(x)
+        up_x = self.up(x)
+        up_x = self.up_conv(up_x)
+        cat_xy = torch.cat((up_x,y),1)
+        if self.res_unit:
+            return self.res_conv(x)+self.sequenceUpBlock(x)
+        else:
+            return self.sequenceUpBlock(cat_xy)
 
 class PathsBlock(nn.Module):
     def __init__(self, input_channels, nb_channels_per_paths, nconv,kernel_size,stride, padding):
@@ -243,23 +326,36 @@ class UNet(nn.Module):
         up_layers = []
         # Contracting layers :
         k = 1
-        for _ in range(self.nb_ed_layers):
-            down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim))
-            k = 2 * k
+        for el in range(self.nb_ed_layers+1):
+            if el < nb_ed_layers:
+                down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim))
+                k = 2 * k
+            else:
+                down_layers.append(DownSamplingBlock(k * ngc,2*k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim, last=True))
+
+
         self.down_layers = nn.Sequential(*down_layers)
 
-        # Core layer
-        # If any dropout layer is used, it is here
-        up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout,leaky_relu_val=leaky_relu, block=block_d,res_unit=self.ResUnet, dim=dim))
+        self.pool = torch.nn.MaxPool3d((3,3,3),(2,2,2),(1,1,1))
 
-        # Extracting layers :
-        for _ in range(self.nb_ed_layers - 1):
-            up_layers.append(UpSamplingBlock(k * ngc, int(k / 4) * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_d, res_unit=self.ResUnet, dim=dim))
-            k = int( k / 2)
-
+        for dl in range(self.nb_ed_layers):
+            up_layers.append(UpSamplingBlockBis(k*ngc*2,k*ngc,
+                                                norm=norm, use_dropout=use_dropout,
+                                                leaky_relu_val=leaky_relu, block=block_d,
+                                                res_unit=self.ResUnet, dim=dim))
+            k = k//2
         self.up_layers = nn.Sequential(*up_layers)
+        self.final_feature = conv(2*ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)
 
-        self.final_feature = conv(2 * ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)
+        # # Core layer
+        # # If any dropout layer is used, it is here
+        # up_layers.append(UpSamplingBlock(k * ngc, int(k/2) * ngc, norm=norm, use_dropout=use_dropout,leaky_relu_val=leaky_relu, block=block_d,res_unit=self.ResUnet, dim=dim))
+        # # Extracting layers :
+        # for _ in range(self.nb_ed_layers - 1):
+        #     up_layers.append(UpSamplingBlock(k * ngc, int(k / 4) * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_d, res_unit=self.ResUnet, dim=dim))
+        #     k = int( k / 2)
+        # self.up_layers = nn.Sequential(*up_layers)
+        # self.final_feature = conv(2 * ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)
 
         self.residual_layer=residual_layer
 
@@ -307,11 +403,15 @@ class UNet(nn.Module):
         x0 = self.init_feature(x) # nhc
         # ----------------------------------------------------------
         # Contracting layers :
-        xk  = [x0]
-        for l in range(self.nb_ed_layers):
-            xk.append(self.down_layers[l](xk[-1]))
+        list_xk  = [x0]
+        xk = x0
+        for l in range(self.nb_ed_layers+1):
+            xk = self.down_layers[l](xk)
+            list_xk.append(xk)
+            if l<self.nb_ed_layers:
+                xk = self.pool(xk)
         # ----------------------------------------------------------
-        xy = xk[-1]
+
         if self.AttentionUnet:
             B = xy.shape[0]
             p = self.patch_embeddings(xy)
@@ -326,13 +426,16 @@ class UNet(nn.Module):
         # ----------------------------------------------------------
         # Extracting layers :
 
-        for l in range(self.nb_ed_layers):
-            y = self.up_layers[l](xy)
-            xy = torch.cat([xk[-l-2],y],1)
+        # for l in range(self.nb_ed_layers):
+        #     y = self.up_layers[l](xy)
+        #     xy = torch.cat([xk[-l-2],y],1)
 
+        for l in range(self.nb_ed_layers):
+            y = self.up_layers[l](xk,list_xk[-2-l])
+            xk = y
         # ----------------------------------------------------------
         # Final feature extraction
-        y = self.final_feature(xy) # output_channel
+        y = self.final_feature(xk) # output_channel
 
         # # residual
         if self.residual_layer>=0:
