@@ -60,6 +60,8 @@ class DownSamplingBlock(nn.Module):
                     sequenceDownBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padding))
             elif elmt=="relu":
                 sequenceDownBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
+            elif elmt=="prelu":
+                sequenceDownBlock.append(nn.PReLU())
             elif (elmt=='pool' and last==False):
                 sequenceDownBlock.append(pool(kernel_size=kernel_size,stride=stride, padding=padding))
             elif elmt=="norm":
@@ -211,6 +213,8 @@ class UpSamplingBlockBis(nn.Module):
                     sequenceUpBlock.append(conv(output_nc, output_nc, kernel_size=kernel_size, stride=stride_one, padding=padd))
             elif (elmt=="relu"):
                 sequenceUpBlock.append(nn.LeakyReLU(leaky_relu_val,inplace=False))
+            elif (elmt=="prelu"):
+                sequenceUpBlock.append(nn.PReLU())
             elif (elmt=="norm"):
                 sequenceUpBlock.append(norm_layer(output_nc))
 

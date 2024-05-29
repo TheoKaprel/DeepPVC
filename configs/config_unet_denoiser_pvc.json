@@ -17,7 +17,7 @@
   "with_adj_angles": true,
   "nb_adj_angles": 16,
   "dim": "3d",
-  "denoise": true,
+  "denoise": false,
   "paths": false,
   "finetuning": false,
 
@@ -56,8 +56,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 3,
-  "hidden_channels_unet":8,
+  "nb_ed_layers": 2,
+  "hidden_channels_unet":64,
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1]
