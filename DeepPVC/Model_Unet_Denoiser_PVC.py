@@ -125,6 +125,12 @@ class UNet_Denoiser_PVC(ModelBase):
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
 
+        if "init" not in self.params:
+            self.params["init"] = "none"
+            
+        networks.init_weights(net=self.UNet_denoiser,init_type=self.params["init"])
+        networks.init_weights(net=self.UNet_pvc,init_type=self.params["init"])
+
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
 

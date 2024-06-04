@@ -37,6 +37,7 @@
   "lr_policy": ["reduceplateau",0.1, 10],
   "early_stopping": false,
 
+  "init": "none",
   "layer_norm": "inst_norm",
   "use_dropout": true,
   "leaky_relu": 0.02,
