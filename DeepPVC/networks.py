@@ -350,6 +350,7 @@ class UNet(nn.Module):
             k = k//2
         self.up_layers = nn.Sequential(*up_layers)
         self.final_feature = conv(2*ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)
+        # self.final_feature = conv(2*ngc, output_channel, kernel_size=(1,1,1), stride=(1,1,1), padding = (0,0,0))
 
         # # Core layer
         # # If any dropout layer is used, it is here

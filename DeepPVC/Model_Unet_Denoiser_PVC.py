@@ -166,6 +166,14 @@ class UNet_Denoiser_PVC(ModelBase):
             # self.scheduler_unet_denoiser = optim.lr_scheduler.MultiplicativeLR(self.unet_denoiser_optimizer, lbda)
             # self.scheduler_unet_pvc = optim.lr_scheduler.MultiplicativeLR(self.unet_pvc_optimizer, lbda)
             self.scheduler = optim.lr_scheduler.MultiplicativeLR(self.double_optimizer, lbda)
+        elif self.learning_rate_policy_infos[0] =="reduceplateau":
+
+            factor=self.learning_rate_policy_infos[1]
+            patience=self.learning_rate_policy_infos[2]
+
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.double_optimizer, 'min',
+                                                                  factor=factor,patience=patience)
+            self.update_lr_every=1
 
     def init_losses(self):
         self.losses_params = {'recon_loss': self.params['recon_loss'],
@@ -489,11 +497,15 @@ class UNet_Denoiser_PVC(ModelBase):
         if self.current_epoch % self.update_lr_every == 0:
             # self.scheduler_unet_denoiser.step()
             # self.scheduler_unet_pvc.step()
-            self.scheduler.step()
+            if self.learning_rate_policy_infos[0]=="multiplicative":
+                self.scheduler.step()
+            elif self.learning_rate_policy_infos[0]=="reduceplateau":
+                self.scheduler.step(self.test_error[-1][1])
 
         if self.verbose > 1:
             # print(f'next lr : {self.scheduler_unet_denoiser.get_last_lr()}')
-            print(f'next lr : {self.scheduler.get_last_lr()}')
+            # print(f'next lr : {self.scheduler.get_last_lr() }')
+            print(f'next lr : {self.double_optimizer.param_groups[0]["lr"] }')
 
         self.current_epoch += 1
         self.current_iteration = 0
