@@ -32,10 +32,11 @@
   "network": "unet",
 
   "n_epochs": 50,
-  "learning_rate":0.0001,
-  "lr_policy": ["multiplicative",0.5, 100],
+  "learning_rate":0.001,
+  "lr_policy": ["reduceplateau",0.5, 10],
   "early_stopping": false,
 
+  "init": "normal",
   "layer_norm": "inst_norm",
   "use_dropout": true,
   "leaky_relu": 0.02,
@@ -50,7 +51,7 @@
   "test_every_n_epoch": 1,
   "optimizer":"Adam",
   "device":"cuda",
-  "validation_norm": "L1",
+  "validation_norm": "L2",
   "comment": "",
 
   "DCNN": false,
@@ -58,7 +59,7 @@
   "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
+  "recon_loss":["L2"],
   "lambda_recon":[1],
   "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
 }

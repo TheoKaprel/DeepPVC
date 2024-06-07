@@ -132,6 +132,12 @@ class UNetModel(ModelBase):
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
 
+        if "init" not in self.params:
+            self.params["init"] = "none"
+        networks.init_weights(net=self.UNet, init_type=self.params["init"])
+
+
+
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
 
@@ -161,6 +167,13 @@ class UNetModel(ModelBase):
             self.update_lr_every = self.learning_rate_policy_infos[2]
             lbda = lambda epoch: mult_rate
             self.scheduler = optim.lr_scheduler.MultiplicativeLR(self.double_optimizer, lbda)
+        elif self.learning_rate_policy_infos[0] =="reduceplateau":
+            factor=self.learning_rate_policy_infos[1]
+            patience=self.learning_rate_policy_infos[2]
+
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.double_optimizer, 'min',
+                                                                  factor=factor,patience=patience)
+            self.update_lr_every=1
 
     def init_losses(self):
 
@@ -325,10 +338,15 @@ class UNetModel(ModelBase):
             print(f'Unet loss : {round(self.unet_losses[-1], 5)}')
 
         if self.current_epoch % self.update_lr_every == 0:
-            self.scheduler.step()
+            if self.learning_rate_policy_infos[0]=="multiplicative":
+                self.scheduler.step()
+            elif self.learning_rate_policy_infos[0]=="reduceplateau":
+                self.scheduler.step(self.test_error[-1][1])
+
 
         if self.verbose > 1:
-            print(f'next lr : {self.scheduler.get_last_lr()}')
+            # print(f'next lr : {self.scheduler.get_last_lr()}')
+            print(f'next lr : {self.double_optimizer.param_groups[0]["lr"] }')
 
         self.current_epoch += 1
         self.current_iteration = 0
