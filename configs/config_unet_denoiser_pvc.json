@@ -43,7 +43,7 @@
   "leaky_relu": 0.02,
 
   "patches":false,
-  "ed_blocks": ["conv-norm-relu-conv-norm-relu", "conv-norm-relu-conv-norm-relu"],
+  "ed_blocks": ["conv-norm-prelu-conv-norm-prelu", "conv-norm-prelu-conv-norm-prelu"],
   "residual_layer": true,
   "resunet": false,
   "attention": false,
@@ -52,14 +52,14 @@
   "test_every_n_epoch": 1,
   "optimizer":"Adam",
   "device":"cuda",
-  "validation_norm": "L2",
+  "validation_norm": "L1",
   "comment": "",
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 2,
+  "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L2"],
+  "recon_loss":["L1"],
   "lambda_recon":[1]
 }

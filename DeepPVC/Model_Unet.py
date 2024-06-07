@@ -172,7 +172,8 @@ class UNetModel(ModelBase):
             patience=self.learning_rate_policy_infos[2]
 
             self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.double_optimizer, 'min',
-                                                                  factor=factor,patience=patience)
+                                                                  factor=factor,patience=patience,
+                                                                  min_lr=1e-6)
             self.update_lr_every=1
 
     def init_losses(self):
