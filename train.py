@@ -153,7 +153,7 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                         debug_output = DeepPVEModel.forward(batch=batch_inputs)
                         print(f'(gpu {rank}) output shape : {debug_output.shape}')
                         print(f'(gpu {rank}) output dtype : {debug_output.dtype}')
-                        if (params['jean_zay']==False) and (epoch%10==0):
+                        if (params['jean_zay']==False) and (epoch%1==0):
                             fig,ax = plt.subplots(max(len(batch_inputs.keys()),len(batch_targets.keys())),3)
 
                             i,j=np.random.randint(batch_inputs[list(batch_inputs.keys())[0]].shape[0]),50

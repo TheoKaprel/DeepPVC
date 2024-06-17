@@ -216,6 +216,8 @@ class UNetModel(ModelBase):
             self.norm = self.truePVE_noisy.sum((1,2,3))
 
             self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+            if self.with_rec_fp:
+                self.true_rec_fp = self.true_rec_fp / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
             if self.with_att:
                 self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
         else:
