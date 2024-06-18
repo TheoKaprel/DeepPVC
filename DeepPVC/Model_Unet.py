@@ -247,7 +247,9 @@ class UNetModel(ModelBase):
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVfree = torch.exp(self.fakePVfree) / torch.exp(self.fakePVfree).sum((1,2,3,4))[:,None,None,None,None]  * self.norm[:,None,None,None,None]
         elif self.params['data_normalisation'] == "sino_sum":
-            self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((3, 4))[:,:,:,None,None]) * self.norm[:,None,:,None, None]
+            projs_sum=self.fakePVfree.sum((3, 4))[:,:,:,None,None]
+            projs_sum[projs_sum==0]=1
+            self.fakePVfree = self.fakePVfree/projs_sum*self.norm[:,None,:,None, None]
 
 
     def forward_unet(self):
