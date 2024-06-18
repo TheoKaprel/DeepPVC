@@ -224,6 +224,17 @@ class UNetModel(ModelBase):
                 self.true_rec_fp = self.true_rec_fp / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
             if self.with_att:
                 self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
+        elif self.params['data_normalisation']=="sino_sum":
+            self.norm = self.truePVE_noisy.sum((2, 3))
+            self.input_max = self.truePVE_noisy.amax((1, 2, 3))[:, None, None, None]
+
+            self.truePVE_noisy = self.truePVE_noisy / self.input_max
+            if self.with_att:
+                max_attmap = torch.amax(self.attmap_fp, dim=(1, 2, 3))
+                max_attmap[max_attmap == 0] = 1  # avoids nan after division by max
+                self.attmap_fp = self.attmap_fp / max_attmap[:, None, None, None]
+            if self.with_rec_fp:
+                self.true_rec_fp = self.true_rec_fp / self.input_max
         else:
             self.norm = None
 
@@ -235,6 +246,8 @@ class UNetModel(ModelBase):
             self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVfree = torch.exp(self.fakePVfree) / torch.exp(self.fakePVfree).sum((1,2,3,4))[:,None,None,None,None]  * self.norm[:,None,None,None,None]
+        elif self.params['data_normalisation'] == "sino_sum":
+            self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((3, 4))[:,:,:,None,None]) * self.norm[:,None,:,None, None]
 
 
     def forward_unet(self):
@@ -269,11 +282,7 @@ class UNetModel(ModelBase):
 
     def forward(self, batch):
         self.truePVE_noisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
-
-        print(",,,,,,,,,,,,,,,,,")
-        print(self.truePVE_noisy.shape)
-        print(",,,,,,,,,,,,,,,,,")
-
+        
         if self.with_rec_fp:
             self.true_rec_fp = batch['rec_fp']
         if self.with_att:
