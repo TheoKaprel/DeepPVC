@@ -44,14 +44,15 @@ class UNetModel(ModelBase):
 
         self.final_2dconv = True if (params['dim']=="3d" and params['inputs']=="projs") else False
 
-        self.DCNN = params['DCNN'] if 'DCNN' in params else False
+        if "archi" not in params:
+            self.archi = "unet"
+        else:
+            self.archi = params["archi"]
+
 
         self.img_to_img = (params['inputs'] == "imgs")
 
         self.paths= params['paths'] if "paths" in params else False
-
-
-        self.attention = False if 'attention' not in params else params['attention']
 
         if from_pth:
             self.for_training=False
@@ -85,7 +86,7 @@ class UNetModel(ModelBase):
     def init_model(self):
         if self.verbose > 0:
             print(f'models device is supposed to be : {self.device}')
-        if self.attention:
+        if self.archi=="attention":
             # self.UNet = networks_diff.AttentionResUnet(init_dim=self.hidden_channels_unet, out_dim=1,
             #                                            channels=self.input_channels, dim_mults=(1, 2, 4, 8)).to(
             #     device=self.device)
@@ -99,7 +100,7 @@ class UNetModel(ModelBase):
                                       ResUnet=self.ResUnet,AttentionUnet = True,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
-        elif self.DCNN:
+        elif self.archi=="dcnn":
             # self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
             #                           dim=self.dim,init_feature_kernel=self.init_feature_kernel,
             #                           nb_ed_layers=self.nb_ed_layers,
@@ -118,10 +119,10 @@ class UNetModel(ModelBase):
                                       paths=self.paths).to(device=self.device)
 
 
-        elif False:
+        elif self.archi=="unet_3d_2d":
             self.UNet = networks.UNET_3D_2D(input_channel=self.input_channels,residual_layer=self.residual_layer,
                                             final_2dchannels=2*self.params['nb_adj_angles']).to(device=self.device)
-        else:
+        elif self.archi=="unet":
             self.UNet = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
@@ -131,6 +132,9 @@ class UNetModel(ModelBase):
                                       ResUnet=self.ResUnet,AttentionUnet=False,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
+
+        elif self.archi=="chatgpt3dunet":
+            self.UNet = networks.ChatGPTUNet3D().to(self.device)
 
         if "init" not in self.params:
             self.params["init"] = "none"
@@ -265,6 +269,10 @@ class UNetModel(ModelBase):
 
     def forward(self, batch):
         self.truePVE_noisy = batch['PVE_noisy'] if (self.img_to_img == False) else batch['rec']
+
+        print(",,,,,,,,,,,,,,,,,")
+        print(self.truePVE_noisy.shape)
+        print(",,,,,,,,,,,,,,,,,")
 
         if self.with_rec_fp:
             self.true_rec_fp = batch['rec_fp']

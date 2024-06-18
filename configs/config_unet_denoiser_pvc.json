@@ -31,6 +31,7 @@
   "verbose": 2,
 
   "network": "unet_denoiser_pvc",
+  "archi": "chatgpt3dunet",
 
   "n_epochs":50,
   "learning_rate":0.001,
@@ -57,7 +58,7 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "nb_ed_layers": 3,
+  "nb_ed_layers": 1,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],

@@ -21,8 +21,8 @@
   "finetuning": false,
 
   "max_nb_data": 20,
-  "training_batchsize":2,
-  "test_batchsize":2,
+  "training_batchsize":1,
+  "test_batchsize":1,
   "data_augmentation": [],
   "data_normalisation": "3d_sum",
   "pad": "circular",
@@ -30,6 +30,7 @@
   "verbose": 2,
 
   "network": "unet",
+  "archi": "chatgpt3dunet",
 
   "n_epochs": 50,
   "learning_rate":0.0001,

@@ -44,9 +44,10 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.final_2dconv = True if (params['dim']=="3d" and params['inputs']=="projs") else False
 
-        self.DCNN = params['DCNN'] if 'DCNN' in params else False
-
-        self.attention = False if 'attention' not in params else params['attention']
+        if "archi" not in params:
+            self.archi = "unet"
+        else:
+            self.archi = params["archi"]
 
         self.denoise = params['denoise'] if "denoise" in params else True
 
@@ -84,13 +85,13 @@ class UNet_Denoiser_PVC(ModelBase):
     def init_model(self):
         if self.verbose > 0:
             print(f'models device is supposed to be : {self.device}')
-        if self.attention:
+        if self.archi=="attention":
             # self.UNet = networks_diff.AttentionResUnet(init_dim=self.hidden_channels_unet, out_dim=1,
             #                                            channels=self.input_channels, dim_mults=(1, 2, 4, 8)).to(
             #     device=self.device)
             self.UNet_denoiser = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=self.input_channels,t=2).to(device=self.device)
             self.UNet_pvc = networks_attention.R2AttU_Net(img_ch=self.input_channels,output_ch=1,t=2).to(device=self.device)
-        elif self.DCNN:
+        elif self.archi=="dcnn":
             # self.UNet_denoiser = networks.ResCNN(in_channels=self.input_channels,out_channels=self.input_channels,ngc=self.hidden_channels_unet).to(device=self.device)
             # self.UNet_pvc = networks.ResCNN(in_channels=self.input_channels, out_channels=1,ngc=self.hidden_channels_unet).to(device=self.device)
             self.UNet_denoiser = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
@@ -107,7 +108,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_layer
                                       ).to(device=self.device)
-        else:
+        elif self.archi=="unet":
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
                                     dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
@@ -124,6 +125,9 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=1 if self.residual_layer else -1, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
+        elif self.archi=="chatgpt3dunet":
+            self.UNet_denoiser = networks.ChatGPTUNet3D()
+            self.UNet_pvc = networks.ChatGPTUNet3D()
 
         if "init" not in self.params:
             self.params["init"] = "none"

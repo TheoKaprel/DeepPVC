@@ -971,3 +971,74 @@ class vanillaCNN(nn.Module):
             return self.final_activation(residual+self.sequence_CNN(x))
         else:
             return self.final_activation(self.sequence_CNN(x))
+
+
+class ChatGPTUNet3D(nn.Module):
+    def __init__(self):
+        super(ChatGPTUNet3D, self).__init__()
+
+        # Encoder
+        self.encoder1 = self.conv_block(3, 32)
+        self.encoder2 = self.conv_block(32, 64)
+        self.encoder3 = self.conv_block(64, 128)
+        self.encoder4 = self.conv_block(128, 256)
+
+        # Bottleneck
+        self.bottleneck = self.conv_block(256, 512)
+
+        # Decoder
+        self.upconv4 = self.upconv_block(512, 256)
+        self.decoder4 = self.conv_block(512, 256)
+        self.upconv3 = self.upconv_block(256, 128)
+        self.decoder3 = self.conv_block(256, 128)
+        self.upconv2 = self.upconv_block(128, 64)
+        self.decoder2 = self.conv_block(128, 64)
+        self.upconv1 = self.upconv_block(64, 32)
+        self.decoder1 = self.conv_block(64, 32)
+
+        # Output
+        self.output = nn.Conv3d(32, 1, kernel_size=1, padding='same')
+
+    def conv_block(self, in_channels, out_channels):
+        return nn.Sequential(
+            nn.Conv3d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm3d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm3d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def upconv_block(self, in_channels, out_channels):
+        return nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='trilinear', align_corners=True),
+            nn.Conv3d(in_channels, out_channels, kernel_size=2, padding='same')
+        )
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.encoder1(x)
+        e2 = self.encoder2(F.max_pool3d(e1, 2))
+        e3 = self.encoder3(F.max_pool3d(e2, 2))
+        e4 = self.encoder4(F.max_pool3d(e3, 2))
+
+        # Bottleneck
+        b = self.bottleneck(F.max_pool3d(e4, 2))
+
+        # Decoder
+        d4 = self.upconv4(b)
+        d4 = torch.cat((d4, e4), dim=1)
+        d4 = self.decoder4(d4)
+        d3 = self.upconv3(d4)
+        d3 = torch.cat((d3, e3), dim=1)
+        d3 = self.decoder3(d3)
+        d2 = self.upconv2(d3)
+        d2 = torch.cat((d2, e2), dim=1)
+        d2 = self.decoder2(d2)
+        d1 = self.upconv1(d2)
+        d1 = torch.cat((d1, e1), dim=1)
+        d1 = self.decoder1(d1)
+
+        # Output
+        out = self.output(d1)
+        return out

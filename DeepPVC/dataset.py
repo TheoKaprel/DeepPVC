@@ -374,10 +374,10 @@ class SinoToSinoDataset(BaseDataset):
             for key_targets in data_targets.keys():
                 data_targets[key_targets] = np.roll(data_targets[key_targets], -random_proj_index,axis=0)
 
-        # for key_inputs in data_inputs.keys():
-        #     data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
-        # for key_targets in data_targets.keys():
-        #     data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
+        for key_inputs in data_inputs.keys():
+            data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
+        for key_targets in data_targets.keys():
+            data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
         for key_inputs in data_inputs.keys():
             data_inputs[key_inputs] = data_inputs[key_inputs][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
