@@ -998,6 +998,7 @@ class ChatGPTUNet3D(nn.Module):
 
         # Output
         self.output = nn.Conv3d(32, 1, kernel_size=1, padding='same')
+        self.activation = nn.ReLU(inplace=True)
 
     def conv_block(self, in_channels, out_channels):
         return nn.Sequential(
@@ -1040,5 +1041,5 @@ class ChatGPTUNet3D(nn.Module):
         d1 = self.decoder1(d1)
 
         # Output
-        out = self.output(d1)
+        out = self.activation(self.output(d1))
         return out
