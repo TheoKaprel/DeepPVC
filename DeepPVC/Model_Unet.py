@@ -249,11 +249,12 @@ class UNetModel(ModelBase):
         elif self.params['data_normalisation'] == "sino_sum":
             projs_sum=self.fakePVfree.sum((3, 4))[:,:,:,None,None]
             projs_sum[projs_sum==0]=1
+            print('------')
             print(self.fakePVfree.amax((1,2,3,4)))
             print(projs_sum.amax((1,2,3,4)))
             self.fakePVfree = self.fakePVfree/projs_sum*self.norm[:,None,:,None, None]
             print(self.fakePVfree.amax((1, 2, 3, 4)))
-
+            print('------')
     def forward_unet(self):
         if self.dim==2:
             input = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
