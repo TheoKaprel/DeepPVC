@@ -249,8 +249,10 @@ class UNetModel(ModelBase):
         elif self.params['data_normalisation'] == "sino_sum":
             projs_sum=self.fakePVfree.sum((3, 4))[:,:,:,None,None]
             projs_sum[projs_sum==0]=1
+            print(self.fakePVfree.amax((1,2,3,4)))
+            print(projs_sum.amax((1,2,3,4)))
             self.fakePVfree = self.fakePVfree/projs_sum*self.norm[:,None,:,None, None]
-
+            print(self.fakePVfree.amax((1, 2, 3, 4)))
 
     def forward_unet(self):
         if self.dim==2:
