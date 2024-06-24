@@ -974,39 +974,52 @@ class vanillaCNN(nn.Module):
 
 
 class ChatGPTUNet3D(nn.Module):
-    def __init__(self):
+    def __init__(self, params):
         super(ChatGPTUNet3D, self).__init__()
 
+        norm = params["layer_norm"]
+        self.use_dropout = params['use_dropout']
+
         # Encoder
-        self.encoder1 = self.conv_block(3, 32)
-        self.encoder2 = self.conv_block(32, 64)
-        self.encoder3 = self.conv_block(64, 128)
-        self.encoder4 = self.conv_block(128, 256)
+        self.encoder1 = self.conv_block(3, 32, norm = norm)
+        self.encoder2 = self.conv_block(32, 64, norm = norm)
+        self.encoder3 = self.conv_block(64, 128, norm = norm)
+        self.encoder4 = self.conv_block(128, 256, norm = norm)
 
         # Bottleneck
-        self.bottleneck = self.conv_block(256, 512)
+        self.bottleneck = self.conv_block(256, 512, norm = norm)
 
         # Decoder
         self.upconv4 = self.upconv_block(512, 256)
-        self.decoder4 = self.conv_block(512, 256)
+        self.decoder4 = self.conv_block(512, 256, norm = norm)
         self.upconv3 = self.upconv_block(256, 128)
-        self.decoder3 = self.conv_block(256, 128)
+        self.decoder3 = self.conv_block(256, 128, norm = norm)
         self.upconv2 = self.upconv_block(128, 64)
-        self.decoder2 = self.conv_block(128, 64)
+        self.decoder2 = self.conv_block(128, 64, norm = norm)
         self.upconv1 = self.upconv_block(64, 32)
-        self.decoder1 = self.conv_block(64, 32)
+        self.decoder1 = self.conv_block(64, 32, norm = norm)
+
+        if self.use_dropout:
+            self.dropout = nn.Dropout3d(p=0.5)
 
         # Output
         self.output = nn.Conv3d(32, 1, kernel_size=1, padding='same')
         self.activation = nn.ReLU(inplace=True)
 
-    def conv_block(self, in_channels, out_channels):
+    def conv_block(self, in_channels, out_channels, norm):
+        if norm=="batch_norm":
+            norm=nn.BatchNorm3d(out_channels)
+        elif norm=="inst_norm":
+            norm=nn.InstanceNorm3d(out_channels)
+        else:
+            norm = nn.Identity(out_channels)
+
         return nn.Sequential(
             nn.Conv3d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm3d(out_channels),
+            norm,
             nn.ReLU(inplace=True),
             nn.Conv3d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm3d(out_channels),
+            norm,
             nn.ReLU(inplace=True)
         )
 
@@ -1030,6 +1043,8 @@ class ChatGPTUNet3D(nn.Module):
         d4 = self.upconv4(b)
         d4 = torch.cat((d4, e4), dim=1)
         d4 = self.decoder4(d4)
+        if self.use_dropout:
+            d4 = self.dropout(d4)
         d3 = self.upconv3(d4)
         d3 = torch.cat((d3, e3), dim=1)
         d3 = self.decoder3(d3)
