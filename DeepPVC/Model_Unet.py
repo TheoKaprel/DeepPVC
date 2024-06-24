@@ -234,7 +234,10 @@ class UNetModel(ModelBase):
                 max_attmap[max_attmap == 0] = 1  # avoids nan after division by max
                 self.attmap_fp = self.attmap_fp / max_attmap[:, None, None, None]
             if self.with_rec_fp:
-                self.true_rec_fp = self.true_rec_fp / self.input_max
+                # self.true_rec_fp = self.true_rec_fp / self.input_max
+                max_rec_fp = torch.amax(self.true_rec_fp, dim=(1, 2, 3))
+                max_rec_fp[max_rec_fp == 0] = 1  # avoids nan after division by max
+                self.true_rec_fp = self.true_rec_fp / max_rec_fp[:,None,None,None]
         else:
             self.norm = None
 
