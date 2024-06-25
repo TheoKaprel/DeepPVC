@@ -8,9 +8,9 @@
   "split_dataset": false,
   "num_workers": 4,
   "datatype": "h5",
-  "dtype": "float",
+  "dtype": "float16",
   "with_rec_fp": false,
-  "with_att": false,
+  "with_att": true,
   "inputs": "imgs",
   "sino": false,
   "input_eq_angles": 1,
@@ -21,8 +21,8 @@
   "finetuning": false,
 
   "max_nb_data": 20,
-  "training_batchsize":2,
-  "test_batchsize":2,
+  "training_batchsize":1,
+  "test_batchsize":1,
   "data_augmentation": [],
   "data_normalisation": "3d_sum",
   "pad": "zero",
@@ -30,6 +30,7 @@
   "verbose": 2,
 
   "network": "unet",
+  "archi": "chatgpt3dunet",
 
   "n_epochs": 50,
   "learning_rate":0.001,
@@ -59,7 +60,7 @@
   "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L2"],
+  "recon_loss":["L1"],
   "lambda_recon":[1],
   "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
 }

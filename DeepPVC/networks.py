@@ -974,14 +974,14 @@ class vanillaCNN(nn.Module):
 
 
 class ChatGPTUNet3D(nn.Module):
-    def __init__(self, params):
+    def __init__(self, params, input_channels):
         super(ChatGPTUNet3D, self).__init__()
 
         norm = params["layer_norm"]
         self.use_dropout = params['use_dropout']
 
         # Encoder
-        self.encoder1 = self.conv_block(3, 32, norm = norm)
+        self.encoder1 = self.conv_block(input_channels, 32, norm = norm)
         self.encoder2 = self.conv_block(32, 64, norm = norm)
         self.encoder3 = self.conv_block(64, 128, norm = norm)
         self.encoder4 = self.conv_block(128, 256, norm = norm)

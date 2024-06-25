@@ -134,7 +134,7 @@ class UNetModel(ModelBase):
                                       paths=self.paths).to(device=self.device)
 
         elif self.archi=="chatgpt3dunet":
-            self.UNet = networks.ChatGPTUNet3D(params=self.params).to(self.device)
+            self.UNet = networks.ChatGPTUNet3D(params=self.params, input_channels=self.input_channels).to(self.device)
 
         if "init" not in self.params:
             self.params["init"] = "none"
