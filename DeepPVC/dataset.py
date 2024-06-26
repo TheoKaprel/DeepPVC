@@ -349,7 +349,8 @@ class SinoToSinoDataset(BaseDataset):
 
 
             if self.with_rec_fp:
-                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
+                # data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
+                data_inputs['rec_fp'] = np.array(data['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
 
             if (self.with_lesion and not self.test):
                 data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,:,:], dtype=self.dtype).astype(bool)
