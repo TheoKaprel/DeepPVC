@@ -979,6 +979,7 @@ class Big3DUnet(nn.Module):
 
         norm = params["layer_norm"]
         self.use_dropout = params['use_dropout']
+        self.residual_channel = 1 if params['residual_layer'] else -1
 
         # Encoder
         self.encoder1 = self.conv_block(input_channels, 32, norm = norm)
@@ -1030,6 +1031,8 @@ class Big3DUnet(nn.Module):
         )
 
     def forward(self, x):
+        res = x[:,self.residual_channel:self.residual_channel+1,:,:,:] if self.residual_channel>=0 else None
+
         # Encoder
         e1 = self.encoder1(x)
         e2 = self.encoder2(F.max_pool3d(e1, 2))
@@ -1054,7 +1057,9 @@ class Big3DUnet(nn.Module):
         d1 = self.upconv1(d2)
         d1 = torch.cat((d1, e1), dim=1)
         d1 = self.decoder1(d1)
+        d0 = self.output(d1)
+
 
         # Output
-        out = self.activation(self.output(d1))
+        out = self.activation(d0+res) if self.residual_channel>=0 else self.activation(d0)
         return out
