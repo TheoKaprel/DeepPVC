@@ -973,9 +973,9 @@ class vanillaCNN(nn.Module):
             return self.final_activation(self.sequence_CNN(x))
 
 
-class ChatGPTUNet3D(nn.Module):
+class Big3DUnet(nn.Module):
     def __init__(self, params, input_channels):
-        super(ChatGPTUNet3D, self).__init__()
+        super(Big3DUnet, self).__init__()
 
         norm = params["layer_norm"]
         self.use_dropout = params['use_dropout']

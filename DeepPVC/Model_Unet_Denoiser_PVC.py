@@ -125,9 +125,9 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=1 if self.residual_layer else -1, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
-        elif self.archi=="chatgpt3dunet":
-            self.UNet_denoiser = networks.ChatGPTUNet3D()
-            self.UNet_pvc = networks.ChatGPTUNet3D()
+        elif self.archi=="big3dunet":
+            self.UNet_denoiser = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
+            self.UNet_pvc = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
 
         if "init" not in self.params:
             self.params["init"] = "none"
