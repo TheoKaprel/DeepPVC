@@ -133,14 +133,13 @@ class UNetModel(ModelBase):
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
 
-        elif self.archi=="big3dunet":
+        elif (self.archi=="big3dunet" or self.archi=="chatgpt3dunet"):
             self.UNet = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
 
-        if "init" not in self.params:
-            self.params["init"] = "none"
-        networks.init_weights(net=self.UNet, init_type=self.params["init"])
-
-
+        if self.for_training:
+            if "init" not in self.params:
+                self.params["init"] = "none"
+            self.UNet = networks.init_weights(net=self.UNet, init_type=self.params["init"])
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)

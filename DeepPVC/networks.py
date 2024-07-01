@@ -42,7 +42,7 @@ def init_weights(net, init_type='normal', mean = 0.0, init_gain=0.02):
     if init_type!="none":
         print('initialize network with %s' % init_type)
         net.apply(init_func)  # apply the initialization function <init_func>
-
+    return net
 
 class DownSamplingBlock(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2, kernel_size = (3,3), stride = (2,2), padding = 1,

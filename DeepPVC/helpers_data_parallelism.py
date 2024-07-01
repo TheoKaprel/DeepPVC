@@ -21,6 +21,9 @@ def init_data_parallelism(model):
         model.UNet_pvc = DistributedDataParallel(model.UNet_pvc, device_ids=[idr_torch.local_rank])
     elif model.network_type=='diffusion':
         model.Diffusion_Unet = DistributedDataParallel(model.Diffusion_Unet, device_ids=[idr_torch.local_rank])
+    elif model.network_type=='double_domain':
+        model.UNet_sino = DistributedDataParallel(model.UNet_sino, device_ids=[idr_torch.local_rank])
+        model.UNet_img = DistributedDataParallel(model.UNet_img, device_ids=[idr_torch.local_rank])
 
 def get_dataloader_params(dataset,jean_zay,split_dataset):
     if jean_zay:

@@ -134,6 +134,11 @@ class UNet_Denoiser_PVC(ModelBase):
             
         networks.init_weights(net=self.UNet_denoiser,init_type=self.params["init"])
         networks.init_weights(net=self.UNet_pvc,init_type=self.params["init"])
+        if self.for_training:
+            if "init" not in self.params:
+                self.params["init"] = "none"
+            self.UNet_denoiser = networks.init_weights(net=self.UNet_denoiser, init_type=self.params["init"])
+            self.UNet_pvc = networks.init_weights(net=self.UNet_pvc, init_type=self.params["init"])
 
         if self.params['jean_zay']:
             helpers_data_parallelism.init_data_parallelism(model=self)
