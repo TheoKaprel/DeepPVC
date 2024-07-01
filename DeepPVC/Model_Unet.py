@@ -42,6 +42,14 @@ class UNetModel(ModelBase):
         self.residual_layer = params['residual_layer']
         self.ResUnet = params['resunet']
 
+        if self.residual_layer:
+            if self.params['inputs'] == "imgs":
+                self.residual_channel = 0
+            elif self.params['inputs']=="full_sino":
+                self.residual_channel = 1 if self.with_rec_fp else 0
+        else:
+            self.residual_channel = -1
+
         self.final_2dconv = True if (params['dim']=="3d" and params['inputs']=="projs") else False
 
         if "archi" not in params:
@@ -128,7 +136,7 @@ class UNetModel(ModelBase):
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
-                                      norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1, blocks=self.ed_blocks,
+                                      norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,AttentionUnet=False,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths).to(device=self.device)
