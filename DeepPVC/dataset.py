@@ -322,6 +322,8 @@ class SinoToSinoDataset(BaseDataset):
         if self.patches:
             self.len_dataset=self.len_dataset * self.tile_shape[0]*self.tile_shape[1]*self.tile_shape[2]
 
+        self.dataseth5.close()
+
     def get_item_h5_full_sino(self, item):
         if self.patches:
             src_i=item%self.nb_src
