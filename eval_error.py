@@ -22,7 +22,8 @@ def train(lpth,dataset_path,output_folder):
 
     for pth in lpth:
 
-        pth_errors = []
+        pth_NRMSE = []
+        pth_NMAE = []
 
         checkpoint = torch.load(pth, map_location=device)
         params = checkpoint['params']
@@ -72,11 +73,18 @@ def train(lpth,dataset_path,output_folder):
                 fakePVfree = DeepPVEModel.forward(batch_inputs)
 
             ground_truth=batch_targets['PVfree'] if (DeepPVEModel.params['inputs'] == "full_sino") else batch_targets['src_4mm']
-            NRMSE_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.sqrt(torch.mean(ground_truth**2))
-            pth_errors.append(NRMSE_batch.item())
 
-        pth_errors = np.array(pth_errors)
-        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '.npy')),pth_errors)
+            NRMSE_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.sqrt(torch.mean(ground_truth**2))
+            pth_NRMSE.append(NRMSE_batch.item())
+
+            NMAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))/ torch.abs(ground_truth)
+            pth_NMAE.append(NMAE_batch.item())
+
+        pth_NRMSE = np.array(pth_NRMSE)
+        pth_NMAE = np.array(pth_NMAE)
+
+        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NRMSE.npy')),pth_NRMSE)
+        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NMAE.npy')),pth_NMAE)
 
 
 
