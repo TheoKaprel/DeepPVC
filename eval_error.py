@@ -77,7 +77,7 @@ def train(lpth,dataset_path,output_folder):
             NRMSE_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.sqrt(torch.mean(ground_truth**2))
             pth_NRMSE.append(NRMSE_batch.item())
 
-            NMAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))/ torch.abs(ground_truth)
+            NMAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))/ torch.mean(torch.abs(ground_truth))
             pth_NMAE.append(NMAE_batch.item())
 
         pth_NRMSE = np.array(pth_NRMSE)
