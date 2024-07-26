@@ -21,9 +21,9 @@
   "finetuning": false,
 
   "max_nb_data": 20,
-  "training_batchsize":1,
-  "test_batchsize":1,
-  "data_augmentation": ["noise"],
+  "training_batchsize":2,
+  "test_batchsize":2,
+  "data_augmentation": ["noise", "rot"],
   "data_normalisation": "3d_sum",
   "pad": "circular",
   "amp": true,

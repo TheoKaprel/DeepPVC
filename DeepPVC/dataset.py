@@ -215,6 +215,12 @@ class CircularPadSino(torch.nn.Module):
         elif input.dim()==4:
             return torch.cat((input[:,-self.pad:,:,:], input, input[:,:self.pad,:,:]),dim=1)
 
+# def CircularPadSino(pad,input):
+    # if input.dim()==3:
+    #     return torch.cat((input[-pad:,:,:], input, input[:pad,:,:]),dim=0)
+    # elif input.dim()==4:
+    #     return torch.cat((input[:,-pad:,:,:], input, input[:,:pad,:,:]),dim=1)
+
 class ZeroPadImgs(torch.nn.Module):
     def __init__(self, size: int) -> None:
         super().__init__()
@@ -257,6 +263,7 @@ class SinoToSinoDataset(BaseDataset):
             self.pad = torch.nn.ConstantPad2d((0, 0, 4, 4), 0) if self.sino else torch.nn.ConstantPad2d((0, 0, 0, 0, 4, 4), 0)
         elif params['pad']=='circular':
             self.pad = CircularPadSino(4)
+            # self.pad = lambda x: CircularPadSino(pad=4,input=x)
         else:
             self.pad = torch.nn.Identity()
 
