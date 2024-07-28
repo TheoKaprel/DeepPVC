@@ -418,7 +418,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
             if self.dim==3:
                 if self.with_att:
-                    input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], attmap_fp[:,None,:,:,:]),dim=1)
+                    input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
                 else:
                     input_denoiser = self.truePVE_noisy[:,None,:,:,:]
 
