@@ -159,8 +159,6 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
-            # self.unet_denoiser_optimizer = optim.Adam(self.UNet_denoiser.parameters(), lr=self.learning_rate)
-            # self.unet_pvc_optimizer = optim.Adam(self.UNet_pvc.parameters(), lr=self.learning_rate)
             self.double_optimizer = optim.Adam(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), lr=self.learning_rate)
         elif self.optimizer =="AdamW":
             # self.unet_denoiser_optimizer = optim.AdamW(self.UNet_denoiser.parameters(), lr=self.learning_rate)
