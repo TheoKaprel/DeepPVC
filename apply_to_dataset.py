@@ -24,7 +24,7 @@ def apply(lpth,dataset_path,output_folder):
 
         checkpoint = torch.load(pth, map_location=device)
         params = checkpoint['params']
-
+        params['max_nb_data'] = 100000
         helpers_params.check_params(params)
 
         test_dataset = dataset.get_dataset(params=params, paths=[dataset_path],test=True)
