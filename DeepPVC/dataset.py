@@ -377,7 +377,7 @@ class SinoToSinoDataset(BaseDataset):
             for key in data_targets.keys():
                 data_targets[key] = data_targets[key][(self.channels_id+proj_i)%self.nb_projs_per_img,:,:]
 
-        if "rot" in self.list_transforms:
+        if ("rot" in self.list_transforms and not self.test):
             random_proj_index=np.random.randint(self.nb_projs_per_img)
             for key_inputs in data_inputs.keys():
                 data_inputs[key_inputs] = np.roll(data_inputs[key_inputs], -random_proj_index,axis=0)
@@ -417,7 +417,7 @@ class ImgToImgDataset(BaseDataset):
 
         self.init_h5()
 
-        if "vol" in self.list_transforms:
+        if ("vol" in self.list_transforms and not self.test):
             self.get_augmentation = lambda img_size: Compose([
                     Rotate((-5, 5), (0, 0), (0, 0), p=0.5),
                     Rotate((0, 0), (-5, 5), (0, 0), p=0.5),
