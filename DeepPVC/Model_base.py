@@ -52,6 +52,10 @@ class ModelBase(torch.nn.Module):
             else:
                 self.input_channels = 2 if params['with_rec_fp'] else 1
 
+            if "with_PVCNet_rec" in self.params:
+                if self.params["with_PVCNet_rec"]:
+                    self.input_channels+=1
+
             self.output_channels = self.output_channels_denoiser = 1
 
 

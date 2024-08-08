@@ -34,6 +34,7 @@ class UNetModel(ModelBase):
             self.ed_blocks = "conv-relu-norm"
 
         self.with_rec_fp = params['with_rec_fp']
+        self.with_PVCNet_rec = params["with_PVCNet_rec"] if "with_PVCNet_rec" in params else False
 
         self.hidden_channels_unet = params["hidden_channels_unet"]
         self.unet_activation = params["unet_activation"]
@@ -211,6 +212,9 @@ class UNetModel(ModelBase):
             self.true_rec_fp = batch_inputs['rec_fp']
         if self.with_att:
             self.attmap_fp = batch_inputs['attmap_fp'] if (self.img_to_img == False) else batch_inputs['attmap_4mm']
+        if self.with_PVCNet_rec:
+            self.PVCNet_rec = batch_inputs['PVCNet_rec']
+
         self.lesion_mask_fp = batch_targets['lesion_mask'] if self.with_lesion else None
 
         self.normalize_data()
@@ -229,8 +233,13 @@ class UNetModel(ModelBase):
             self.truePVE_noisy = self.truePVE_noisy / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
             if self.with_rec_fp:
                 self.true_rec_fp = self.true_rec_fp / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+
+            if self.with_PVCNet_rec:
+                self.PVCNet_rec = self.PVCNet_rec / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+
             if self.with_att:
                 self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]
+
         elif self.params['data_normalisation']=="sino_sum":
             self.norm = self.truePVE_noisy.sum((2, 3))
             self.input_max = self.truePVE_noisy.amax((1, 2, 3))[:, None, None, None]
@@ -265,10 +274,16 @@ class UNetModel(ModelBase):
         if self.dim==2:
             input = torch.concat((self.truePVE_noisy,self.true_rec_fp),dim=1) if self.with_rec_fp else self.truePVE_noisy
         elif self.dim==3:
-            if self.with_att:
-                input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
+            if self.with_PVCNet_rec:
+                if self.with_att:
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
+                else:
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:]), dim=1)
             else:
-                input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
+                if self.with_att:
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
+                else:
+                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]), dim=1) if self.with_rec_fp else self.truePVE_noisy[:,None,:,:,:]
 
         self.fakePVfree = self.UNet(input)
         self.denormalize_data()
@@ -298,6 +313,8 @@ class UNetModel(ModelBase):
             self.true_rec_fp = batch['rec_fp']
         if self.with_att:
             self.attmap_fp = batch['attmap_fp'] if (self.img_to_img == False) else batch['attmap_4mm']
+        if self.with_PVCNet_rec:
+            self.PVCNet_rec = batch['PVCNet_rec']
 
         self.normalize_data()
 
@@ -314,10 +331,16 @@ class UNetModel(ModelBase):
             if self.dim==2:
                 input = batch[0]
             elif self.dim==3:
-                if self.with_att:
-                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
+                if self.with_PVCNet_rec:
+                    if self.with_att:
+                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
+                    else:
+                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:]),dim=1)
                 else:
-                    input = self.truePVE_noisy[:,None,:,:,:]
+                    if self.with_att:
+                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
+                    else:
+                        input = self.truePVE_noisy[:,None,:,:,:]
 
         with autocast(enabled=self.amp,dtype=torch.float16):
             self.fakePVfree = self.UNet(input)
