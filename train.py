@@ -15,6 +15,9 @@ import tracemalloc
 from DeepPVC import dataset, Model_instance
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
 
+import torch._dynamo
+torch._dynamo.config.suppress_errors = True
+
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--json', help = 'JSON parameter file to start training FROM SCRATCH')
