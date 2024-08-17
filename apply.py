@@ -57,7 +57,7 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
 def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
     input_PVE_noisy_array = itk.array_from_image(itk.imread(input))
-    input_rec_fp_array = itk.array_from_image(itk.imread(input_rec_fp)) if ((input_rec_fp is not None) and (params['with_rec_fp'])) else None
+    input_rec_fp_array = itk.array_from_image(itk.imread(input_rec_fp)) if ((input_rec_fp is not None) and (params['with_rec_fp'] or params['with_PVCNet_rec'])) else None
     attmap_fp_array = itk.array_from_image(itk.imread(attmap_fp)) if (attmap_fp is not None) else None
 
     with torch.no_grad():

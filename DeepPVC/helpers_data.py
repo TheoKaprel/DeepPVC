@@ -400,6 +400,10 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
         if with_att:
             data_inputs['attmap_4mm'] = pad(torch.Tensor(attmap_fp_array[None,:,:,:]))
 
+        if "with_PVCNet_rec" in params:
+            if params['with_PVCNet_rec']:
+                data_inputs['PVCNet_rec'] = pad(torch.Tensor(input_rec_fp_array[None,:,:,:]))
+
         return data_inputs
 
 

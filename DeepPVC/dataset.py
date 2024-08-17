@@ -462,7 +462,9 @@ class ImgToImgDataset(BaseDataset):
 
             data_inputs['rec'] = np.array(data['rec'],dtype=self.dtype)
             data_inputs['attmap_4mm'] = np.array(data['attmap_4mm'], dtype=self.dtype)
-            data_inputs['PVCNet_rec'] = np.array(data['PVCNet_751113_rec_noRM'], dtype=self.dtype)
+
+            if self.params["with_PVCNet_rec"]:
+                data_inputs['PVCNet_rec'] = np.array(data['PVCNet_751113_rec_noRM'], dtype=self.dtype)
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
 
