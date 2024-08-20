@@ -453,6 +453,8 @@ class ImgToImgDataset(BaseDataset):
 
         self.len_dataset = self.nb_src
 
+        self.dataseth5.close()
+
     def get_item_h5_img_to_img(self, item):
         src_i=item
         with h5py.File(self.datasetfn, 'r') as f:
