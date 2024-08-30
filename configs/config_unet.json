@@ -24,7 +24,7 @@
   "max_nb_data": 5,
   "training_batchsize":1,
   "test_batchsize":1,
-  "data_augmentation": [],
+  "data_augmentation": ["vol"],
   "data_normalisation": "3d_sum",
   "pad": "zero",
   "amp": true,

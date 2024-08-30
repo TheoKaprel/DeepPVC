@@ -470,14 +470,17 @@ class ImgToImgDataset(BaseDataset):
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
 
-        if "vol" in self.list_transforms:
+        if ("vol" in self.list_transforms and (not self.test)):
             augmentation = self.get_augmentation(data_inputs['rec'].shape)
             data = {'image': data_inputs['rec'], "image2": data_inputs['attmap_4mm'],
+                    "image3": data_targets['src_4mm'], "image4": data_inputs['PVCNet_rec']} if self.params["with_PVCNet_rec"] else {'image': data_inputs['rec'], "image2": data_inputs['attmap_4mm'],
                     "image3": data_targets['src_4mm']}
             aug_data = augmentation(**data)
             data_inputs['rec'] = aug_data['image']
             data_inputs['attmap_4mm'] = aug_data["image2"]
             data_targets['src_4mm'] = aug_data["image3"]
+            if self.params["with_PVCNet_rec"]:
+                data_inputs['PVCNet_rec'] =aug_data["image4"]
 
         for key_inputs in data_inputs.keys():
             data_inputs[key_inputs] = self.pad(torch.from_numpy(data_inputs[key_inputs]))
