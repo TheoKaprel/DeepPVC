@@ -31,7 +31,7 @@
   "verbose": 2,
 
   "network": "unet",
-  "archi": "unet",
+  "archi": "dcnn",
 
   "n_epochs": 50,
   "learning_rate":0.001,

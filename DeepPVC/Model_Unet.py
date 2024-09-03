@@ -117,16 +117,22 @@ class UNetModel(ModelBase):
             #                           use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
             #                           norm=self.layer_norm, residual_layer=self.residual_layer
             #                           ).to(device=self.device)
-            self.UNet = networks.CNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
-                                      kernel=self.init_feature_kernel,
+            # self.UNet = networks.CNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+            #                           kernel=self.init_feature_kernel,
+            #                           nb_ed_layers=self.nb_ed_layers,
+            #                           output_channel=self.output_channels, generator_activation=self.unet_activation,
+            #                           leaky_relu=self.leaky_relu,
+            #                           norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1,
+            #                           blocks=self.ed_blocks,
+            #                           ResUnet=self.ResUnet,
+            #                           paths=self.paths).to(device=self.device)
+            self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
-                                      leaky_relu=self.leaky_relu,
-                                      norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1,
-                                      blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet,
-                                      paths=self.paths).to(device=self.device)
-
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_layer
+                                      ).to(device=self.device)
 
         elif self.archi=="unet_3d_2d":
             self.UNet = networks.UNET_3D_2D(input_channel=self.input_channels,residual_layer=self.residual_layer,
@@ -235,7 +241,8 @@ class UNetModel(ModelBase):
                 self.true_rec_fp = self.true_rec_fp / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
 
             if self.with_PVCNet_rec:
-                self.PVCNet_rec = self.PVCNet_rec / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
+                self.PVCNet_rec = self.PVCNet_rec / self.PVCNet_rec.amax((1,2,3))[:,None,None,None]
+                # self.PVCNet_rec = self.PVCNet_rec / self.truePVE_noisy.amax((1,2,3))[:,None,None,None]
 
             if self.with_att:
                 self.attmap_fp = self.attmap_fp / self.attmap_fp.amax((1,2,3))[:,None,None,None]

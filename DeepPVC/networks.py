@@ -915,7 +915,8 @@ class vanillaCNN(nn.Module):
             conv = nn.Conv3d
             init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1,1), int(init_feature_kernel / 2)
             # conv_kernels,conv_strides,conv_paddings = (3,3,3), (1,1,1), 1
-            conv_kernels,conv_strides,conv_paddings = (7,7,7), (1,1,1), 3
+            # conv_kernels,conv_strides,conv_paddings = (7,7,7), (1,1,1), 3
+            conv_kernels,conv_strides,conv_paddings = init_feature_kernel_size,init_feature_stride,init_feature_padding
 
             if norm=="batch_norm":
                 norm_layer = nn.BatchNorm3d
