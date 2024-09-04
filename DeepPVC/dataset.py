@@ -394,7 +394,7 @@ class SinoToSinoDataset(BaseDataset):
         for key_targets in data_targets.keys():
             data_targets[key_targets] = data_targets[key_targets][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
 
-        data_inputs['ref'] = self.keys[src_i]
+        # data_inputs['ref'] = self.keys[src_i]
 
         return data_inputs,data_targets
 
