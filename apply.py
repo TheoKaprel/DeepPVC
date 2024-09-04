@@ -39,7 +39,7 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
     model.switch_eval()
     model.show_infos()
 
-    output_array,fakePVE = apply_to_input(input=input,input_rec_fp=input_rec_fp,attmap_fp=attmap_fp,params=params,device=device,model=model)
+    output_array = apply_to_input(input=input,input_rec_fp=input_rec_fp,attmap_fp=attmap_fp,params=params,device=device,model=model)
 
 
     input_image = itk.imread(input)
@@ -50,10 +50,10 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
     output_image.SetSpacing(vSpacing)
     output_image.SetOrigin(vOffset)
 
-    fakePVE_img = itk.image_from_array(fakePVE)
-    fakePVE_img.SetSpacing(vSpacing)
-    fakePVE_img.SetOrigin(vOffset)
-    itk.imwrite(fakePVE_img, "/export/home/tkaprelian/temp/fakePVE2.mhd")
+    # fakePVE_img = itk.image_from_array(fakePVE)
+    # fakePVE_img.SetSpacing(vSpacing)
+    # fakePVE_img.SetOrigin(vOffset)
+    # itk.imwrite(fakePVE_img, "/export/home/tkaprelian/temp/fakePVE2.mhd")
 
     return output_image
 
@@ -115,7 +115,7 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
             if params['pad']=="circular":
                 output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)[0,4:124,:,:]
-                fakePVE[:,fovi1:fovi2,fovj1:fovj2] = model.fakePVE[0,0,4:124,:,:]
+                # fakePVE[:,fovi1:fovi2,fovj1:fovj2] = model.fakePVE[0,0,4:124,:,:]
             else:
                 output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)
         elif params['inputs']=="imgs":
@@ -128,11 +128,11 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
         print(f'network output shape : {output.shape}')
 
         output_array = helpers_data.back_to_input_format(params=params,output=output, initial_shape = list(input_PVE_noisy_array.shape))
-        fakePVE = helpers_data.back_to_input_format(params=params,output=fakePVE, initial_shape = list(input_PVE_noisy_array.shape))
+        # fakePVE = helpers_data.back_to_input_format(params=params,output=fakePVE, initial_shape = list(input_PVE_noisy_array.shape))
         print(f'final output shape : {output_array.shape}')
 
 
-        return output_array,fakePVE
+        return output_array
 
 
 
