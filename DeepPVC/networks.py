@@ -950,11 +950,16 @@ class vanillaCNN(nn.Module):
             sequence.append(norm_layer(ngc))
 
         # Last Layer
+        # sequence.append(conv(ngc,
+        #                           output_channel,
+        #                           kernel_size=conv_kernels,
+        #                           stride=conv_strides,
+        #                           padding = conv_paddings))
         sequence.append(conv(ngc,
                                   output_channel,
-                                  kernel_size=conv_kernels,
-                                  stride=conv_strides,
-                                  padding = conv_paddings))
+                                  kernel_size=(1,1,1),
+                                  stride=(1,1,1),
+                                  padding = (0,0,0)))
 
 
         # sequence.append(get_activation(generator_activation))
