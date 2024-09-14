@@ -44,7 +44,7 @@ def show_pth(lpth, losses, legend):
             dict_val[ref]=model.val_error_MAE
             print(model.val_error_MSE)
 
-    params_keys=list(lparams[0].keys())
+    params_keys=list(lparams[-1].keys())
 
     params_with_differences=[]
     for key in params_keys:
