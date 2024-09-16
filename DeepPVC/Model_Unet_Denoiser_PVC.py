@@ -27,6 +27,7 @@ class UNet_Denoiser_PVC(ModelBase):
             self.dim=2
 
         self.init_feature_kernel = params['init_feature_kernel']
+        self.final_feature_kernel = params['final_feature_kernel'] if "final_feature_kernel" in params else 3
         self.nb_ed_layers = params['nb_ed_layers']
         if "ed_blocks" in params:
             self.ed_blocks = params["ed_blocks"]
@@ -115,7 +116,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       ).to(device=self.device)
         elif self.archi=="unet":
             self.UNet_denoiser = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
-                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,final_feature_kernel=self.final_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,

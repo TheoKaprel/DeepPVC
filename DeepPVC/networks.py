@@ -324,7 +324,7 @@ def get_activation(activation):
 
 
 class UNet(nn.Module):
-    def __init__(self,input_channel, ngc,init_feature_kernel, paths,
+    def __init__(self,input_channel, ngc,init_feature_kernel,final_feature_kernel, paths,
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=-1, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
                  AttentionUnet=False,
@@ -345,7 +345,12 @@ class UNet(nn.Module):
             self.dim=3
             conv = nn.Conv3d
             init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1, 1), int(init_feature_kernel / 2)
-            final_kernel,final_stride,final_padding = (3,3,3), (1,1,1), 1
+            if final_feature_kernel == 3:
+                final_kernel,final_stride,final_padding = (3,3,3), (1,1,1), (1,1,1)
+            elif final_feature_kernel==1:
+                final_kernel, final_stride,final_padding = (1,1,1), (1,1,1), (0,0,0)
+            else:
+                final_kernel, final_stride, final_padding = (3, 3, 3), (1, 1, 1), (1, 1, 1)
 
         block_e,block_d = blocks[0], blocks[1]
 
@@ -950,16 +955,16 @@ class vanillaCNN(nn.Module):
             sequence.append(norm_layer(ngc))
 
         # Last Layer
-        # sequence.append(conv(ngc,
-        #                           output_channel,
-        #                           kernel_size=conv_kernels,
-        #                           stride=conv_strides,
-        #                           padding = conv_paddings))
         sequence.append(conv(ngc,
                                   output_channel,
-                                  kernel_size=(1,1,1),
-                                  stride=(1,1,1),
-                                  padding = (0,0,0)))
+                                  kernel_size=conv_kernels,
+                                  stride=conv_strides,
+                                  padding = conv_paddings))
+        # sequence.append(conv(ngc,
+        #                           output_channel,
+        #                           kernel_size=(1,1,1),
+        #                           stride=(1,1,1),
+        #                           padding = (0,0,0)))
 
 
         # sequence.append(get_activation(generator_activation))
