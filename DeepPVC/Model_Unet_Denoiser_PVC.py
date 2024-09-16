@@ -123,7 +123,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                                final_2dconv=False).to(device=self.device)
-            self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
+            self.UNet_pvc = networks.UNet(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,final_feature_kernel=self.final_feature_kernel,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
