@@ -43,7 +43,7 @@
   "use_dropout": true,
   "leaky_relu": 0.02,
 
-  "patches":false,
+  "patches":true,
   "ed_blocks": ["conv-norm-prelu-conv-norm-prelu", "conv-norm-prelu-conv-norm-prelu"],
   "residual_layer": true,
   "resunet": false,

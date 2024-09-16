@@ -109,14 +109,21 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                     f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({input_PVE_noisy_array.shape[1]}x{input_PVE_noisy_array.shape[2]})")
                 exit(0)
 
-            batch = {}
-            for key in data_input.keys():
-                batch[key] = data_input[key][:,:,fovi1:fovi2,fovj1:fovj2]
+            batch = data_input
 
             if params['pad']=="circular":
+                for key in data_input.keys():
+                    batch[key] = batch[key][:, :, fovi1:fovi2, fovj1:fovj2]
+
                 output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)[0,4:124,:,:]
-                # fakePVE[:,fovi1:fovi2,fovj1:fovj2] = model.fakePVE[0,0,4:124,:,:]
+            elif params["patches"]:
+                li,lj = [40,64,88],[24,51,78,104]
+                for ii in li:
+                    for jj in lj:
+                        output[:,ii-16:ii+16,jj-16:jj+16] = model.forward(batch[:,:,ii-16:ii+16,jj-16:jj+16])[0,4:124,:,:]
             else:
+                for key in data_input.keys():
+                    batch[key] = batch[key][:, :, fovi1:fovi2, fovj1:fovj2]
                 output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)
         elif params['inputs']=="imgs":
             output=model.forward(data_input)
