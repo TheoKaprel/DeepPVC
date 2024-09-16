@@ -301,12 +301,12 @@ class SinoToSinoDataset(BaseDataset):
 
         print(f"fov pixels : {[[self.fovi1,self.fovi2], [self.fovj1,self.fovj2]]}")
 
-        if self.patches:
-            self.patch_size=(32,64,64)
-            first_data=self.pad(torch.from_numpy(first_data))[None,:,:,:]
-            first_data_patches = first_data.unfold(1, self.patch_size[0], self.patch_size[0]).unfold(2, self.patch_size[1], self.patch_size[1]).unfold(3, self.patch_size[2], self.patch_size[2])
-            self.unfold_shape=first_data_patches.size()
-            self.tile_shape=(self.unfold_shape[1],self.unfold_shape[2],self.unfold_shape[3])
+        # if self.patches:
+        #     self.patch_size=(32,64,64)
+        #     first_data=self.pad(torch.from_numpy(first_data))[None,:,:,:]
+        #     first_data_patches = first_data.unfold(1, self.patch_size[0], self.patch_size[0]).unfold(2, self.patch_size[1], self.patch_size[1]).unfold(3, self.patch_size[2], self.patch_size[2])
+        #     self.unfold_shape=first_data_patches.size()
+        #     self.tile_shape=(self.unfold_shape[1],self.unfold_shape[2],self.unfold_shape[3])
 
         if (self.max_nb_data > 0 and len(self.keys)> self.max_nb_data):
             self.keys = self.keys[:int(self.max_nb_data)]
@@ -327,14 +327,13 @@ class SinoToSinoDataset(BaseDataset):
         # self.len_dataset = self.nb_src
 
         if self.patches:
-            self.len_dataset=self.len_dataset * self.tile_shape[0]*self.tile_shape[1]*self.tile_shape[2]
+            self.len_dataset=self.len_dataset * 2*3
 
         self.dataseth5.close()
 
     def get_item_h5_full_sino(self, item):
         if self.patches:
             src_i=item%self.nb_src
-            i,j,k=item%self.tile_shape[0],item%self.tile_shape[1],item%self.tile_shape[2]
         else:
             if (self.dim==3 or self.test):
                 src_i=item
@@ -393,6 +392,14 @@ class SinoToSinoDataset(BaseDataset):
             data_inputs[key_inputs] = data_inputs[key_inputs][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
         for key_targets in data_targets.keys():
             data_targets[key_targets] = data_targets[key_targets][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
+
+        if self.patches:
+            id_i = np.random.randint(self.fovi1+32,self.fovi2-32)
+            id_j = np.random.randint(self.fovj1+32,self.fovj2-32)
+            for key_inputs in data_inputs.keys():
+                data_inputs[key_inputs] = data_inputs[key_inputs][:, id_i-16:id_i+16, id_j-16:id_j+16]
+            for key_targets in data_targets.keys():
+                data_targets[key_targets] = data_targets[key_targets][:, id_i-16:id_i+16, id_j-16:id_j+16]
 
         # data_inputs['ref'] = self.keys[src_i]
 
