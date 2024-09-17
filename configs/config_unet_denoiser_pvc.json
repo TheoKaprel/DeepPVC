@@ -17,7 +17,7 @@
   "with_adj_angles": true,
   "nb_adj_angles": 16,
   "dim": "3d",
-  "denoise": true,
+  "denoise": false,
   "paths": false,
   "finetuning": false,
 
@@ -27,11 +27,11 @@
   "data_augmentation": ["noise", "rot"],
   "data_normalisation": "sino_sum",
   "pad": "circular",
-  "amp": true,
+  "amp": false,
   "verbose": 2,
 
   "network": "unet_denoiser_pvc",
-  "archi": "big3dunet",
+  "archi": "dcnn",
 
   "n_epochs":50,
   "learning_rate":0.001,
@@ -43,7 +43,7 @@
   "use_dropout": true,
   "leaky_relu": 0.02,
 
-  "patches":true,
+  "patches":false,
   "ed_blocks": ["conv-norm-prelu-conv-norm-prelu", "conv-norm-prelu-conv-norm-prelu"],
   "residual_layer": true,
   "resunet": false,
@@ -59,9 +59,9 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "final_feature_kernel": 3,
-  "nb_ed_layers": 4,
+  "nb_ed_layers": 6,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
-  "lambda_recon":[1]
+  "recon_loss":["L1", "edcc"],
+  "lambda_recon":[1, 1]
 }
