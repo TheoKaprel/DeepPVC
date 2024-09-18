@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch.cuda.amp import custom_fwd
@@ -63,27 +64,24 @@ class eDCC_loss(nn.Module):
                                         (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
 
     def laplace_p(self,p,sigma):
-        exp_s = torch.exp(sigma*self.spacing*self.linspace)
+        exp_s = torch.exp(sigma*self.linspace)*self.spacing
         return torch.matmul(p,exp_s)
 
     @custom_fwd
     def forward(self,_,projs):
-        edcc = None
+        edcc_ = None
         for i,thetai in enumerate(self.array_theta):
             j =(i+30)%128
             thetaj = self.array_theta[j]
-
             sigma_ij = self.mu0 * torch.tan((thetai - thetaj) / 2)
             sigma_ji = self.mu0 * torch.tan((thetai - thetaj) / 2)
-            for l in range(projs.shape[-2]):
-                P_i = self.laplace_p(p=projs[:,i,l,:],sigma=sigma_ij)
-                P_j = self.laplace_p(p=projs[:,j,l,:],sigma=sigma_ji)
-                if edcc is None:
-                    edcc = 2/self.Nprojs * torch.abs(P_i-P_j)/(P_i+P_j) if (P_i+P_j != 0) else 0
-                else:
-                    edcc += 2/self.Nprojs * torch.abs(P_i-P_j)/(P_i+P_j) if (P_i+P_j != 0) else 0
-        # print(edcc.mean())
-        return edcc.mean()
+            P_i = torch.matmul(projs[:,i,:,:],torch.exp(sigma_ij*self.linspace)*self.spacing)
+            P_j = torch.matmul(projs[:,j,:,:],torch.exp(sigma_ji*self.linspace)*self.spacing)
+            if edcc_ is None:
+                edcc_=(2/self.Nprojs**2*torch.abs(P_i-P_j)/(P_i+P_j)).sum(-1) # sum(-1) over the projection lines
+            else:
+                edcc_+=(2/self.Nprojs**2*torch.abs(P_i-P_j)/(P_i+P_j)).sum(-1) # the += is the sum over projection angles
+        return edcc_.mean() # mean over batch
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py

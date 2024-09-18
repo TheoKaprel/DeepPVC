@@ -31,7 +31,7 @@
   "verbose": 2,
 
   "network": "unet_denoiser_pvc",
-  "archi": "dcnn",
+  "archi": "unet",
 
   "n_epochs":50,
   "learning_rate":0.001,
@@ -58,8 +58,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "final_feature_kernel": 3,
-  "nb_ed_layers": 6,
+  "final_feature_kernel": 1,
+  "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1", "edcc"],
