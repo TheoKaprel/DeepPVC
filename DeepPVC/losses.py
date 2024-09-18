@@ -63,25 +63,24 @@ class eDCC_loss(nn.Module):
         self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
                                         (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
 
-    def laplace_p(self,p,sigma):
-        exp_s = torch.exp(sigma*self.linspace)*self.spacing
-        return torch.matmul(p,exp_s)
-
     @custom_fwd
     def forward(self,_,projs):
-        edcc_ = None
+        edcc = torch.tensor([0.]).to(self.device)
         for i,thetai in enumerate(self.array_theta):
             j =(i+30)%128
             thetaj = self.array_theta[j]
             sigma_ij = self.mu0 * torch.tan((thetai - thetaj) / 2)
             sigma_ji = self.mu0 * torch.tan((thetai - thetaj) / 2)
             P_i = torch.matmul(projs[:,i,:,:],torch.exp(sigma_ij*self.linspace)*self.spacing)
-            P_j = torch.matmul(projs[:,j,:,:],torch.exp(sigma_ji*self.linspace)*self.spacing)
-            if edcc_ is None:
-                edcc_=(2/self.Nprojs**2*torch.abs(P_i-P_j)/(P_i+P_j)).sum(-1) # sum(-1) over the projection lines
-            else:
-                edcc_+=(2/self.Nprojs**2*torch.abs(P_i-P_j)/(P_i+P_j)).sum(-1) # the += is the sum over projection angles
-        return edcc_.mean() # mean over batch
+            P_j = torch.matmul(projs[:,j,:,:],torch.exp(sigma_ji*self.linspace)*self.spacing) # N_batch,Nx
+            P_i =P_i.ravel()
+            P_j =P_j.ravel()
+            mask = (P_i*P_j>0)
+            P_i = P_i[mask]
+            P_j = P_j[mask]
+            edcc_li = 2 / self.Nprojs * torch.abs(P_i - P_j) / (P_i + P_j)
+            edcc+= edcc_li.mean() # mean over both batch size and Nx (for lines with >0 values)
+        return edcc
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
@@ -191,7 +190,7 @@ class UNetLosses(Model_Loss):
         super().__init__(losses_params)
 
     def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None):
-        unet_loss = 0
+        unet_loss = torch.tensor([0.], device=self.device)
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if loss_name=="lesion":
                 unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
