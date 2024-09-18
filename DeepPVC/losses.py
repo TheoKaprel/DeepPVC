@@ -68,20 +68,21 @@ class eDCC_loss(nn.Module):
 
     @custom_fwd
     def forward(self,_,projs):
+        edcc = None
         for i,thetai in enumerate(self.array_theta):
             j =(i+30)%128
             thetaj = self.array_theta[j]
-            edcc = None
+
+            sigma_ij = self.mu0 * torch.tan((thetai - thetaj) / 2)
+            sigma_ji = self.mu0 * torch.tan((thetai - thetaj) / 2)
             for l in range(projs.shape[-2]):
-                sigma_ij = self.mu0 * torch.tan((thetai-thetaj)/2)
-                sigma_ji = self.mu0 * torch.tan((thetai-thetaj)/2)
                 P_i = self.laplace_p(p=projs[:,i,l,:],sigma=sigma_ij)
                 P_j = self.laplace_p(p=projs[:,j,l,:],sigma=sigma_ji)
                 if edcc is None:
                     edcc = 2/self.Nprojs * torch.abs(P_i-P_j)/(P_i+P_j) if (P_i+P_j != 0) else 0
                 else:
                     edcc += 2/self.Nprojs * torch.abs(P_i-P_j)/(P_i+P_j) if (P_i+P_j != 0) else 0
-
+        # print(edcc.mean())
         return edcc.mean()
 
 class gradient_penalty(nn.Module):

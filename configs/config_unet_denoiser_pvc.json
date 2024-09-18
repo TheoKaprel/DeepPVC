@@ -17,7 +17,7 @@
   "with_adj_angles": true,
   "nb_adj_angles": 16,
   "dim": "3d",
-  "denoise": false,
+  "denoise": true,
   "paths": false,
   "finetuning": false,
 
@@ -63,5 +63,5 @@
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1", "edcc"],
-  "lambda_recon":[1, 1]
+  "lambda_recon":[1, 0.1]
 }

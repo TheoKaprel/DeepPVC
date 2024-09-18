@@ -198,7 +198,18 @@ class UNet_Denoiser_PVC(ModelBase):
     def init_losses(self):
         self.losses_params = {'recon_loss': self.params['recon_loss'],
                               'lambda_recon': self.params['lambda_recon'], 'device': self.device}
-        self.losses_denoiser = losses.UNetLosses(self.losses_params)
+        if "edcc" in self.params['recon_loss']:
+            recon_loss = []
+            lamba_recons = []
+            for loss_name,loss_lambda in zip(self.params['recon_loss'],self.params['lambda_recon']):
+                if loss_name!="edcc":
+                    recon_loss.append(loss_name)
+                    lamba_recons.append(loss_lambda)
+            self.losses_params_denoiser = {'recon_loss': recon_loss,
+                              'lambda_recon': lamba_recons, 'device': self.device}
+        else:
+            self.losses_params_denoiser = self.losses_params
+        self.losses_denoiser = losses.UNetLosses(self.losses_params_denoiser)
         self.losses_pvc = losses.UNetLosses(self.losses_params)
 
     def input_data(self, batch_inputs, batch_targets):
