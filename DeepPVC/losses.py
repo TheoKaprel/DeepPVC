@@ -58,14 +58,12 @@ class eDCC_loss(nn.Module):
         self.mu0 = 0.013
         self.Nprojs = 128
         self.array_theta = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1]
+        self.size = 112
+        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
+                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
 
     def laplace_p(self,p,sigma):
-        size = p.shape[-1]
-        exp_s = torch.tensor([torch.exp(sigma*s*self.spacing)
-                                         for s in
-                                         torch.linspace((-size*self.spacing+self.spacing)/2,
-                                                        (size*self.spacing-self.spacing)/2,size)],
-                                        device=self.device)
+        exp_s = torch.exp(sigma*self.spacing*self.linspace)
         return torch.matmul(p,exp_s)
 
     @custom_fwd
@@ -75,8 +73,8 @@ class eDCC_loss(nn.Module):
             thetaj = self.array_theta[j]
             edcc = None
             for l in range(projs.shape[-2]):
-                sigma_ij = self.mu0 * torch.tan(torch.tensor([(thetai-thetaj)/2]))
-                sigma_ji = self.mu0 * torch.tan(torch.tensor([(thetai-thetaj)/2]))
+                sigma_ij = self.mu0 * torch.tan((thetai-thetaj)/2)
+                sigma_ji = self.mu0 * torch.tan((thetai-thetaj)/2)
                 P_i = self.laplace_p(p=projs[:,i,l,:],sigma=sigma_ij)
                 P_j = self.laplace_p(p=projs[:,j,l,:],sigma=sigma_ji)
                 if edcc is None:
