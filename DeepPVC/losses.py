@@ -24,7 +24,8 @@ def get_nn_loss(loss_name):
     elif loss_name=="conv":
         return nn.L1Loss()
     elif loss_name=="edcc":
-        return eDCC_loss()
+        return fast_eDCC_loss()
+        # return eDCC_loss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -81,6 +82,32 @@ class eDCC_loss(nn.Module):
             edcc_li = 2 / self.Nprojs * torch.abs(P_i - P_j) / (P_i + P_j)
             edcc+= edcc_li.mean() # mean over both batch size and Nx (for lines with >0 values)
         return edcc
+
+class fast_eDCC_loss(nn.Module):
+    def __init__(self):
+        super(fast_eDCC_loss, self).__init__()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.spacing = 4.7952
+        self.mu0 = 0.013
+        self.Nprojs = 128
+        self.array_theta_i = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1].to(self.device)
+        self.array_theta_j = self.array_theta_i.roll(-30)
+        self.size = 112
+        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
+                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
+
+    @custom_fwd
+    def forward(self,_,projs):
+        sigma_ij =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_j) / 2)
+        x_i = torch.exp(sigma_ij[:,None]*self.linspace[None,:])*self.spacing
+        P_i = (projs * x_i[None, :, None, :]).sum(-1)
+
+        sigma_ji =  self.mu0 * torch.tan((self.array_theta_j - self.array_theta_i) / 2)
+        x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
+        P_j = (projs.roll(-30,dims=1) * x_j[None, :, None, :]).sum(-1)
+
+        edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
+        return torch.sum(edcc_fast_before_mean[~edcc_fast_before_mean.isnan()])/edcc_fast_before_mean.numel()
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
