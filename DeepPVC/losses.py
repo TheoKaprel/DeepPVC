@@ -106,8 +106,9 @@ class fast_eDCC_loss(nn.Module):
         x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
         P_j = (projs.roll(-30,dims=1) * x_j[None, :, None, :]).sum(-1)
 
-        P_i = P_i[P_i*P_j!=0]
-        P_j = P_j[P_i*P_j!=0]
+        non_zero_mask = P_i*P_j
+        P_i = P_i[non_zero_mask]
+        P_j = P_j[non_zero_mask]
         edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
         return edcc_fast_before_mean.mean()
 
