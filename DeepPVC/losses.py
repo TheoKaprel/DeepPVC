@@ -106,9 +106,14 @@ class fast_eDCC_loss(nn.Module):
         x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
         P_j = (projs.roll(-30,dims=1) * x_j[None, :, None, :]).sum(-1)
 
+        P_i = P_i[P_i*P_j!=0]
+        P_j = P_j[P_i*P_j!=0]
         edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
-        edcc_fast_before_mean_with_zero_replacing_inf_nans = torch.nan_to_num(edcc_fast_before_mean, nan=0, posinf=0, neginf=0)
-        return edcc_fast_before_mean_with_zero_replacing_inf_nans.mean()
+        return edcc_fast_before_mean.mean()
+
+        # edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
+        # edcc_fast_before_mean_with_zero_replacing_inf_nans = torch.nan_to_num(edcc_fast_before_mean, nan=0, posinf=0, neginf=0)
+        # return edcc_fast_before_mean_with_zero_replacing_inf_nans.mean()
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
