@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/linkhome/rech/gencre01/uyo34ub/scratch/datasets/lu_fp_dataset/train_dataset_sino.h5"],
-  "test_dataset_path": ["/linkhome/rech/gencre01/uyo34ub/scratch/datasets/lu_vf_dataset/test_dataset/test_dataset_sino.h5"],
+  "dataset_path": ["/lustre/fsn1/projects/rech/jxz/uyo34ub/datasets/all_lu_datasets/train_datasets/train_dataset_sino.h5"],
+  "test_dataset_path": ["/lustre/fsn1/projects/rech/jxz/uyo34ub/datasets/all_lu_datasets/test_datasets/test_dataset_sino.h5"],
   "validation_dataset_path__": ["/linkhome/rech/gencre01/uyo34ub/scratch/datasets/lu_dataset/validation_dataset/iec_lu_rtk_dataset_img.h5"],
   "jean_zay": true,
   "compile": true,
@@ -56,6 +56,7 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
+  "final_feature_kernel":1,
   "nb_ed_layers":2,
   "hidden_channels_unet": 8,
   "unet_activation": "relu",
