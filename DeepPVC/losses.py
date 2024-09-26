@@ -24,7 +24,8 @@ def get_nn_loss(loss_name):
     elif loss_name=="conv":
         return nn.L1Loss()
     elif loss_name=="edcc":
-        return fast_eDCC_loss()
+        return fast_eDCC_loss_horiz_and_vert_directions()
+        # return fast_eDCC_loss()
         # return eDCC_loss()
     else:
         print(f'ERROR in loss name {loss_name}')
@@ -114,6 +115,48 @@ class fast_eDCC_loss(nn.Module):
         # edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
         # edcc_fast_before_mean_with_zero_replacing_inf_nans = torch.nan_to_num(edcc_fast_before_mean, nan=0, posinf=0, neginf=0)
         # return edcc_fast_before_mean_with_zero_replacing_inf_nans.mean()
+
+class fast_eDCC_loss_horiz_and_vert_directions(nn.Module):
+    def __init__(self):
+        super(fast_eDCC_loss_horiz_and_vert_directions, self).__init__()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.spacing = 4.7952
+        self.mu0 = 0.013
+        self.Nprojs = 120
+        self.array_theta_i__ = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1]
+
+        self.array_theta_i_ = torch.cat((self.array_theta_i__[-4:],self.array_theta_i__,self.array_theta_i__[:4]),dim=0)
+        self.id_i = torch.arange(0, 128)
+        self.id_j = torch.cat((self.id_i.flip(0).roll(69)[:64],self.id_i.flip(0).roll(61)[64:]),0)
+
+        maskk = (self.array_theta_i_!= 0.) & (self.array_theta_i_!= torch.pi/2) & (self.array_theta_i_!= torch.pi) & (self.array_theta_i_!= 3*torch.pi/2)
+        self.id_i = self.id_i[maskk]
+        self.id_j = self.id_j[maskk]
+
+        self.array_theta_i = self.array_theta_i_[self.id_i].to(self.device)
+        self.array_theta_j = self.array_theta_i_[self.id_j].to(self.device)
+
+        self.size = 112
+        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
+                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
+
+    @custom_fwd
+    def forward(self,_,projs):
+        sigma_ij =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_j) / 2)
+        x_i = torch.exp(sigma_ij[:,None]*self.linspace[None,:])*self.spacing
+        projs_i = projs[:, self.id_i, :, :]
+        P_i = (projs_i * x_i[None, :, None, :]).sum(-1)
+
+        sigma_ji =  self.mu0 * torch.tan((self.array_theta_j - self.array_theta_i) / 2)
+        x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
+        projs_j = projs[:,self.id_j,:,:]
+        P_j = (projs_j * x_j[None, :, None, :]).sum(-1)
+        non_zero = P_i*P_j!=0
+        P_i_ = P_i[non_zero]
+        P_j_ = P_j[non_zero]
+        edcc_fast_before_mean = 2 * torch.abs(P_i_ - P_j_) / (P_i_ + P_j_)
+        return edcc_fast_before_mean.mean()
+
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
