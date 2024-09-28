@@ -137,9 +137,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
         if "init" not in self.params:
             self.params["init"] = "none"
-            
-        networks.init_weights(net=self.UNet_denoiser,init_type=self.params["init"])
-        networks.init_weights(net=self.UNet_pvc,init_type=self.params["init"])
+
         if self.for_training:
             if "init" not in self.params:
                 self.params["init"] = "none"

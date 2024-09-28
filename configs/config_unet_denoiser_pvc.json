@@ -62,6 +62,6 @@
   "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
-  "recon_loss":["L1"],
-  "lambda_recon":[1]
+  "recon_loss":["L1", "edcc"],
+  "lambda_recon":[1, 1]
 }

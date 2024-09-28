@@ -128,17 +128,27 @@ class fast_eDCC_loss_horiz_and_vert_directions(nn.Module):
         self.array_theta_i_ = torch.cat((self.array_theta_i__[-4:],self.array_theta_i__,self.array_theta_i__[:4]),dim=0)
         self.id_i = torch.arange(0, 128)
         self.id_j = torch.cat((self.id_i.flip(0).roll(69)[:64],self.id_i.flip(0).roll(61)[64:]),0)
+        self.id_k = torch.cat((self.id_i[8:9], self.id_i.flip(0).roll(1)[1:]), 0)
 
-        maskk = (self.array_theta_i_!= 0.) & (self.array_theta_i_!= torch.pi/2) & (self.array_theta_i_!= torch.pi) & (self.array_theta_i_!= 3*torch.pi/2)
-        self.id_i = self.id_i[maskk]
-        self.id_j = self.id_j[maskk]
+
+        self.id_j[self.array_theta_i_==0.] = (self.id_i[self.array_theta_i_==0.]+30)%128
+        self.id_j[self.array_theta_i_==torch.pi/2] = (self.id_i[self.array_theta_i_==torch.pi/2]+30)%128
+        self.id_j[self.array_theta_i_==torch.pi] = (self.id_i[self.array_theta_i_==torch.pi]+30)%128
+        self.id_j[self.array_theta_i_==3*torch.pi/2] = (self.id_i[self.array_theta_i_==3*torch.pi/2]+30)%128
+
+        self.id_k[self.array_theta_i_==0.] = (self.id_i[self.array_theta_i_==0.]+30)%128
+        self.id_k[self.array_theta_i_==torch.pi/2] = (self.id_i[self.array_theta_i_==torch.pi/2]+30)%128
+        self.id_k[self.array_theta_i_==torch.pi] = (self.id_i[self.array_theta_i_==torch.pi]+30)%128
+        self.id_k[self.array_theta_i_==3*torch.pi/2] = (self.id_i[self.array_theta_i_==3*torch.pi/2]+30)%128
 
         self.array_theta_i = self.array_theta_i_[self.id_i].to(self.device)
         self.array_theta_j = self.array_theta_i_[self.id_j].to(self.device)
+        self.array_theta_k = self.array_theta_i_[self.id_k].to(self.device)
 
         self.size = 112
         self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
                                         (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
+
 
     @custom_fwd
     def forward(self,_,projs):
@@ -146,7 +156,6 @@ class fast_eDCC_loss_horiz_and_vert_directions(nn.Module):
         x_i = torch.exp(sigma_ij[:,None]*self.linspace[None,:])*self.spacing
         projs_i = projs[:, self.id_i, :, :]
         P_i = (projs_i * x_i[None, :, None, :]).sum(-1)
-
         sigma_ji =  self.mu0 * torch.tan((self.array_theta_j - self.array_theta_i) / 2)
         x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
         projs_j = projs[:,self.id_j,:,:]
@@ -154,8 +163,21 @@ class fast_eDCC_loss_horiz_and_vert_directions(nn.Module):
         non_zero = P_i*P_j!=0
         P_i_ = P_i[non_zero]
         P_j_ = P_j[non_zero]
-        edcc_fast_before_mean = 2 * torch.abs(P_i_ - P_j_) / (P_i_ + P_j_)
-        return edcc_fast_before_mean.mean()
+        edcc_fast_before_mean_i_j = 2 * torch.abs(P_i_ - P_j_) / (P_i_ + P_j_)
+
+        sigma_ik =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_k) / 2)
+        x_i = torch.exp(sigma_ik[:,None]*self.linspace[None,:])*self.spacing
+        P_i = (projs_i * x_i[None, :, None, :]).sum(-1)
+        sigma_ki =  self.mu0 * torch.tan((self.array_theta_k - self.array_theta_i) / 2)
+        x_k = torch.exp(sigma_ki[:,None]*self.linspace[None,:])*self.spacing
+        projs_k = projs[:,self.id_k,:,:]
+        P_k = (projs_k * x_k[None, :, None, :]).sum(-1)
+        non_zero = P_i*P_k!=0
+        P_i_ = P_i[non_zero]
+        P_k_ = P_k[non_zero]
+        edcc_fast_before_mean_i_k = 2 * torch.abs(P_i_ - P_k_) / (P_i_ + P_k_)
+
+        return 0.5 * (edcc_fast_before_mean_i_j.mean() + edcc_fast_before_mean_i_k.mean())
 
 
 class gradient_penalty(nn.Module):
