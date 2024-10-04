@@ -290,7 +290,9 @@ class UNet_Denoiser_PVC(ModelBase):
         elif self.params['data_normalisation'] == "3d_sum":
             self.fakePVE = (self.fakePVE / self.fakePVE.sum((1, 2, 3, 4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
         elif self.params['data_normalisation'] == "sino_sum":
-            self.fakePVE = (self.fakePVE / self.fakePVE.sum((3, 4))[:,:,:,None,None]) * self.norm[:, None, :, None, None]
+            projs_sum = self.fakePVE.sum((3, 4))
+            projs_sum[projs_sum==0] = 1
+            self.fakePVE = (self.fakePVE / projs_sum[:,:,:,None,None]) * self.norm[:, None, :, None, None]
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVE = torch.exp(self.fakePVE) / torch.exp(self.fakePVE).sum((1, 2, 3, 4))[:, None, None,
                                                            None, None] * self.norm[:, None, None, None, None]
