@@ -303,8 +303,9 @@ class UNet_Denoiser_PVC(ModelBase):
         elif self.params['data_normalisation'] in ["3d_sum", "3d_softmax", "sino_sum"]:
             # self.fakePVE = self.fakePVE / self.input_max[:,:,:,:,None]
             max = self.fakePVE.amax((1,2,3,4))
-            max[max==0] = 1
-            self.fakePVE = self.fakePVE / max[:,None,None,None,None]
+            max_ = max.clone()
+            max_[max==0] = 1
+            self.fakePVE = self.fakePVE / max_[:,None,None,None,None]
         else:
             self.norm = None
 
