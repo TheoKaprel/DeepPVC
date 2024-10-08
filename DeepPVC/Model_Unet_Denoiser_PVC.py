@@ -131,6 +131,23 @@ class UNet_Denoiser_PVC(ModelBase):
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
+        elif self.archi=="unet_sym":
+            self.UNet_denoiser = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,
+                                    dim=self.dim,init_feature_kernel=self.init_feature_kernel,final_feature_kernel=self.final_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
+                                      ResUnet=self.ResUnet,
+                                               final_2dconv=False).to(device=self.device)
+            self.UNet_pvc = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,final_feature_kernel=self.final_feature_kernel,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
+                                      ResUnet=self.ResUnet,
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
         elif self.archi=="big3dunet":
             self.UNet_denoiser = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
             self.UNet_pvc = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
@@ -648,7 +665,7 @@ class UNet_Denoiser_PVC(ModelBase):
         print(self.UNet_denoiser)
         nb_params = sum(p.numel() for p in self.UNet_denoiser.parameters())
         print(f'NUMBER OF PARAMERS : {nb_params}')
-
+        self.nb_params = nb_params
         print('*' * 20 + "PVC" + '*'*20)
         print(self.UNet_pvc)
         nb_params = sum(p.numel() for p in self.UNet_pvc.parameters())
@@ -661,7 +678,7 @@ class UNet_Denoiser_PVC(ModelBase):
             print('PVC loss : ')
             print(self.losses_pvc)
             print('*' * 80)
-
+        self.nb_params += nb_params
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_UNet(unet_losses=self.unet_denoiser_losses, test_mse=[], save=save, wait=True, title=title)

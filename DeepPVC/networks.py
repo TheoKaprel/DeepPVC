@@ -458,17 +458,17 @@ class UNet(nn.Module):
                 xk = self.pool(xk)
         # ----------------------------------------------------------
 
-        if self.AttentionUnet:
-            B = xy.shape[0]
-            p = self.patch_embeddings(xy)
-            NP = p.shape[-1]
-            p = p.flatten(2)
-            p = p.transpose(-1,-2)
-            p,_ = self.VisTrans(p)
-            p = p.permute(0,2,1)
-            H = p.shape[1]
-            p = p.contiguous().view(B,H,NP,NP,NP)
-            xy = self.patch_de_embeddings(p)
+        # if self.AttentionUnet:
+        #     B = xy.shape[0]
+        #     p = self.patch_embeddings(xy)
+        #     NP = p.shape[-1]
+        #     p = p.flatten(2)
+        #     p = p.transpose(-1,-2)
+        #     p,_ = self.VisTrans(p)
+        #     p = p.permute(0,2,1)
+        #     H = p.shape[1]
+        #     p = p.contiguous().view(B,H,NP,NP,NP)
+        #     xy = self.patch_de_embeddings(p)
         # ----------------------------------------------------------
         # Extracting layers :
 
@@ -494,6 +494,129 @@ class UNet(nn.Module):
         y = self.activation(y)
         # ----------------------------------------------------------
         return(y)
+
+
+class UNet_symetric(nn.Module):
+    def __init__(self,input_channel, ngc,init_feature_kernel,final_feature_kernel, paths,
+                 output_channel,nb_ed_layers,generator_activation,
+                 use_dropout,leaky_relu, norm, residual_layer=-1, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
+                 AttentionUnet=False,
+                 dim=2,final_2dconv=False, final_2dchannels=0):
+        super(UNet_symetric, self).__init__()
+
+        self.ResUnet = ResUnet
+        self.input_channels = input_channel
+        self.output_channels = output_channel
+
+
+        self.dim=3
+        conv = nn.Conv3d
+        init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1, 1), int(init_feature_kernel / 2)
+        if final_feature_kernel == 3:
+            final_kernel,final_stride,final_padding = (3,3,3), (1,1,1), (1,1,1)
+        elif final_feature_kernel==1:
+            final_kernel, final_stride,final_padding = (1,1,1), (1,1,1), (0,0,0)
+        else:
+            final_kernel, final_stride, final_padding = (3, 3, 3), (1, 1, 1), (1, 1, 1)
+
+        block_e,block_d = blocks[0], blocks[1]
+
+
+        self.paths = False
+        self.init_feature = conv(input_channel, ngc, kernel_size=init_feature_kernel_size, stride=init_feature_stride, padding = init_feature_padding)
+
+        self.nb_ed_layers = nb_ed_layers
+        down_layers = []
+        up_layers = []
+        # Contracting layers :
+        k = 1
+        for el in range(self.nb_ed_layers+1):
+            if el < nb_ed_layers:
+                down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim))
+                k = 2 * k
+            else:
+                down_layers.append(DownSamplingBlock(k * ngc,2*k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim, last=True))
+
+
+        self.down_layers = nn.Sequential(*down_layers)
+
+        self.pool = torch.nn.MaxPool3d((3,3,3),(2,2,2),(1,1,1))
+
+        for dl in range(self.nb_ed_layers+1):
+            up_layers.append(UpSamplingBlockBis(k*ngc*2,k*ngc,
+                                                norm=norm, use_dropout=use_dropout,
+                                                leaky_relu_val=leaky_relu, block=block_d,
+                                                res_unit=self.ResUnet, dim=dim))
+            k = k//2
+        self.up_layers = nn.Sequential(*up_layers)
+        self.final_feature = conv(ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)
+        self.residual_layer=residual_layer
+        self.activation = get_activation(generator_activation)
+        self.do_final_2d_conv=False
+
+    def forward(self, x):
+        if self.residual_layer>=0:
+            if self.dim==2:
+                residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
+            elif self.dim==3:
+                residual = x[:,self.residual_layer:self.residual_layer+1,:,:,:]
+
+
+        # if self.paths:
+        #     # different inital paths
+        #     x_=[]
+        #     for c in range(x.shape[1]):
+        #         # x_.append(self.inital_paths[c](x[:,c:c+1,:,:,:]))
+        #         x_.append(self.inital_paths[c](x[:,c,:,:,:])[:,None,:,:,:])
+        #     x = torch.concatenate(x_, dim=1)
+
+
+        # ----------------------------------------------------------
+        #first feature extraction
+        x0 = self.init_feature(x) # nhc
+        # ----------------------------------------------------------
+        # Contracting layers :
+        list_xk  = [x0]
+        xk = x0
+        for l in range(self.nb_ed_layers+1):
+            xk = self.pool(xk)
+            xk = self.down_layers[l](xk)
+            list_xk.append(xk)
+        # ----------------------------------------------------------
+
+        # if self.AttentionUnet:
+        #     B = xy.shape[0]
+        #     p = self.patch_embeddings(xy)
+        #     NP = p.shape[-1]
+        #     p = p.flatten(2)
+        #     p = p.transpose(-1,-2)
+        #     p,_ = self.VisTrans(p)
+        #     p = p.permute(0,2,1)
+        #     H = p.shape[1]
+        #     p = p.contiguous().view(B,H,NP,NP,NP)
+        #     xy = self.patch_de_embeddings(p)
+        # ----------------------------------------------------------
+        # Extracting layers :
+
+        # for l in range(self.nb_ed_layers):
+        #     y = self.up_layers[l](xy)
+        #     xy = torch.cat([xk[-l-2],y],1)
+
+        for l in range(self.nb_ed_layers+1):
+            y = self.up_layers[l](xk,list_xk[-2-l])
+            xk = y
+        # ----------------------------------------------------------
+        # Final feature extraction
+        y = self.final_feature(xk) # output_channel
+
+        # # residual
+        if self.residual_layer>=0:
+            y += residual
+
+        y = self.activation(y)
+        # ----------------------------------------------------------
+        return(y)
+
 
 class CNN_block(nn.Module):
     def __init__(self, ic, oc,k,norm,leaky_relu_val=0.2, block="conv-norm-relu", res_unit=False):

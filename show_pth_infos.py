@@ -3,7 +3,7 @@ import click
 import matplotlib.pyplot as plt
 
 from DeepPVC import helpers,helpers_params, Model_instance
-
+from tabulate import tabulate
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -26,7 +26,7 @@ def show_pth(lpth, losses, legend):
         params = nn['params']
         helpers_params.check_params(params)
         params['jean_zay']=False
-        lparams.append(params)
+        # lparams.append(params)
         ref=params['ref']+f'_{params["current_epoch"]}'
 
         print(params)
@@ -37,10 +37,13 @@ def show_pth(lpth, losses, legend):
         model.switch_eval()
         model.show_infos()
 
+        params['nb_params']= model.nb_params
+        lparams.append(params)
+
         if losses:
             model.plot_losses(save=False, wait=True, title=pth)
             dict_test[ref]=model.test_error
-            # dict_val[ref]=model.val_error_MSE
+            dict_val[ref]=model.val_error_MSE
             dict_val[ref]=model.val_error_MAE
             print(model.val_error_MSE)
 
@@ -59,16 +62,27 @@ def show_pth(lpth, losses, legend):
         if len(values)>1:
             params_with_differences.append(key)
 
-
+    tab = []
     print(params_with_differences)
+    l_not_intab =  ["validation_dataset_path__", "output_folder", "dataset_path", "test_dataset_path"]
     for par in lparams:
+        t = []
         print(par['ref'])
         for key_diff in params_with_differences:
             if key_diff in par:
                 print(f'{key_diff}: {par[key_diff]}')
+                if key_diff not in l_not_intab:
+                    t.append(par[key_diff])
             else:
                 print(f'{key_diff}: NONE')
+                if key_diff not in  l_not_intab:
+                    t.append("NONE")
+
         print('--'*20)
+        tab.append(t)
+    tab_head = [p for p in params_with_differences if p not in l_not_intab]
+
+    print(tabulate(tab,headers=tab_head))
 
 
 

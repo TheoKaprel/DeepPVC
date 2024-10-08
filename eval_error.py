@@ -63,7 +63,7 @@ def train(lpth,dataset_path,output_folder):
         DeepPVEModel.switch_eval()
 
         for step, (batch_inputs, batch_targets) in enumerate(test_dataloader):
-
+            print(step)
             for key_inputs in batch_inputs.keys():
                 batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
             for key_targets in batch_targets.keys():

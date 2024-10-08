@@ -33,6 +33,8 @@ class UNetModel(ModelBase):
         else:
             self.ed_blocks = "conv-relu-norm"
 
+        self.final_feature_kernel = params['final_feature_kernel'] if "final_feature_kernel" in params else 3
+
         self.with_rec_fp = params['with_rec_fp']
         self.with_PVCNet_rec = params["with_PVCNet_rec"] if "with_PVCNet_rec" in params else False
 
@@ -108,7 +110,8 @@ class UNetModel(ModelBase):
                                       norm=self.layer_norm, residual_layer=0 if self.residual_layer else -1, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,AttentionUnet = True,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
-                                      paths=self.paths).to(device=self.device)
+                                      paths=self.paths,
+                                      final_feature_kernel=self.final_feature_kernel).to(device=self.device)
         elif self.archi=="dcnn":
             # self.UNet = networks.vanillaCNN(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
             #                           dim=self.dim,init_feature_kernel=self.init_feature_kernel,
@@ -146,7 +149,19 @@ class UNetModel(ModelBase):
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,AttentionUnet=False,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
-                                      paths=self.paths).to(device=self.device)
+                                      paths=self.paths,
+                                      final_feature_kernel=self.final_feature_kernel).to(device=self.device)
+        elif self.archi=="unet_sym":
+            self.UNet = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      nb_ed_layers=self.nb_ed_layers,
+                                      output_channel=self.output_channels, generator_activation=self.unet_activation,
+                                      use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
+                                      norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
+                                      ResUnet=self.ResUnet,AttentionUnet=False,
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
+                                      paths=self.paths,
+                                      final_feature_kernel=self.final_feature_kernel).to(device=self.device)
 
         elif (self.archi=="big3dunet" or self.archi=="chatgpt3dunet"):
             self.UNet = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
@@ -496,6 +511,7 @@ class UNetModel(ModelBase):
         print('*' * 20 + "UNET" + '*'*20)
         print(self.UNet)
         nb_params = sum(p.numel() for p in self.UNet.parameters())
+        self.nb_params = nb_params
         print(f'NUMBER OF PARAMERS : {nb_params}')
 
         if hasattr(self, "losses"):
