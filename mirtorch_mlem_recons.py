@@ -4,13 +4,16 @@ import argparse
 import sys
 import os
 host = os.uname()[1]
+
+import torch
+
 if (host !='siullus'):
     sys.path.append("/linkhome/rech/gencre01/uyo34ub/homeMocamed/WORK/PVE/MIRTorch")
 else:
     sys.path.append("/export/home/tkaprelian/Desktop/External_repositories/MIRTorch")
 from mirtorch.linear.spect import SPECT
 
-import torch
+
 from torch import optim
 import torch.nn as nn
 import math
