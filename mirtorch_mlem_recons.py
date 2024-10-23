@@ -387,7 +387,9 @@ def main():
     elif args.loss=="KL":
         loss = torch.nn.KLDivLoss()
     elif args.loss=="PNLL":
-        loss = torch.nn.PoissonNLLLoss(log_input=False)
+        loss = torch.nn.PoissonNLLLoss(log_input=False,eps=1e-4)
+        # loss = lambda inp,targ: (inp - targ * torch.log(inp+1e-8)).mean()
+
     else:
         print(f"ERROR: unrecognized loss ({args.loss})")
         exit(0)
