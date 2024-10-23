@@ -201,10 +201,10 @@ def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input=None):
 
     print("Training")
     for iter in range(niter):
-        x_RM_max = x_RM.max()
-        x_RM_n = x_RM/x_RM_max
-        out_hat = net(x_RM_n[None, None, :, :, :])[0, 0, :, :, :]
-        out_hat = out_hat * x_RM_max
+        # x_RM_max = x_RM.max()
+        # x_RM_n = x_RM/x_RM_max
+        out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
+        # out_hat = out_hat * x_RM_max
         ybar = SPECT_sys_RM._apply(out_hat)
         loss_k = loss(ybar/ybar.sum() * p.sum(), p)
         print(f"loss {iter} : {loss_k}")
