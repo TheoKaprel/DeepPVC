@@ -438,7 +438,9 @@ def main():
 
     elif args.version==5:
         input = itk.imread(args.input)
-        input = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
+        input = itk.array_from_image(input).astype(np.float32)
+        input = np.transpose(input, (2, 0, 1))
+        input = torch.from_numpy(input).to(device)
         xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
     elif args.version == 6:
         xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=args.nosem,
