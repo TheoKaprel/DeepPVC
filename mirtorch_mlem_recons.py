@@ -380,6 +380,8 @@ def main():
 
     if args.loss == "L1":
         loss = torch.nn.L1Loss()
+    elif args.loss=="L2":
+        loss = torch.nn.MSELoss()
     elif args.loss=="KL":
         loss = torch.nn.KLDivLoss()
     elif args.loss=="PNLL":
