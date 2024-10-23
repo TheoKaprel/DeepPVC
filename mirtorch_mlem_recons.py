@@ -358,7 +358,7 @@ def main():
                   ny=ny,sy=dy,sid = 280).to(device)
 
 
-    A_RM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+    A_RM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
               mumap=attmap_tensor, psfs=psf_RM, dy=dy)
 
 
@@ -385,14 +385,9 @@ def main():
         print(f"ERROR: unrecognized loss ({args.loss})")
         exit(0)
 
-    if args.version!=6:
-        unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
-        print(unet)
-        nb_params = sum(p.numel() for p in unet.parameters())
-        print(f'NUMBER OF PARAMERS : {nb_params}')
-        # loss,optimizer
-        optimizer = optim.Adam(unet.parameters(), lr=args.lr)
-    else:
+
+
+    if args.version==6:
         unet1 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
         unet2 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
         print("------------ unet 1 -----------------")
@@ -406,12 +401,19 @@ def main():
 
         # loss,optimizer
         optimizer = optim.Adam(list(unet1.parameters())+list(unet2.parameters()), lr=args.lr)
+    elif args.version>0:
+        unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        print(unet)
+        nb_params = sum(p.numel() for p in unet.parameters())
+        print(f'NUMBER OF PARAMERS : {nb_params}')
+        # loss,optimizer
+        optimizer = optim.Adam(unet.parameters(), lr=args.lr)
 
     if args.version in [0,1,2,3,6]:
         psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
                       ny=ny,sy=dy,sid=280).to(device)
 
-        A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(256, 256, nprojs),
+        A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
                   mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
 
 
@@ -424,7 +426,12 @@ def main():
 
     # xn = deep_mlem_v4(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer)
 
-    if args.version==5:
+
+    if args.version==0:
+        x0 = torch.ones_like(A_RM.mumap)
+        xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A_RM,niter=args.niter)
+
+    elif args.version==5:
         input = itk.imread(args.input)
         input = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
         xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
