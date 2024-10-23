@@ -410,6 +410,7 @@ def main():
         optimizer = optim.Adam(list(unet1.parameters())+list(unet2.parameters()), lr=args.lr)
     elif args.version>0:
         unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        unet = torch.compile(unet)
         print(unet)
         nb_params = sum(p.numel() for p in unet.parameters())
         print(f'NUMBER OF PARAMERS : {nb_params}')
