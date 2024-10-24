@@ -319,7 +319,9 @@ def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap
             optimizer.zero_grad(set_to_none=True)
 
         print(f"loss {iter} : {loss_iter}")
-        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())),
+
+        if iter%args.saveevery==0:
+            itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())),
                     os.path.join(args.iter, f"iter_{iter}.mhd"))
 
     itk.imwrite(itk.image_from_array((net.M.detach().cpu().numpy())),
@@ -494,7 +496,7 @@ def main():
             unet = Mult(input_size=(128, 128, 128)).to(device=device)
         else:
             unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
-        
+
         # unet = torch.compile(unet)
         print(unet)
         nb_params = sum(p.numel() for p in unet.parameters())
@@ -562,6 +564,7 @@ if __name__ == '__main__':
     parser.add_argument("--output")
     parser.add_argument("--iter")
     parser.add_argument("--nosem" ,type = int)
+    parser.add_argument("--saveevery" ,type = int)
     parser.add_argument("--nprojpersubset" ,type = int)
     parser.add_argument("--version", type = int)
     parser.add_argument("--matrix",action="store_true")
