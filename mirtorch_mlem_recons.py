@@ -323,9 +323,9 @@ def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap
         if iter%args.saveevery==0:
             itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())),
                     os.path.join(args.iter, f"iter_{iter}.mhd"))
-
-    itk.imwrite(itk.image_from_array((net.M.detach().cpu().numpy())),
-                os.path.join(args.iter, f"matrix.mhd"))
+            if args.matrix:
+                itk.imwrite(itk.image_from_array((net.M.detach().cpu().numpy())),
+                        os.path.join(args.iter, f"matrix_{iter}.mhd"))
 
     return out_hat
 
