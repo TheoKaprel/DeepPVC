@@ -284,23 +284,46 @@ def deep_mlem_v6(p, SPECT_sys_noRM, SPECT_sys_RM, niter,nosem, net1,net2, loss, 
 
     return rec_corrected_corrected
 
-def deep_mlem_v7(p, SPECT_sys_RM, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap,dy, nprojpersubset, niter):
+def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap,dy, nprojpersubset, niter):
     print('OSEM-RM')
     x_RM = input
+    x_RM_max = x_RM.max()
+    x_RM_n = x_RM/x_RM_max
 
-    print("Training")
+    nx, ny, nz = img_size[0], img_size[1], img_size[2]
+    list_A = []
+    nsubsets = int(nprojs/nprojpersubset)
+    for k in range(nsubsets):
+        id = np.array([k + nsubsets * j for j in range(nprojpersubset)])
+        psf_RM_k = psf_RM[:,:,:,id]
+        print(psf_RM_k.shape)
+        list_A.append(SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojpersubset),
+              mumap=attmap, psfs=psf_RM_k, dy=dy,first_angle = id[0]*360/nprojs))
+
     for iter in range(niter):
-        # x_RM_max = x_RM.max()
-        # x_RM_n = x_RM/x_RM_max
-        out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
-        # out_hat = out_hat * x_RM_max
-        ybar = SPECT_sys_RM._apply(out_hat)
-        loss_k = loss(ybar, p)
-        print(f"loss {iter} : {loss_k}")
-        loss_k.backward()
-        optimizer.step()
-        optimizer.zero_grad(set_to_none=True)
-        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+        loss_iter = 0
+        for subs in range(nsubsets):
+            SPECT_sys = list_A[subs]
+            out_hat = net(x_RM_n[None, None, :, :, :])[0, 0, :, :, :]
+            out_hat = out_hat * x_RM_max
+            ybar = SPECT_sys._apply(out_hat)
+
+            id = torch.tensor([int(subs + nsubsets * j) for j in range(nprojpersubset)])
+            p_subs = p[:,:,id]
+
+            loss_k = loss(ybar, p_subs)
+
+            loss_iter+=loss_k/nsubsets
+            loss_k.backward()
+            optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+
+        print(f"loss {iter} : {loss_iter}")
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())),
+                    os.path.join(args.iter, f"iter_{iter}.mhd"))
+
+    itk.imwrite(itk.image_from_array((net.M.detach().cpu().numpy())),
+                os.path.join(args.iter, f"matrix.mhd"))
 
     return out_hat
 
@@ -333,6 +356,17 @@ class CNN(nn.Module):
         y = self.sequenceCNN(x)
         y = y + res
         return self.activation(y)
+
+
+class Mult(nn.Module):
+    def __init__(self, input_size):
+        super(Mult, self).__init__()
+        self.M = torch.nn.Parameter(torch.ones(input_size,requires_grad=True))
+        self.relu = torch.nn.ReLU()
+
+    def forward(self, x):
+        return self.relu(x * self.M)
+
 
 def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
     # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
@@ -456,7 +490,11 @@ def main():
         # loss,optimizer
         optimizer = optim.Adam(list(unet1.parameters())+list(unet2.parameters()), lr=args.lr)
     elif args.version>0:
-        unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        if args.matrix:
+            unet = Mult(input_size=(128, 128, 128)).to(device=device)
+        else:
+            unet = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
+        
         # unet = torch.compile(unet)
         print(unet)
         nb_params = sum(p.numel() for p in unet.parameters())
@@ -485,7 +523,7 @@ def main():
     if args.version==0:
         x0 = torch.ones_like(A_RM.mumap)
         # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A_RM,niter=args.niter)
-        xn = osem(x0, p=projs_tensor_mir, psf_RM=psf_RM, img_size=(nx,ny,nz), nprojs=120, attmap=attmap_tensor, dy=dy, nprojpersubset=8, niter=args.niter)
+        xn = osem(x0, p=projs_tensor_mir, psf_RM=psf_RM, img_size=(nx,ny,nz), nprojs=120, attmap=attmap_tensor, dy=dy, nprojpersubset=args.nprojpersubset, niter=args.niter)
 
     elif args.version==5:
         input = itk.imread(args.input)
@@ -493,6 +531,12 @@ def main():
         input = np.transpose(input, (2, 0, 1))
         input = torch.from_numpy(input).to(device)
         xn = deep_mlem_v5(p=projs_tensor_mir,SPECT_sys_RM=A_RM,niter=args.niter,net=unet,loss=loss,optimizer=optimizer, input = input)
+    elif args.version==7:
+        input = itk.imread(args.input)
+        input = itk.array_from_image(input).astype(np.float32)
+        input = np.transpose(input, (2, 0, 1))
+        input = torch.from_numpy(input).to(device)
+        xn =  deep_mlem_v7(p=projs_tensor_mir, net=unet, loss=loss, optimizer=optimizer, input=input, psf_RM=psf_RM, img_size=(nx,ny,nz), nprojs=120, attmap=attmap_tensor, dy=dy, nprojpersubset=args.nprojpersubset, niter=args.niter)
     elif args.version == 6:
         xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=args.nosem,
                      net1=unet1,net2=unet2,loss=loss,optimizer=optimizer)
@@ -518,7 +562,9 @@ if __name__ == '__main__':
     parser.add_argument("--output")
     parser.add_argument("--iter")
     parser.add_argument("--nosem" ,type = int)
+    parser.add_argument("--nprojpersubset" ,type = int)
     parser.add_argument("--version", type = int)
+    parser.add_argument("--matrix",action="store_true")
     args = parser.parse_args()
 
     main()
