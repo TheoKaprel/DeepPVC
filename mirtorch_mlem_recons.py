@@ -219,22 +219,16 @@ def deep_mlem_v4(p, SPECT_sys_RM, niter, net, loss, optimizer):
     return out_hat
 
 
-def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input=None):
+def deep_mlem_v5(p, SPECT_sys_RM, niter, net, loss, optimizer, input):
     print('OSEM-RM')
-    if input is None:
-        with torch.no_grad():
-            x0 = torch.ones_like(SPECT_sys_RM.mumap)
-            x_RM = mlem(x=x0, p=p, SPECT_sys=SPECT_sys_RM, niter=20)
-            itk.imwrite(itk.image_from_array((x_RM.cpu().numpy())), os.path.join(args.iter, f"x_RM.mhd"))
-    else:
-        x_RM = input
+    x_RM = input
+    x_RM_max = x_RM.max()
+    x_RM_n = x_RM/x_RM_max
 
     print("Training")
     for iter in range(niter):
-        # x_RM_max = x_RM.max()
-        # x_RM_n = x_RM/x_RM_max
-        out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
-        # out_hat = out_hat * x_RM_max
+        out_hat = net(x_RM_n[None, None, :, :, :])[0, 0, :, :, :]
+        out_hat = out_hat * x_RM_max
         ybar = SPECT_sys_RM._apply(out_hat)
         loss_k = loss(ybar, p)
         print(f"loss {iter} : {loss_k}")
@@ -289,6 +283,27 @@ def deep_mlem_v6(p, SPECT_sys_noRM, SPECT_sys_RM, niter,nosem, net1,net2, loss, 
         itk.imwrite(itk.image_from_array(rec_corrected_corrected.detach().cpu().numpy()), os.path.join(args.iter, f"iter_{k}.mhd"))
 
     return rec_corrected_corrected
+
+def deep_mlem_v7(p, SPECT_sys_RM, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap,dy, nprojpersubset, niter):
+    print('OSEM-RM')
+    x_RM = input
+
+    print("Training")
+    for iter in range(niter):
+        # x_RM_max = x_RM.max()
+        # x_RM_n = x_RM/x_RM_max
+        out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
+        # out_hat = out_hat * x_RM_max
+        ybar = SPECT_sys_RM._apply(out_hat)
+        loss_k = loss(ybar, p)
+        print(f"loss {iter} : {loss_k}")
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+
+    return out_hat
+
 
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
