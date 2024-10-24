@@ -46,6 +46,36 @@ def mlem(x, p, SPECT_sys, niter):
         out = torch.multiply(out, torch.div(back, asum))
     return out
 
+def osem(x, p, psf_RM, img_size, nprojs,attmap,dy, nprojpersubset, niter):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    nx, ny, nz = img_size[0], img_size[1], img_size[2]
+    list_A = []
+    nsubsets = int(nprojs/nprojpersubset)
+    for k in range(nsubsets):
+        id = np.array([k + nsubsets * j for j in range(nprojpersubset)])
+        psf_RM_k = psf_RM[:,:,:,id]
+        print(psf_RM_k.shape)
+        list_A.append(SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojpersubset),
+              mumap=attmap, psfs=psf_RM_k, dy=dy,first_angle = id[0]*360/nprojs))
+
+    ones = torch.ones((128,128,nprojpersubset)).to(device)
+    out = torch.clone(x)
+    for iter in range(niter):
+        for subs in range(nsubsets):
+            SPECT_sys = list_A[subs]
+            asum = SPECT_sys._apply_adjoint(ones)
+            asum[asum == 0] = float('Inf')
+            ybar = SPECT_sys._apply(out)
+            id = torch.tensor([int(subs + nsubsets * j) for j in range(nprojpersubset)])
+            yratio = torch.div(p[:,:,id], ybar)
+            back = SPECT_sys._apply_adjoint(yratio)
+            out = torch.multiply(out, torch.div(back, asum))
+        print(f'iter : {iter}')
+        itk.imwrite(itk.image_from_array(np.transpose(out.detach().cpu().numpy(),(1,2,0))), os.path.join(args.iter, f"iter_{iter}.mhd"))
+
+    return out
+
+
 def deep_mlem_v1(p, SPECT_sys_noRM, SPECT_sys_RM, niter, net, loss, optimizer):
     # projs_corrected = h(projs)
     # recons_corrected = BP(projs_corrected)
@@ -364,8 +394,8 @@ def main():
 
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
-              mumap=attmap_tensor, psfs=psf_RM, dy=dy)
-
+              mumap=attmap_tensor, psfs=psf_RM, dy=dy,first_angle=0)
+    print(f"PSF shape: {psf_RM.shape}")
 
     # input = itk.imread(args.input)
     # input_tensor = torch.from_numpy(itk.array_from_image(input).astype(np.float32)).to(device)
@@ -419,12 +449,12 @@ def main():
         # loss,optimizer
         optimizer = optim.Adam(unet.parameters(), lr=args.lr)
 
-    if args.version in [0,1,2,3,6]:
+    if args.version in [1,2,3,6]:
         psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
                       ny=ny,sy=dy,sid=280).to(device)
 
         A_noRM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
-                  mumap=attmap_tensor, psfs=psf_noRM, dy=dy)
+                  mumap=attmap_tensor, psfs=psf_noRM, dy=dy,first_angle = 0)
 
 
     print(projs_tensor_mir.dtype)
@@ -439,7 +469,8 @@ def main():
 
     if args.version==0:
         x0 = torch.ones_like(A_RM.mumap)
-        xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A_RM,niter=args.niter)
+        # xn = mlem(x=x0,p=projs_tensor_mir,SPECT_sys=A_RM,niter=args.niter)
+        xn = osem(x0, p=projs_tensor_mir, psf_RM=psf_RM, img_size=(nx,ny,nz), nprojs=120, attmap=attmap_tensor, dy=dy, nprojpersubset=8, niter=args.niter)
 
     elif args.version==5:
         input = itk.imread(args.input)
