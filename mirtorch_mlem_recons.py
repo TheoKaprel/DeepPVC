@@ -329,6 +329,40 @@ def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap
 
     return out_hat
 
+def deep_mlem_v8(p, SPECT_sys_RM, SPECT_sys_noRM, niter, net, loss, optimizer):
+    print("Training")
+    bp_ones = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
+    bp_ones[bp_ones == 0] = float('Inf')
+    for iter in range(niter):
+        p_hat = net(p[None,None,:,:,:])[0,0,:,:,:]
+        out_hat = SPECT_sys_noRM._apply_adjoint(p_hat) / bp_ones
+        p_RM  = SPECT_sys_RM._apply(out_hat)
+        loss_k = loss(p_RM, p)
+        print(f"loss {iter} : {loss_k}")
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+    return out_hat
+
+
+def deep_mlem_v9(p, SPECT_sys_RM, SPECT_sys_noRM, niter, net1,net2, loss, optimizer):
+    print("Training")
+    bp_ones = SPECT_sys_noRM._apply_adjoint(torch.ones_like(p))
+    bp_ones[bp_ones == 0] = float('Inf')
+    for iter in range(niter):
+        p_hat = net1(p[None,None,:,:,:])[0,0,:,:,:]
+        out_hat_rec = SPECT_sys_noRM._apply_adjoint(p_hat) / bp_ones
+        out_hat = net2(out_hat_rec[None,None,:,:,:])[0,0,:,:,:]
+        p_RM  = SPECT_sys_RM._apply(out_hat)
+        loss_k = loss(p_RM, p)
+        print(f"loss {iter} : {loss_k}")
+        loss_k.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        itk.imwrite(itk.image_from_array((out_hat.detach().cpu().numpy())), os.path.join(args.iter, f"iter_{iter}.mhd"))
+    return out_hat
+
 
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
@@ -477,7 +511,7 @@ def main():
 
 
 
-    if args.version==6:
+    if args.version in [6,9]:
         unet1 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
         unet2 = CNN(nc=args.nc, ks=args.ks, nl=args.nl).to(device=device)
         print("------------ unet 1 -----------------")
@@ -504,7 +538,7 @@ def main():
         # loss,optimizer
         optimizer = optim.Adam(unet.parameters(), lr=args.lr)
 
-    if args.version in [1,2,3,6]:
+    if args.version in [1,2,3,6,8,9]:
         psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
                       ny=ny,sy=dy,sid=280).to(device)
 
@@ -542,7 +576,12 @@ def main():
     elif args.version == 6:
         xn = deep_mlem_v6(p=projs_tensor_mir,SPECT_sys_RM=A_RM,SPECT_sys_noRM=A_noRM,niter=args.niter,nosem=args.nosem,
                      net1=unet1,net2=unet2,loss=loss,optimizer=optimizer)
-
+    elif args.version==8:
+        xn = deep_mlem_v8(p=projs_tensor_mir, SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM, niter=args.niter, net=unet, loss=loss,
+                     optimizer=optimizer)
+    elif args.version==9:
+        xn = deep_mlem_v9(p=projs_tensor_mir,SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,niter=args.niter,
+                          net1 = unet1, net2 = unet2, loss = loss, optimizer=optimizer)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))
