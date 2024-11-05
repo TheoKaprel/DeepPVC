@@ -295,7 +295,7 @@ class UNetLosses(Model_Loss):
             elif loss_name=="conv":
                 unet_loss+= lbda * loss(input_rec[:,None,:,:,:], conv_psf(output[:,None,:,:,:]))
             elif loss_name=="Poisson":
-                print("poisson poisson")
+                print(output[0,40,63,63].sum(), input_raw[0,40,63,63].sum())
                 unet_loss+= lbda * loss(output, input_raw)
             else:
                 unet_loss+= lbda * loss(target, output)

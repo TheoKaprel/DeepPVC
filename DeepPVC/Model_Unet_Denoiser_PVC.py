@@ -233,6 +233,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def input_data(self, batch_inputs, batch_targets):
         self.truePVE_noisy = batch_inputs['PVE_noisy']
+        self.truePVE_noisy_raw = batch_inputs['PVE_noisy']
         self.truePVE = batch_targets['PVE']
         self.truePVfree = batch_targets['PVfree']
 
@@ -382,7 +383,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def losses_unet_denoiser(self):
         self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:],lesion_mask=self.lesion_mask_fp,
-                                                                     input_raw=self.truePVE_noisy)
+                                                                     input_raw=self.truePVE_noisy_raw)
 
     def losses_unet_pvc(self):
         self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:], lesion_mask=self.lesion_mask_fp)
