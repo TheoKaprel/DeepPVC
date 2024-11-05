@@ -224,6 +224,10 @@ class UNet_Denoiser_PVC(ModelBase):
                               'lambda_recon': lamba_recons, 'device': self.device}
         else:
             self.losses_params_denoiser = self.losses_params
+
+        if (("poisson" in self.params) and self.params["poisson"]):
+            self.losses_params_denoiser = {'recon_loss': self.params['recon_loss']+['Poisson'],
+                                           'lambda_recon': self.params['lambda_recon']+[1], 'device': self.device}
         self.losses_denoiser = losses.UNetLosses(self.losses_params_denoiser)
         self.losses_pvc = losses.UNetLosses(self.losses_params)
 
@@ -377,7 +381,8 @@ class UNet_Denoiser_PVC(ModelBase):
 
 
     def losses_unet_denoiser(self):
-        self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:],lesion_mask=self.lesion_mask_fp)
+        self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:],lesion_mask=self.lesion_mask_fp,
+                                                                     input_raw=self.truePVE_noisy)
 
     def losses_unet_pvc(self):
         self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:], lesion_mask=self.lesion_mask_fp)

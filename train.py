@@ -340,7 +340,7 @@ def get_init_check_params(resume_pth, json, output):
 
 if __name__ == '__main__':
     host = os.uname()[1]
-    if (host !='siullus'):
+    if (host !='suillus'):
         import idr_torch
         # get distributed configuration from Slurm environment
         NODE_ID = os.environ['SLURM_NODEID']

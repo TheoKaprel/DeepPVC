@@ -7,7 +7,7 @@ host = os.uname()[1]
 
 import torch
 
-if (host !='siullus'):
+if (host !='suillus'):
     sys.path.append("/linkhome/rech/gencre01/uyo34ub/homeMocamed/WORK/PVE/MIRTorch")
 else:
     sys.path.append("/export/home/tkaprelian/Desktop/External_repositories/MIRTorch")

@@ -10,7 +10,7 @@ def get_nn_loss(loss_name):
     elif loss_name=="L2":
         return nn.MSELoss()
     elif loss_name=="Poisson":
-        return PoissonLikelihood_loss()
+        return nn.PoissonNLLLoss(log_input=False,full=False)
     elif loss_name=='BCE':
         return nn.BCEWithLogitsLoss()
     elif loss_name=="Wasserstein":
@@ -287,13 +287,16 @@ class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
         super().__init__(losses_params)
 
-    def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None):
+    def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None, input_raw = None):
         unet_loss = torch.tensor([0.], device=self.device)
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if loss_name=="lesion":
                 unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
             elif loss_name=="conv":
                 unet_loss+= lbda * loss(input_rec[:,None,:,:,:], conv_psf(output[:,None,:,:,:]))
+            elif loss_name=="Poisson":
+                print("poisson poisson")
+                unet_loss+= lbda * loss(output, input_raw)
             else:
                 unet_loss+= lbda * loss(target, output)
         return unet_loss
