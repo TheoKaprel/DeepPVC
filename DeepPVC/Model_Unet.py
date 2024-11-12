@@ -276,6 +276,8 @@ class UNetModel(ModelBase):
                 max_rec_fp = torch.amax(self.true_rec_fp, dim=(1, 2, 3))
                 max_rec_fp[max_rec_fp == 0] = 1  # avoids nan after division by max
                 self.true_rec_fp = self.true_rec_fp / max_rec_fp[:,None,None,None]
+        elif self.params['data_normalisation'] in ["act_cons"]:
+            self.norm = self.truePVE_noisy.sum((1,2,3))
         else:
             self.norm = None
 
@@ -283,7 +285,7 @@ class UNetModel(ModelBase):
     def denormalize_data(self):
         if self.params['data_normalisation'] == "3d_max":
             self.fakePVfree = self.fakePVfree  * self.norm[:,None,None,None,None]
-        elif self.params['data_normalisation'] == "3d_sum":
+        elif self.params['data_normalisation'] in ["3d_sum", "act_cons"]:
             self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1,2,3,4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVfree = torch.exp(self.fakePVfree) / torch.exp(self.fakePVfree).sum((1,2,3,4))[:,None,None,None,None]  * self.norm[:,None,None,None,None]

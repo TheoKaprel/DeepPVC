@@ -8,10 +8,10 @@
   "split_dataset": false,
   "num_workers": 4,
   "datatype": "h5",
-  "dtype": "float16",
+  "dtype": "float32",
   "with_rec_fp": false,
   "with_att": true,
-  "with_PVCNet_rec": true,
+  "with_PVCNet_rec": false,
   "inputs": "imgs",
   "sino": false,
   "input_eq_angles": 1,
@@ -31,7 +31,7 @@
   "verbose": 2,
 
   "network": "unet",
-  "archi": "dcnn",
+  "archi": "unet_sym",
 
   "n_epochs": 50,
   "learning_rate":0.001,

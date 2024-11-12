@@ -303,6 +303,8 @@ class UNet_Denoiser_PVC(ModelBase):
                 max_rec_fp = torch.amax(self.true_rec_fp, dim=(1, 2, 3))
                 max_rec_fp[max_rec_fp == 0] = 1  # avoids nan after division by max
                 self.true_rec_fp = self.true_rec_fp / max_rec_fp[:,None,None,None]
+        elif self.params['data_normalisation']=="act_cons":
+            self.norm = self.truePVE_noisy.sum((2, 3))
         else:
             self.norm = None
 
@@ -311,7 +313,7 @@ class UNet_Denoiser_PVC(ModelBase):
             self.fakePVE = self.fakePVE * self.input_max[:,None,None,None,None] / self.fakePVE.amax((1,2,3,4))[:,None,None,None,None]
         elif self.params['data_normalisation'] == "3d_sum":
             self.fakePVE = (self.fakePVE / self.fakePVE.sum((1, 2, 3, 4))[:,None,None,None,None]) * self.norm[:,None,None,None,None]
-        elif self.params['data_normalisation'] == "sino_sum":
+        elif self.params['data_normalisation'] in ["sino_sum","act_cons"]:
             projs_sum = self.fakePVE.sum((3, 4))
             projs_sum[projs_sum==0] = 1
             self.fakePVE = (self.fakePVE / projs_sum[:,:,:,None,None]) * self.norm[:, None, :, None, None]
@@ -328,8 +330,6 @@ class UNet_Denoiser_PVC(ModelBase):
             max_ = max.clone()
             max_[max==0] = 1
             self.fakePVE = self.fakePVE / max_[:,None,None,None,None]
-        else:
-            self.norm = None
 
     def denormalize_data_pvc(self):
         if self.params['data_normalisation'] == "3d_max":
@@ -337,7 +337,7 @@ class UNet_Denoiser_PVC(ModelBase):
         elif self.params['data_normalisation'] == "3d_sum":
             self.fakePVfree = (self.fakePVfree / self.fakePVfree.sum((1, 2, 3, 4))[:, None, None, None,
                                                  None]) * self.norm[:, None, None, None, None]
-        elif self.params['data_normalisation'] == "sino_sum":
+        elif self.params['data_normalisation'] in ["sino_sum","act_cons"]:
             projs_sum = self.fakePVfree.sum((3, 4))
             projs_sum[projs_sum==0] = 1
             self.fakePVfree = (self.fakePVfree / projs_sum[:,:,:,None,None]) * self.norm[:,None,:,None, None]
@@ -345,6 +345,15 @@ class UNet_Denoiser_PVC(ModelBase):
         elif self.params['data_normalisation'] == "3d_softmax":
             self.fakePVfree = torch.exp(self.fakePVfree) / torch.exp(self.fakePVfree).sum((1, 2, 3, 4))[:, None, None,
                                                            None, None] * self.norm[:, None, None, None, None]
+
+        # fig,ax = plt.subplots()
+        # ax.plot((self.truePVE_noisy.detach().cpu().numpy())[0,:,:,:].sum((1,2)),label="PVEnoisy")
+        # ax.plot((self.fakePVE.detach().cpu().numpy())[0,0,:,:,:].sum((1,2)),label="fakePVE")
+        # ax.plot((self.truePVfree.detach().cpu().numpy())[0,:,:,:].sum((1,2)),label="truePVfree")
+        # ax.plot((self.fakePVfree.detach().cpu().numpy())[0,0,:,:,:].sum((1,2)),label="fakePVfree")
+        # ax.plot((self.true_rec_fp.detach().cpu().numpy())[0,:,:,:].sum((1,2)),label="recfp")
+        # ax.legend()
+        # plt.show()
 
     def forward_unet_denoiser(self):
         if self.dim==2:
