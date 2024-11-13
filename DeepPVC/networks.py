@@ -559,7 +559,7 @@ class UNet_symetric(nn.Module):
             if self.dim==2:
                 residual=x[:,0:self.output_channels,:,:] if self.input_channels != self.output_channels else x
             elif self.dim==3:
-                residual = x[:,self.residual_layer:self.residual_layer+1,:,:,:]
+                residual = x[:,self.residual_layer:self.residual_layer+1,:,:,:].clone()
 
 
         # if self.paths:
@@ -573,7 +573,7 @@ class UNet_symetric(nn.Module):
 
         # ----------------------------------------------------------
         #first feature extraction
-        x0 = self.init_feature(x) # nhc
+        x0 = self.init_feature(x.clone()) # nhc
         # ----------------------------------------------------------
         # Contracting layers :
         list_xk  = [x0]

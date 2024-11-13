@@ -433,75 +433,18 @@ class UNet_Denoiser_PVC(ModelBase):
             self.double_optimizer.zero_grad(set_to_none=True)
 
     def forward(self, batch):
+        self.truePVE_noisy = batch['PVE_noisy']
         if self.with_rec_fp:
-            if self.with_att:
-                self.truePVE_noisy,self.true_rec_fp,self.attmap_fp = batch['PVE_noisy'], batch['rec_fp'], batch['attmap_fp']
-            else:
-                self.truePVE_noisy, self.true_rec_fp = batch['PVE_noisy'], batch['rec_fp']
+            self.true_rec_fp = batch['rec_fp']
+        if self.with_att:
+            self.attmap_fp = batch['attmap_fp']
 
-            self.normalize_data()
-            # ----------------------------
-
-            # patch_size=(32,64,64)
-            # truePVEnoisy = truePVEnoisy.unfold(1, patch_size[0], patch_size[0]).unfold(2, patch_size[1], patch_size[1]).unfold(3, patch_size[2], patch_size[2])
-            # true_rec_fp = true_rec_fp.unfold(1, patch_size[0], patch_size[0]).unfold(2, patch_size[1], patch_size[1]).unfold(3, patch_size[2], patch_size[2])
-            # unfold_shape=truePVEnoisy.size()
-            # truePVEnoisy=truePVEnoisy.contiguous().view(-1, patch_size[0], patch_size[1], patch_size[2])
-            # true_rec_fp=true_rec_fp.contiguous().view(-1, patch_size[0], patch_size[1], patch_size[2])
-
-            if self.dim==2:
-                input_denoiser = torch.concat((self.truePVE_noisy, self.true_rec_fp), dim=1)
-            elif self.dim==3:
-                if self.with_att:
-                    input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
-                else:
-                    input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]),dim=1)
-        else:
-            if self.with_att:
-                self.truePVE_noisy,self.attmap_fp = batch['PVE_noisy'], batch['attmap_fp']
-            else:
-                self.truePVE_noisy = batch['PVE_noisy']
-
-            self.normalize_data()
-
-            if self.dim==3:
-                if self.with_att:
-                    input_denoiser = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
-                else:
-                    input_denoiser = self.truePVE_noisy[:,None,:,:,:]
-
-        with autocast(enabled=self.amp,dtype=torch.float16):
-            self.fakePVE = self.UNet_denoiser(input_denoiser)
-            self.denormalize_data_denoiser()
-            self.normalize_data_pvc()
-
-        if self.with_rec_fp:
-            if self.dim==2:
-                self.fakePVE = torch.concat((self.fakePVE, self.true_rec_fp), dim=1)
-            elif self.dim==3:
-                if self.with_att:
-                    input_pvc = torch.concat((self.fakePVE, self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]), dim=1)
-                else:
-                    input_pvc = torch.concat((self.fakePVE, self.true_rec_fp[:,None,:,:,:]), dim=1)
-        else:
-            if self.dim == 3:
-                if self.with_att:
-                    input_pvc = torch.concat((self.fakePVE,self.attmap_fp[:, None, :, :, :]), dim=1)
-
-
-        if self.dim==2:
-            with autocast(enabled=self.amp,dtype=torch.float16):
-                self.fakePVfree = self.UNet_pvc(input_pvc)
-                self.denormalize_data_pvc()
-            return self.fakePVfree
-        elif self.dim==3:
-            with autocast(enabled=self.amp,dtype=torch.float16):
-                self.fakePVfree= self.UNet_pvc(input_pvc)
-                self.denormalize_data_pvc()
-            self.fakePVfree = self.fakePVfree[:,0,:,:,:]
-            return self.fakePVfree
-
-
+        self.normalize_data()
+        with autocast(enabled=self.amp, dtype=torch.float16):
+            self.forward_unet_denoiser()
+            self.forward_unet_pvc()
+        self.fakePVfree = self.fakePVfree[:, 0, :, :, :]
+        return self.fakePVfree
 
     def optimize_parameters(self):
         # Unet denoiser update
