@@ -386,7 +386,7 @@ class CNN(nn.Module):
 
     def forward(self,x):
         res = x
-        y = self.sequenceCNN(x)
+        y = self.sequenceCNN(x.clone())
         y = y + res
         return self.activation(y)
 
