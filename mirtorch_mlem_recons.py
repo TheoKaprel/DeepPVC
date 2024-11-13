@@ -287,8 +287,6 @@ def deep_mlem_v6(p, SPECT_sys_noRM, SPECT_sys_RM, niter,nosem, net1,net2, loss, 
 def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap,dy, nprojpersubset, niter):
     print('OSEM-RM')
     x_RM = input
-    x_RM_max = x_RM.max()
-    x_RM_n = x_RM/x_RM_max
 
     nx, ny, nz = img_size[0], img_size[1], img_size[2]
     list_A = []
@@ -304,8 +302,7 @@ def deep_mlem_v7(p, net, loss, optimizer, input, psf_RM, img_size, nprojs,attmap
         loss_iter = 0
         for subs in range(nsubsets):
             SPECT_sys = list_A[subs]
-            out_hat = net(x_RM_n[None, None, :, :, :])[0, 0, :, :, :]
-            out_hat = out_hat * x_RM_max
+            out_hat = net(x_RM[None, None, :, :, :])[0, 0, :, :, :]
             ybar = SPECT_sys._apply(out_hat)
 
             id = torch.tensor([int(subs + nsubsets * j) for j in range(nprojpersubset)])
