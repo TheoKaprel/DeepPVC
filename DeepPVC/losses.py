@@ -11,6 +11,8 @@ def get_nn_loss(loss_name):
         return nn.MSELoss()
     elif loss_name=="Poisson":
         return nn.PoissonNLLLoss(log_input=False,full=False)
+    elif loss_name=="poisson":
+        return nn.PoissonNLLLoss(log_input=False,full=False)
     elif loss_name=='BCE':
         return nn.BCEWithLogitsLoss()
     elif loss_name=="Wasserstein":
@@ -295,8 +297,12 @@ class UNetLosses(Model_Loss):
             elif loss_name=="conv":
                 unet_loss+= lbda * loss(input_rec[:,None,:,:,:], conv_psf(output[:,None,:,:,:]))
             elif loss_name=="Poisson":
-                print(output[0,40,63,63].sum(), input_raw[0,40,63,63].sum())
-                unet_loss+= lbda * loss(output, input_raw)
+                print(output[0,40,63,63], input_raw[0,40,63,63], target[0,40,63,63])
+                # unet_loss+= lbda * loss(output, input_raw)
+                unet_loss+= lbda * loss(output, target)
+            elif loss_name=="poisson":
+                unet_loss+=lbda * loss(output,target)
             else:
-                unet_loss+= lbda * loss(target, output)
+                # unet_loss+= lbda * loss(target, output)
+                unet_loss+= lbda * loss(output, target)
         return unet_loss

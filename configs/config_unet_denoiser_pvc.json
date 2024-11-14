@@ -24,7 +24,7 @@
   "max_nb_data": 1,
   "training_batchsize":1,
   "test_batchsize":1,
-  "data_augmentation": [],
+  "data_augmentation": ["noise"],
   "data_normalisation": "sino_sum",
   "pad": "circular",
   "amp": true,
@@ -33,7 +33,7 @@
   "network": "unet_denoiser_pvc",
   "archi": "unet_sym",
 
-  "n_epochs":50,
+  "n_epochs":200,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.1, 1000],
   "early_stopping": false,
@@ -63,5 +63,6 @@
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
-  "lambda_recon":[1]
+  "lambda_recon":[1],
+  "poisson": false
 }
