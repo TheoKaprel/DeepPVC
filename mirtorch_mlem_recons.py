@@ -3,6 +3,9 @@
 import argparse
 import sys
 import os
+
+import matplotlib.pyplot as plt
+
 host = os.uname()[1]
 
 import torch
@@ -361,6 +364,61 @@ def deep_mlem_v9(p, SPECT_sys_RM, SPECT_sys_noRM, niter, net1,net2, loss, optimi
     return out_hat
 
 
+class HammingFilter:
+    r"""Implementation of the Hamming filter given by :math:`\Pi(\omega) = \frac{1}{2}\left(1+\cos\left(\frac{\pi(|\omega|-\omega_L)}{\omega_H-\omega_L} \right)\right)` for :math:`\omega_L \leq |\omega| < \omega_H` and :math:`\Pi(\omega) = 1` for :math:`|\omega| \leq \omega_L` and :math:`\Pi(\omega) = 0` for :math:`|\omega|>\omega_H`. Arguments ``wl`` and ``wh`` should be expressed as fractions of the Nyquist frequency (i.e. ``wh=0.93`` represents 93% the Nyquist frequency).
+    """
+
+    def __init__(self, wl, wh):
+        self.wl = wl / 2  # units of Nyquist Frequency
+        self.wh = wh / 2
+
+    def __call__(self, w):
+        w = w.cpu().numpy()
+        filter = np.piecewise(
+            w,
+            [np.abs(w) <= self.wl, (self.wl < np.abs(w)) * (self.wh >= np.abs(w)), np.abs(w) > self.wh],
+            [lambda w: 1, lambda w: 1 / 2 * (1 + np.cos(np.pi * (np.abs(w) - self.wl) / (self.wh - self.wl))),
+             lambda w: 0])
+        return torch.tensor(filter)
+
+class RampFilter:
+    r"""Implementation of the Ramp filter :math:`\Pi(\omega) = |\omega|`
+    """
+    def __init__(self):
+        return
+    def __call__(self, w):
+        return torch.abs(w)
+
+import matplotlib.pyplot as plt
+
+def fbp(p,SPECT_sys_noRM):
+    freq_fft = torch.fft.fftfreq(p.shape[-2])
+    filtr1 = HammingFilter(wl=0.5, wh=1)
+    filtr2 = RampFilter()
+    filter_total = filtr1(freq_fft)*filtr2(freq_fft)
+    print(filter_total.shape)
+    proj_filtered = torch.zeros_like(p)
+    for i in range(128):
+        for angle in range(120):
+            proj_fft = torch.fft.fft(p[:,i,angle])
+            proj_fft = proj_fft * filter_total
+            proj_filtered[:,i,angle] = torch.fft.ifft(proj_fft).real
+
+    fig,ax = plt.subplots(1,4)
+    ax[0].imshow(p[:,:,0].detach().cpu().numpy())
+    ax[1].imshow(proj_filtered[:,:,0].detach().cpu().numpy())
+    ax[2].imshow(proj_filtered[:,:,64].detach().cpu().numpy())
+    ax[3].plot(filter_total.detach().cpu().numpy())
+    plt.show()
+
+    bp_ones = SPECT_sys_noRM._apply_adjoint(torch.ones_like(proj_filtered))
+    bp_ones[bp_ones == 0] = float('Inf')
+
+    a = torch.nn.ReLU()
+
+    return a(SPECT_sys_noRM._apply_adjoint(proj_filtered) / bp_ones)
+
+
 class CNN(nn.Module):
     def __init__(self, nc=8, ks = 3, nl = 6):
         super(CNN, self).__init__()
@@ -535,7 +593,7 @@ def main():
         # loss,optimizer
         optimizer = optim.Adam(unet.parameters(), lr=args.lr)
 
-    if args.version in [1,2,3,6,8,9]:
+    if args.version in [1,2,3,6,8,9,10]:
         psf_noRM = get_psf(kernel_size=1,sigma0=0,alpha=0,nview=120,
                       ny=ny,sy=dy,sid=280).to(device)
 
@@ -579,6 +637,8 @@ def main():
     elif args.version==9:
         xn = deep_mlem_v9(p=projs_tensor_mir,SPECT_sys_RM=A_RM, SPECT_sys_noRM=A_noRM,niter=args.niter,
                           net1 = unet1, net2 = unet2, loss = loss, optimizer=optimizer)
+    elif args.version==10:
+        xn = fbp(p = projs_tensor_mir,SPECT_sys_noRM=A_noRM)
 
     rec_array = xn.detach().cpu().numpy()
     rec_array_ = np.transpose(rec_array, (1,2,0))

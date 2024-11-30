@@ -4,7 +4,7 @@ import os
 import numpy as np
 import click
 from DeepPVC import dataset, Model_instance
-from DeepPVC import helpers, helpers_params
+from DeepPVC import helpers, helpers_params, helpers_data
 import torch.distributed as dist
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -62,23 +62,27 @@ def apply(lpth,dataset_path,output_folder):
         for step, (batch_inputs, batch_targets) in enumerate(test_dataloader):
 
             for key_inputs in batch_inputs.keys():
-                if key_inputs!="ref":
+                if key_inputs not in ["ref", "initial_shape"]:
                     batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
             for key_targets in batch_targets.keys():
                 batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
             with torch.no_grad():
-                fakePVfree = DeepPVEModel.forward(batch_inputs)[0,4:124,:,:]
+                fakePVfree = DeepPVEModel.forward(batch_inputs)
             print(fakePVfree.shape)
-            ref = str(batch_inputs['ref'][0], "utf-8")
+            fakePVfree = helpers_data.back_to_input_format(params=params, output=fakePVfree,
+                                                             initial_shape=batch_inputs["initial_shape"])
+            print(fakePVfree.shape)
+            print(step)
+            ref = batch_inputs['ref'][0]
             output_fn = f"{ref}_PVCNet_"+DeepPVEModel.output_pth.replace(".pth",".npy")
-            np.save(os.path.join(output_folder,output_fn), fakePVfree.detach().cpu().numpy())
+            np.save(os.path.join(output_folder,output_fn), fakePVfree)
 
 
 
 if __name__ == '__main__':
     host = os.uname()[1]
-    if (host != 'siullus'):
+    if (host != 'suillus'):
         import idr_torch
 
         on_jz = True

@@ -476,6 +476,7 @@ class ImgToImgDataset(BaseDataset):
                 data_inputs['PVCNet_rec'] = np.array(data['PVCNet_751113_rec_noRM'], dtype=self.dtype)
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
+        # initial_shape = list(data_targets['src_4mm'].shape)
 
         if ("vol" in self.list_transforms and (not self.test)):
             augmentation = self.get_augmentation(data_inputs['rec'].shape)
@@ -494,6 +495,8 @@ class ImgToImgDataset(BaseDataset):
         for key_targets in data_targets.keys():
             data_targets[key_targets] = self.pad(torch.from_numpy(data_targets[key_targets]))
 
+        # data_inputs['ref'] = self.keys[src_i]
+        # data_inputs['initial_shape'] = initial_shape
         return data_inputs,data_targets
 
     def __len__(self):
