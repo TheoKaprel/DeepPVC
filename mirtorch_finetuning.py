@@ -55,11 +55,11 @@ def main():
     projs = itk.imread(args.projs)
     projs_array = itk.array_from_image(projs).astype(np.float32)
     projs_array_mir = projs_rtk_to_mir(projs_array)
-    projs_tensor_mir = torch.from_numpy(projs_array_mir)
+    projs_tensor_mir = torch.from_numpy(projs_array_mir).to(device)
 
 
     attmap_tensor = torch.from_numpy(attmap_fp_array.astype(np.float32))
-    attmap_tensor_mirt = attmap_tensor.transpose(0,1).transpose(0,2)
+    attmap_tensor_mirt = attmap_tensor.transpose(0,1).transpose(0,2).to(device)
     spacing = np.array(input_image.GetSpacing())
     spx,spy,spz = spacing[0], spacing[1], spacing[2]
     nx,ny,nz = attmap_tensor.shape[0], attmap_tensor.shape[1], attmap_tensor.shape[2]
