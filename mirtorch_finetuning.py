@@ -76,7 +76,7 @@ def main():
 
     poisson_loss = torch.nn.PoissonNLLLoss(log_input=False, eps=1e-4, reduction="mean")
     optimizer = torch.optim.Adam(model.UNet.parameters(), lr=args.lr)
-    model.set_requires_grad(model.UNet,requires_grad=False)
+    model.set_requires_grad(model.UNet,requires_grad=True)
 
     num_epochs = args.nepochs
 
