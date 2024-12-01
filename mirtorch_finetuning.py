@@ -66,9 +66,19 @@ def main():
     nprojs = 120
     dy = spy
 
-    kernel_size = 7
+    # fig,ax = plt.subplots()
+    # for kernel_size in [7, 15, 21, 31]:
+    #     psf_RM = get_psf(kernel_size=kernel_size,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
+    #               ny=ny,sy=dy,sid = 280).to(device) # (7, 7, 128, 120)
+    #     itk.imwrite(itk.image_from_array(psf_RM[:,:,:,55].detach().cpu().numpy()),os.path.join(args.savefolder, f"psf_{kernel_size}.mhd"))
+    #     ax.plot(np.linspace(-kernel_size//2*4.7952, kernel_size//2*4.7952, kernel_size), psf_RM[:,kernel_size//2,64,55].detach().cpu().numpy(), label=f"{kernel_size}")
+    # plt.legend()
+    # plt.show()
+
+
+    kernel_size = 31
     psf_RM = get_psf(kernel_size=kernel_size,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
-                  ny=ny,sy=dy,sid = 280).to(device) # (7, 7, 128, 120)
+                  ny=ny,sy=dy,sid = 280).to(device) # (kernel_size, kernel_size, ny, nprojs)
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
               mumap=attmap_tensor_mirt, psfs=psf_RM, dy=dy,first_angle=0)
