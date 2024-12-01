@@ -66,9 +66,10 @@ def main():
     nprojs = 120
     dy = spy
 
-    psf_RM = get_psf(kernel_size=7,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
-                  ny=ny,sy=dy,sid = 280).to(device)
+    psf_RM = get_psf(kernel_size=15,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
+                  ny=ny,sy=dy,sid = 280).to(device) # (7, 7, 128, 120)
 
+    # itk.imwrite(itk.image_from_array(psf_RM.detach().cpu().numpy()),os.path.join(args.savefolder, f"psf.mhd"))
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
               mumap=attmap_tensor_mirt, psfs=psf_RM, dy=dy,first_angle=0)
@@ -80,8 +81,7 @@ def main():
 
     num_epochs = args.nepochs
 
-    for epoch in range(num_epochs):
-
+    for epoch in range(1, num_epochs+1):
         output=model.forward(data_input)[0,:,:,:]*4.7952
         output_mirt = output.transpose(0,1).transpose(0,2)
         fp_img = A_RM._apply(output_mirt)
@@ -91,10 +91,12 @@ def main():
         optimizer.zero_grad()  # Clear previous gradients
         loss_k.backward()  # Compute gradients
         optimizer.step()  # Update model parameters
-        print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss_k.item():.6f}")
+        print(f"Epoch {epoch}/{num_epochs}, Loss: {loss_k.item():.6f}")
 
         if epoch % args.saveevery==0:
             itk.imwrite(itk.image_from_array(output.detach().cpu().numpy()),os.path.join(args.savefolder, f"iter_{epoch}.mhd"))
+            # itk.imwrite(itk.image_from_array(fp_img.detach().cpu().numpy()),os.path.join(args.savefolder, f"fp_img_{epoch}.mhd"))
+            # itk.imwrite(itk.image_from_array(projs_tensor_mir.detach().cpu().numpy()),os.path.join(args.savefolder, f"projs_tensor_mir.mhd"))
 
 
 
