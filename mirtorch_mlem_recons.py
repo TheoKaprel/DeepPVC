@@ -459,7 +459,7 @@ class Mult(nn.Module):
         return self.relu(x * self.M)
 
 
-def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
+def get_psf_(kernel_size, sigma0, alpha, nview, ny,sy, sid):
     # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
     x_cord = torch.arange(kernel_size)
     x_grid = x_cord.repeat(kernel_size).view(kernel_size, kernel_size)
@@ -504,6 +504,53 @@ def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
     else:
         psf[kernel_size//2, kernel_size//2, :, :] = 1
     return psf
+
+def get_psf(kernel_size, sigma0, alpha, nview, ny,sy, sid):
+    # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
+    x_cord = torch.arange(kernel_size)
+    x_grid = x_cord.repeat(kernel_size).view(kernel_size, kernel_size)
+    y_grid = x_grid.t()
+    xy_grid = torch.stack([x_grid, y_grid], dim=-1)
+
+    mean = (kernel_size - 1) / 2.
+
+
+    # # Calculate the 2-dimensional gaussian kernel which is
+    # # the product of two gaussian distributions for two different
+    # # variables (in this case called x and y)
+    # gaussian_kernel = (1. / (2. * math.pi * variance)) * \
+    #                   torch.exp(
+    #                       -torch.sum((xy_grid - mean) ** 2., dim=-1) / \
+    #                       (2 * variance)
+    #                   )
+    # # Make sure sum of values in gaussian kernel equals 1.
+    # gaussian_kernel = gaussian_kernel / torch.sum(gaussian_kernel)
+    # psf = gaussian_kernel.repeat(ny, nview, 1, 1).permute(2, 3, 0, 1)
+
+    psf = torch.zeros((kernel_size, kernel_size, ny,nview), dtype = torch.float32)
+
+    if (alpha>0 and sigma0>0):
+        for iv in range(nview):
+            dist = (sid - ny * sy / 2)
+            for iy in range(ny):
+                if iy>0:
+                    sigma = dist * 2 * sy * (alpha)**2 + (2* sy * alpha * sigma0) - alpha**2 * sy**2
+                else:
+                    sigma = alpha * dist + sigma0
+
+                variance = sigma ** 2.
+
+                gaussian_kernel=(1. / (2. * math.pi * variance)) * torch.exp(
+                              -torch.sum((xy_grid - mean) ** 2., dim=-1) / \
+                              (2 * variance)
+                          )
+                psf[:,:,iy,iv] =gaussian_kernel / torch.sum(gaussian_kernel)
+
+                dist = dist + sy
+    else:
+        psf[kernel_size//2, kernel_size//2, :, :] = 1
+    return psf
+
 
 def main():
     print(args)

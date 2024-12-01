@@ -18,7 +18,7 @@ else:
     sys.path.append("/export/home/tkaprelian/Desktop/External_repositories/MIRTorch")
 
 from mirtorch.linear.spect import SPECT
-from mirtorch_mlem_recons import projs_rtk_to_mir,projs_mir_to_rtk,osem,get_psf
+from mirtorch_mlem_recons import projs_rtk_to_mir,projs_mir_to_rtk,osem,get_psf, get_psf_
 import matplotlib.pyplot as plt
 
 def main():
@@ -66,10 +66,9 @@ def main():
     nprojs = 120
     dy = spy
 
-    psf_RM = get_psf(kernel_size=15,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
+    kernel_size = 7
+    psf_RM = get_psf(kernel_size=kernel_size,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
                   ny=ny,sy=dy,sid = 280).to(device) # (7, 7, 128, 120)
-
-    # itk.imwrite(itk.image_from_array(psf_RM.detach().cpu().numpy()),os.path.join(args.savefolder, f"psf.mhd"))
 
     A_RM = SPECT(size_in=(nx, ny, nz), size_out=(128, 128, nprojs),
               mumap=attmap_tensor_mirt, psfs=psf_RM, dy=dy,first_angle=0)
@@ -77,7 +76,7 @@ def main():
 
     poisson_loss = torch.nn.PoissonNLLLoss(log_input=False, eps=1e-4, reduction="mean")
     optimizer = torch.optim.Adam(model.UNet.parameters(), lr=args.lr)
-    model.set_requires_grad(model.UNet,requires_grad=True)
+    model.set_requires_grad(model.UNet,requires_grad=False)
 
     num_epochs = args.nepochs
 
@@ -95,7 +94,7 @@ def main():
 
         if epoch % args.saveevery==0:
             itk.imwrite(itk.image_from_array(output.detach().cpu().numpy()),os.path.join(args.savefolder, f"iter_{epoch}.mhd"))
-            # itk.imwrite(itk.image_from_array(fp_img.detach().cpu().numpy()),os.path.join(args.savefolder, f"fp_img_{epoch}.mhd"))
+            # itk.imwrite(itk.image_from_array(fp_img_1.detach().cpu().numpy()),os.path.join(args.savefolder, f"fp1_img_{epoch}.mhd"))
             # itk.imwrite(itk.image_from_array(projs_tensor_mir.detach().cpu().numpy()),os.path.join(args.savefolder, f"projs_tensor_mir.mhd"))
 
 
