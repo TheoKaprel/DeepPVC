@@ -20,6 +20,7 @@ def show_pth(lpth, losses, legend):
 
     dict_test={}
     dict_val={}
+    dict_train={}
 
     for pth in lpth:
         nn = torch.load(pth,map_location=device)
@@ -45,6 +46,7 @@ def show_pth(lpth, losses, legend):
             dict_test[ref]=model.test_error
             dict_val[ref]=model.val_error_MSE
             dict_val[ref]=model.val_error_MAE
+            dict_train[ref]=model.unet_pvc_losses
             print(model.val_error_MSE)
 
     params_keys=list(lparams[-1].keys())
@@ -107,6 +109,20 @@ def show_pth(lpth, losses, legend):
         ax_test.set_title('Test loss', fontsize = 18)
         ax_test.set_xlabel("Epochs", fontsize = 18)
         ax_test.set_ylabel("Test Loss (L1)", fontsize = 18)
+
+        fig_train_test,ax_train_test=plt.subplots()
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
+        for i,(ref_i,test_i) in enumerate(dict_test.items()):
+            print(test_i)
+            ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
+                         color=colors[i], linewidth = 2)
+        for i,(ref_i,train_i) in enumerate(dict_train.items()):
+            ax_train_test.plot([_ for _ in range(len(train_i))], train_i,label=f'{legend[i]} (val)',
+                         color=colors[i], linewidth = 1, linestyle="dashed")
+        ax_train_test.legend(fontsize = 18)
+        ax_train_test.set_title('losses', fontsize = 18)
+        ax_train_test.set_xlabel("Epochs", fontsize = 18)
+        ax_train_test.set_ylabel("Test Loss (L1)", fontsize = 18)
         plt.show()
 
 

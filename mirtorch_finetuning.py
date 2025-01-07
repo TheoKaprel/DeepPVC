@@ -76,7 +76,7 @@ def main():
     # plt.show()
 
 
-    kernel_size = 31
+    kernel_size = 9
     psf_RM = get_psf(kernel_size=kernel_size,sigma0=1.1684338873367237,alpha=0.03235363042582603,nview=120,
                   ny=ny,sy=dy,sid = 280).to(device) # (kernel_size, kernel_size, ny, nprojs)
 

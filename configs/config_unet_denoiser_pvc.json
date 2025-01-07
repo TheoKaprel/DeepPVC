@@ -39,8 +39,8 @@
   "early_stopping": false,
 
   "init": "normal",
-  "layer_norm": "none",
-  "use_dropout": false,
+  "layer_norm": "inst_norm",
+  "use_dropout": true,
   "leaky_relu": 0.02,
 
   "patches":false,
@@ -59,7 +59,7 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "final_feature_kernel": 1,
-  "nb_ed_layers": 2,
+  "nb_ed_layers": 3,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],
