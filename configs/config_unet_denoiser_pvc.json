@@ -33,7 +33,7 @@
   "network": "unet_denoiser_pvc",
   "archi": "unet_sym",
 
-  "n_epochs":200,
+  "n_epochs":100,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.1, 1000],
   "early_stopping": false,
@@ -59,7 +59,7 @@
   "DCNN": false,
   "init_feature_kernel": 3,
   "final_feature_kernel": 1,
-  "nb_ed_layers": 3,
+  "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
   "recon_loss":["L1"],

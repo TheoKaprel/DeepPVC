@@ -192,7 +192,7 @@ class UpSamplingBlock(nn.Module):
 
 class UpSamplingBlockBis(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2,
-                 norm="batch_norm", use_dropout = False, block="conv-relu-norm", res_unit = False,dim=2):
+                 norm="batch_norm", use_dropout = False, block="conv-relu-norm", res_unit = False,dim=2,attention=False):
         super(UpSamplingBlockBis, self).__init__()
         sequenceUpBlock = []
         splited_block = block.split('-')
@@ -262,7 +262,22 @@ class UpSamplingBlockBis(nn.Module):
         else:
             self.use_dropout=False
 
+        self.attention = attention
+        if attention:
+            self.att_x = nn.Conv3d(input_nc,input_nc,(1,1,1),(1,1,1),(0,0,0))
+            self.att_y = nn.Conv3d(input_nc//2,input_nc,(1,1,1),(2,2,2),(0,0,0))
+            self.att_relu = nn.ReLU()
+            self.att_psi = nn.Conv3d(input_nc,1, (1,1,1), (1,1,1), (0,0,0))
+            self.att_sigmoid = nn.Sigmoid()
+
+
     def forward(self, x,y):
+        if self.attention:
+            att_x = self.att_x(x)
+            att_y = self.att_y(y)
+            sum_att_x_att_y = self.att_relu(att_x+att_y)
+            att = self.att_sigmoid(self.att_psi(sum_att_x_att_y))
+            x = x * att
 
         if self.use_dropout:
             x = self.dropout(x)
@@ -500,7 +515,7 @@ class UNet_symetric(nn.Module):
     def __init__(self,input_channel, ngc,init_feature_kernel,final_feature_kernel, paths,
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=-1, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
-                 AttentionUnet=False,
+                 attention = False,
                  dim=2,final_2dconv=False, final_2dchannels=0):
         super(UNet_symetric, self).__init__()
 
@@ -546,7 +561,7 @@ class UNet_symetric(nn.Module):
             up_layers.append(UpSamplingBlockBis(k*ngc*2,k*ngc,
                                                 norm=norm, use_dropout=use_dropout,
                                                 leaky_relu_val=leaky_relu, block=block_d,
-                                                res_unit=self.ResUnet, dim=dim))
+                                                res_unit=self.ResUnet, dim=dim,attention = attention))
             k = k//2
         self.up_layers = nn.Sequential(*up_layers)
         self.final_feature = conv(ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)

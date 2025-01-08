@@ -42,6 +42,7 @@ class UNet_Denoiser_PVC(ModelBase):
         self.layer_norm = params['layer_norm']
         self.residual_layer = params['residual_layer']
         self.ResUnet = params['resunet']
+        self.attention = params['attention']
 
         if self.residual_layer:
             self.residual_channel = 1 if self.with_rec_fp else 0
@@ -138,7 +139,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       output_channel=self.output_channels_denoiser, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet,
+                                      ResUnet=self.ResUnet,attention=self.attention,
                                                final_2dconv=False).to(device=self.device)
             self.UNet_pvc = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,final_feature_kernel=self.final_feature_kernel,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
@@ -146,7 +147,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet,
+                                      ResUnet=self.ResUnet,attention=self.attention,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
         elif self.archi=="big3dunet":
             self.UNet_denoiser = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
