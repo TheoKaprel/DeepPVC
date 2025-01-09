@@ -65,6 +65,7 @@ class ModelBase(torch.nn.Module):
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
         self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None
         self.optimizer = params['optimizer']
+        self.weight_decay = params['weight_decay'] if 'weight_decay' in params else 0
 
         self.output_folder = self.params['output_folder']
         self.output_pth = self.params['output_pth']
