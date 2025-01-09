@@ -421,7 +421,13 @@ class UNet_Denoiser_PVC(ModelBase):
                 self.scaler.scale(self.unet_denoiser_loss + self.unet_pvc_loss).backward()
             else:
                 self.scaler.scale(self.unet_pvc_loss).backward()
-            # if (self.current_iteration%3==0):
+
+            # GRADIENT CLIPPING
+            # Unscales the gradients of optimizer's assigned params in-place
+            self.scaler.unscale_(self.double_optimizer)
+            # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+            torch.nn.utils.clip_grad_norm_(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), 1)
+
             self.scaler.step(self.double_optimizer)
             self.scaler.update()
             self.double_optimizer.zero_grad(set_to_none=True)

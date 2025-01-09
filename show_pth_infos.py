@@ -114,10 +114,10 @@ def show_pth(lpth, losses, legend):
         colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
-            ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
+            ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=f'{legend[i]} (test)',
                          color=colors[i], linewidth = 2)
         for i,(ref_i,train_i) in enumerate(dict_train.items()):
-            ax_train_test.plot([_ for _ in range(len(train_i))], train_i,label=f'{legend[i]} (val)',
+            ax_train_test.plot([_ for _ in range(len(train_i))], train_i,label=f'{legend[i]} (train)',
                          color=colors[i], linewidth = 1, linestyle="dashed")
         ax_train_test.legend(fontsize = 18)
         ax_train_test.set_title('losses', fontsize = 18)

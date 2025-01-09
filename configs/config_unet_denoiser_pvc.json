@@ -1,6 +1,6 @@
 {
-  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample_sino.h5"],
-  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/train_dataset_sample_sino.h5"],
+  "dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_validation_dataset/train_dataset_sample_sino.h5"],
+  "test_dataset_path": ["/export/home/tkaprelian/Desktop/PVE/datasets/lu_vf_dataset/test_dataset/test_dataset_sample_sino.h5"],
   "validation_dataset_path_": ["/export/home/tkaprelian/Desktop/PVE/datasets/validation_dataset_iec/validation_dataset_iec.h5"],
   "jean_zay": false,
   "compile": false,
@@ -21,8 +21,8 @@
   "paths": false,
   "finetuning": false,
 
-  "max_nb_data": 1,
-  "training_batchsize":1,
+  "max_nb_data": 8,
+  "training_batchsize":4,
   "test_batchsize":1,
   "data_augmentation": ["noise"],
   "data_normalisation": "sino_sum",
