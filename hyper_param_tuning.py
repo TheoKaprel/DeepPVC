@@ -60,7 +60,7 @@ def objective_w_params(single_trial, params, tune):
         if param_to_tune == "final_feature_kernel":
             params['final_feature_kernel'] = trial.suggest_discrete_uniform('final_feature_kernel', low=1, high=9, q=2)
         if param_to_tune=="nb_ed_layers":
-            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',1,3)
+            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',1,1)
         if param_to_tune == "hidden_channels_unet":
             params['hidden_channels_unet'] = trial.suggest_categorical('hidden_channels_unet', choices=[4, 8, 16, 32, 64])
         if param_to_tune=='loss_denoiser':
@@ -106,7 +106,7 @@ def train_and_eval(params):
         DeepPVEModel.update_epoch()
 
 
-    MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel,
+    MNRMSE, MNMAE = helpers_functions.validation_errors(validation_dataloader, DeepPVEModel,
                                                         do_NRMSE=(params['validation_norm'] == "L2"),
                                                         do_NMAE=(params['validation_norm'] == "L1"))
 
