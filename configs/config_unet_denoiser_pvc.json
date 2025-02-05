@@ -33,7 +33,7 @@
   "network": "unet_denoiser_pvc",
   "archi": "unet_sym",
 
-  "n_epochs":100,
+  "n_epochs":3,
   "learning_rate":0.001,
   "lr_policy": ["multiplicative",0.1, 1000],
   "early_stopping": false,
@@ -64,5 +64,8 @@
   "unet_activation": "relu",
   "recon_loss":["L1"],
   "lambda_recon":[1],
-  "poisson": false
+  "loss_denoiser": ["L1"],
+  "lambda_denoiser": [1],
+  "loss_pvc": ["L1"],
+  "lambda_pvc": [1]
 }

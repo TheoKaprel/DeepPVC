@@ -29,6 +29,8 @@ def get_nn_loss(loss_name):
         return fast_eDCC_loss_horiz_and_vert_directions()
         # return fast_eDCC_loss()
         # return eDCC_loss()
+    elif loss_name=="sure_poisson":
+        return SurePoissonLoss()
     else:
         print(f'ERROR in loss name {loss_name}')
         exit(0)
@@ -41,6 +43,33 @@ class Lesion_loss(nn.Module):
     @custom_fwd
     def forward(self, y_true, y_pred, lesion_mask):
         return self.l1(y_true[lesion_mask], y_pred[lesion_mask])
+
+class SurePoissonLoss(nn.Module):
+    def __init__(self, tau=1):
+        super(SurePoissonLoss, self).__init__()
+        self.tau = tau
+
+    def forward(self, p_noisy, p_output, model, true_rec_fp,attmap_fp):
+        # generate a random vector b
+        b = torch.empty_like(p_noisy).uniform_()
+        b = b > 0.5
+        b = (2 * b - 1) * 1.0  # binary [-1, 1]
+
+        y1 = p_output
+
+        input_denoiser = torch.concat(((p_noisy + self.tau * b)[:, None, :, :, :], true_rec_fp[:, None, :, :, :],attmap_fp[:, None, :, :, :]), dim=1)
+
+        y2 = model()
+
+        loss_sure = (
+            (y1 - p_noisy).pow(2)
+            -  p_noisy
+            + (2.0 / self.tau) * (b * p_noisy * (y2 - y1))
+        )
+
+        loss_sure = loss_sure.reshape(p_noisy.size(0), -1).mean(1)
+        return loss_sure
+
 
 class PoissonLikelihood_loss(nn.Module):
     def __init__(self):
@@ -289,7 +318,7 @@ class UNetLosses(Model_Loss):
     def __init__(self, losses_params):
         super().__init__(losses_params)
 
-    def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None, input_raw = None):
+    def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None, input_raw = None,model=None):
         unet_loss = torch.tensor([0.], device=self.device)
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if loss_name=="lesion":
@@ -302,6 +331,8 @@ class UNetLosses(Model_Loss):
                 unet_loss+= lbda * loss(output, target)
             elif loss_name=="poisson":
                 unet_loss+=lbda * loss(output,target)
+            elif loss_name=="sure_poisson":
+                unet_loss+=lbda*loss(p_noisy=input_raw, p_output=output, model=model)
             else:
                 # unet_loss+= lbda * loss(target, output)
                 unet_loss+= lbda * loss(output, target)

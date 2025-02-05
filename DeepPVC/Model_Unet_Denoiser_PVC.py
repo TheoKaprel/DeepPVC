@@ -211,7 +211,7 @@ class UNet_Denoiser_PVC(ModelBase):
                                                                   min_lr=1e-6)
             self.update_lr_every=1
 
-    def init_losses(self):
+    def init_losses_(self):
         self.losses_params = {'recon_loss': self.params['recon_loss'],
                               'lambda_recon': self.params['lambda_recon'], 'device': self.device}
         if "edcc" in self.params['recon_loss']:
@@ -229,8 +229,31 @@ class UNet_Denoiser_PVC(ModelBase):
         if (("poisson" in self.params) and self.params["poisson"]):
             self.losses_params_denoiser = {'recon_loss': self.params['recon_loss']+['Poisson'],
                                            'lambda_recon': self.params['lambda_recon']+[1], 'device': self.device}
+
+        if "sure_poisson" in self.params['recon_loss']:
+            recon_loss = []
+            lamba_recons = []
+            for loss_name,loss_lambda in zip(self.params['recon_loss'],self.params['lambda_recon']):
+                if loss_name!="sure_poisson":
+                    recon_loss.append(loss_name)
+                    lamba_recons.append(loss_lambda)
+            self.losses_params_pvc = {'recon_loss': recon_loss,
+                              'lambda_recon': lamba_recons, 'device': self.device}
+        else:
+            self.losses_params_pvc = self.losses_params
+
         self.losses_denoiser = losses.UNetLosses(self.losses_params_denoiser)
-        self.losses_pvc = losses.UNetLosses(self.losses_params)
+        self.losses_pvc = losses.UNetLosses(self.losses_params_pvc)
+
+    def init_losses(self):
+        self.losses_params_denoiser = {'recon_loss': self.params['loss_denoiser'],
+                              'lambda_recon': self.params['lambda_denoiser'], 'device': self.device}
+
+        self.losses_params_pvc = {'recon_loss': self.params['loss_pvc'],
+                              'lambda_recon': self.params['lambda_pvc'], 'device': self.device}
+
+        self.losses_denoiser = losses.UNetLosses(self.losses_params_denoiser)
+        self.losses_pvc = losses.UNetLosses(self.losses_params_pvc)
 
     def input_data(self, batch_inputs, batch_targets):
         self.truePVE_noisy = batch_inputs['PVE_noisy']
@@ -393,7 +416,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def losses_unet_denoiser(self):
         self.unet_denoiser_loss = self.losses_denoiser.get_unet_loss(target=self.truePVE, output=self.fakePVE if self.dim==2 else self.fakePVE[:,0,:,:,:],lesion_mask=self.lesion_mask_fp,
-                                                                     input_raw=self.truePVE_noisy_raw)
+                                                                     input_raw=self.truePVE_noisy_raw, model=self.UNet_denoiser)
 
     def losses_unet_pvc(self):
         self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:], lesion_mask=self.lesion_mask_fp)
@@ -637,7 +660,8 @@ class UNet_Denoiser_PVC(ModelBase):
         print(f'NUMBER OF PARAMERS : {nb_params}')
         if hasattr(self, "losses_denoiser"):
             print('Losses : ')
-            print(self.losses_params)
+            print("denoiser: ", self.losses_params_denoiser)
+            print("pvc: ", self.losses_params_pvc)
             print('Denoiser loss : ')
             print(self.losses_denoiser)
             print('PVC loss : ')

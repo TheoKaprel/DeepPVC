@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import torch.distributed as dist
-
-
-from DeepPVC import dataset,Models,helpers_data,helpers_functions
+from DeepPVC import dataset,Model_instance,helpers_functions
 
 import click
 import optuna
@@ -13,10 +11,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("--n_trials", type=int, default=30)
 @click.option("--parambase")
-@click.option("--tune", multiple=True)
+@click.option("--tune")
 def optuna_study(n_trials, parambase, tune):
     params_file = open(parambase).read()
     params = json.loads(params_file)
+    tune = tune.split(',')
+    print(tune)
     objective = lambda single_trial: objective_w_params(single_trial= single_trial,params=params, tune=tune)
 
     if rank==0:
@@ -45,38 +45,32 @@ def objective_w_params(single_trial, params, tune):
         trial=single_trial
 
     for param_to_tune in tune:
-        if param_to_tune=='data_normalisation':
-            params['data_normalisation'] = trial.suggest_categorical('data_normalisation', choices = ["none", "img_mean"])
-        elif param_to_tune=='learning_rate':
+        if param_to_tune=="with_rec_fp":
+            params['with_rec_fp'] = trial.suggest_categorical('with_rec_fp', choices=[True,False])
+        if param_to_tune == "denoise":
+            params['denoise'] = trial.suggest_categorical('denoise', choices=[True, False])
+        if param_to_tune == "data_normalisation":
+            params['data_normalisation'] = trial.suggest_categorical('data_normalisation', choices=["none", "sino_sum", "3d_max"])
+        if param_to_tune=="n_epochs":
+            params['n_epochs'] = trial.suggest_int('n_epochs',10,200)
+        if param_to_tune == 'learning_rate':
             params['learning_rate']=trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
-        elif param_to_tune=='input_channels':
-            params['input_channels'] = trial.suggest_categorical('input_channels', choices=[1,3,4,6,12,14])
-            if params['input_channels'] in [1,4,12]:
-                params['with_adj_angles']=False
-            elif params['input_channels'] in [3,6,14]:
-                params['with_adj_angles']=True
-            else:
-                print(f"ERROR : input_channels not well defined : {params['input_channels']}")
-                exit(0)
-        elif param_to_tune=='conv3d':
-            params['conv3d']=trial.suggest_categorical('conv3d', choices=[True, False])
-        elif param_to_tune == 'residual_layer':
-            params['residual_layer'] = trial.suggest_categorical('residual_layer', choices=[True, False])
-        elif param_to_tune=="init_feature_kernel":
-            params['init_feature_kernel']=trial.suggest_discrete_uniform('init_feature_kernel', low=3,high=9,q=2)
-        elif param_to_tune=="nb_ed_layers":
-            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',3,5)
-        elif param_to_tune=='hidden_channels_gen':
-            params['hidden_channels_gen']=trial.suggest_categorical('hidden_channels_gen', choices=[16,32,64])
-        elif param_to_tune == 'hidden_channels_disc':
-            params['hidden_channels_disc'] = trial.suggest_categorical('hidden_channels_disc', choices=[7, 9, 11,13])
-        elif param_to_tune=='lambda_recon':
-            lambda_recon=[0]
-            lambda_recon[0]=trial.suggest_int('lambda_recon', 50,150)
-            params['lambda_recon']=lambda_recon
-        else:
-            print('ERROR: unrecognized parameter to tune {}'.format(param_to_tune))
-
+        if param_to_tune=="init_feature_kernel":
+            params['init_feature_kernel'] = trial.suggest_discrete_uniform('init_feature_kernel', low=3,high=9,q=2)
+        if param_to_tune == "final_feature_kernel":
+            params['final_feature_kernel'] = trial.suggest_discrete_uniform('final_feature_kernel', low=1, high=9, q=2)
+        if param_to_tune=="nb_ed_layers":
+            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',1,3)
+        if param_to_tune == "hidden_channels_unet":
+            params['hidden_channels_unet'] = trial.suggest_categorical('hidden_channels_unet', choices=[4, 8, 16, 32, 64])
+        if param_to_tune=='loss_denoiser':
+            loss_denoiser=[0]
+            loss_denoiser[0]=trial.suggest_categorical('loss_denoiser', choices=["L1", "L2"])
+            params['loss_denoiser']=loss_denoiser
+        if param_to_tune=='loss_pvc':
+            loss_pvc=[0]
+            loss_pvc[0]=trial.suggest_categorical('loss_pvc', choices=["L1", "L2"])
+            params['loss_pvc']=loss_pvc
 
     error=train_and_eval(params=params)
 
@@ -90,24 +84,23 @@ def train_and_eval(params):
     params['output_pth']="none"
     verbose=params['verbose']
 
-    train_dataloader, test_dataloader, params = dataset.load_data(params)
+    train_dataloader, test_dataloader, validation_dataloader, params = dataset.load_data(params)
 
-    DeepPVEModel = Models.ModelInstance(params=params, from_pth=None, resume_training=False)
+    DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=None, resume_training=False)
     device = DeepPVEModel.device
-    data_normalisation = params['data_normalisation']
 
 
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose>0:
             print("Epoch {}/{}".format(epoch, DeepPVEModel.n_epochs))
 
-        for step,batch in enumerate(train_dataloader):
-            norm = helpers_data.compute_norm_eval(dataset_or_img=batch,data_normalisation=data_normalisation)
-            batch = helpers_data.normalize_eval(dataset_or_img=batch,data_normalisation=data_normalisation,norm=norm,params=params,to_torch=False)
+        for step,(batch_inputs,batch_targets) in enumerate(train_dataloader):
+            for key_inputs in batch_inputs.keys():
+                batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
+            for key_targets in batch_targets.keys():
+                batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
 
-            batch = batch.to(device,non_blocking=True)
-            DeepPVEModel.input_data(batch)
-
+            DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
             DeepPVEModel.optimize_parameters()
 
         DeepPVEModel.update_epoch()
@@ -125,7 +118,7 @@ def train_and_eval(params):
 
 if __name__ == '__main__':
     host = os.uname()[1]
-    if (host !='siullus'):
+    if (host !='suillus'):
         import idr_torch
         # get distributed configuration from Slurm environment
         NODE_ID = os.environ['SLURM_NODEID']

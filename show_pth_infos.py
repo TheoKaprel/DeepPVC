@@ -112,17 +112,18 @@ def show_pth(lpth, losses, legend):
 
         fig_train_test,ax_train_test=plt.subplots()
         colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
+        colors = ['orange', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
-            ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=f'{legend[i]} (test)',
+            ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=f'Validation',
                          color=colors[i], linewidth = 2)
         for i,(ref_i,train_i) in enumerate(dict_train.items()):
-            ax_train_test.plot([_ for _ in range(len(train_i))], train_i,label=f'{legend[i]} (train)',
+            ax_train_test.plot([_ for _ in range(len(train_i))], train_i,label=f'Training',
                          color=colors[i], linewidth = 1, linestyle="dashed")
         ax_train_test.legend(fontsize = 18)
-        ax_train_test.set_title('losses', fontsize = 18)
+        # ax_train_test.set_title('losses', fontsize = 18)
         ax_train_test.set_xlabel("Epochs", fontsize = 18)
-        ax_train_test.set_ylabel("Test Loss (L1)", fontsize = 18)
+        ax_train_test.set_ylabel("L1 Losses", fontsize = 18)
         plt.show()
 
 
