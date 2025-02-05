@@ -122,7 +122,18 @@ if __name__ == '__main__':
         import idr_torch
         # get distributed configuration from Slurm environment
         NODE_ID = os.environ['SLURM_NODEID']
-        MASTER_ADDR = os.environ['MASTER_ADDR']
+        MASTER_ADDR = os.environ['MASTER_ADDR'] if ("MASTER_ADDR" in os.environ) else os.environ['HOSTNAME']
+        TIME_LIMIT = os.environ['SBATCH_TIMELIMIT']
+
+        print(f"TIME_LIMIT is : {TIME_LIMIT}")
+        TIME_LIMIT_s = 0
+        TIME_LIMIT_split =  TIME_LIMIT.split(":")
+        if len(TIME_LIMIT_split)==3:
+            TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60*60 + int(TIME_LIMIT_split[1])*60 + int(TIME_LIMIT_split[2])
+        elif len(TIME_LIMIT_split)==2:
+            TIME_LIMIT_s = int(TIME_LIMIT_split[0])*60 + int(TIME_LIMIT_split[1])
+        print(f"i.e. {TIME_LIMIT_s} seconds")
+
 
         # display info
         if idr_torch.rank == 0:
@@ -131,6 +142,7 @@ if __name__ == '__main__':
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
         dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
+
         rank=idr_torch.rank
     else:
         rank=0
