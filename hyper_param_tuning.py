@@ -60,7 +60,7 @@ def objective_w_params(single_trial, params, tune):
         if param_to_tune == "final_feature_kernel":
             params['final_feature_kernel'] = trial.suggest_discrete_uniform('final_feature_kernel', low=1, high=9, q=2)
         if param_to_tune=="nb_ed_layers":
-            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',1,1)
+            params['nb_ed_layers']=trial.suggest_int('nb_ed_layers',1,3)
         if param_to_tune == "hidden_channels_unet":
             params['hidden_channels_unet'] = trial.suggest_categorical('hidden_channels_unet', choices=[4, 8, 16, 32, 64])
         if param_to_tune=='loss_denoiser':
@@ -83,7 +83,7 @@ def train_and_eval(params):
     params['ref']="none"
     params['output_pth']="none"
     verbose=params['verbose']
-
+    list_metrics = []
     train_dataloader, test_dataloader, validation_dataloader, params = dataset.load_data(params)
 
     DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=None, resume_training=False)
@@ -105,16 +105,16 @@ def train_and_eval(params):
 
         DeepPVEModel.update_epoch()
 
+        MNRMSE, MNMAE = helpers_functions.validation_errors(test_dataloader, DeepPVEModel,
+                                                            do_NRMSE=(params['validation_norm'] == "L2"),
+                                                            do_NMAE=(params['validation_norm'] == "L1"))
 
-    MNRMSE, MNMAE = helpers_functions.validation_errors(validation_dataloader, DeepPVEModel,
-                                                        do_NRMSE=(params['validation_norm'] == "L2"),
-                                                        do_NMAE=(params['validation_norm'] == "L1"))
+        if params["validation_norm"]=="L2":
+            list_metrics.append(MNRMSE.item())
+        elif params["validation_norm"]=="L1":
+            list_metrics.append(MNMAE.item())
 
-    if params["validation_norm"]=="L2":
-        return MNRMSE.item()
-    elif params["validation_norm"]=="L1":
-        return MNMAE.item()
-
+    return min(list_metrics)
 
 if __name__ == '__main__':
     host = os.uname()[1]
