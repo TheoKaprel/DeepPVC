@@ -41,6 +41,7 @@ def optuna_study(n_trials, parambase, tune):
 def objective_w_params(single_trial, params, tune):
     if params['jean_zay']:
         trial=optuna.integration.TorchDistributedTrial(single_trial)
+        # trial = single_trial
     else:
         trial=single_trial
 
@@ -113,6 +114,7 @@ def train_and_eval(params):
             list_metrics.append(MNRMSE.item())
         elif params["validation_norm"]=="L1":
             list_metrics.append(MNMAE.item())
+        print(f"Current test error: {list_metrics[-1]}")
 
     return min(list_metrics)
 
@@ -142,7 +144,6 @@ if __name__ == '__main__':
         print("- Process {} corresponds to GPU {} of node {}".format(idr_torch.rank, idr_torch.local_rank, NODE_ID))
 
         dist.init_process_group(backend='nccl', init_method='env://', world_size=idr_torch.size, rank=idr_torch.rank)
-
         rank=idr_torch.rank
     else:
         rank=0
