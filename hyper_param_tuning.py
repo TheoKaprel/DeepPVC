@@ -114,7 +114,10 @@ def train_and_eval(params):
             list_metrics.append(MNRMSE.item())
         elif params["validation_norm"]=="L1":
             list_metrics.append(MNMAE.item())
-        print(f"Current test error: {list_metrics[-1]}")
+        last_err = list_metrics[-1]
+        print(f"Current test error: {last_err}")
+        if last_err != last_err:
+            raise optuna.exceptions.TrialPruned()
 
     return min(list_metrics)
 
