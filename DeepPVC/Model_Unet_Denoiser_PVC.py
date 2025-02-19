@@ -9,7 +9,7 @@ from . import networks, losses, helpers_data_parallelism, networks_diff, plots,n
 from torch.cuda.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
-
+from torchscan import summary
 
 class UNet_Denoiser_PVC(ModelBase):
     def __init__(self, params, from_pth=None, resume_training=False, device=None):
@@ -28,6 +28,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.init_feature_kernel = params['init_feature_kernel']
         self.final_feature_kernel = params['final_feature_kernel'] if "final_feature_kernel" in params else 3
+        self.kernel_size = params['kernel_size'] if "kernel_size" in params else 3
         self.nb_ed_layers = params['nb_ed_layers']
         if "ed_blocks" in params:
             self.ed_blocks = params["ed_blocks"]
@@ -140,7 +141,8 @@ class UNet_Denoiser_PVC(ModelBase):
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,attention=self.attention,
-                                               final_2dconv=False).to(device=self.device)
+                                               final_2dconv=False,
+                                                        kernel_size = self.kernel_size).to(device=self.device)
             self.UNet_pvc = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,paths=self.paths,final_feature_kernel=self.final_feature_kernel,
                                       dim=self.dim,init_feature_kernel=self.init_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
@@ -148,7 +150,8 @@ class UNet_Denoiser_PVC(ModelBase):
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
                                       ResUnet=self.ResUnet,attention=self.attention,
-                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0).to(device=self.device)
+                                      final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
+                                                   kernel_size = self.kernel_size).to(device=self.device)
         elif self.archi=="big3dunet":
             self.UNet_denoiser = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
             self.UNet_pvc = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
@@ -668,6 +671,9 @@ class UNet_Denoiser_PVC(ModelBase):
             print(self.losses_pvc)
             print('*' * 80)
         self.nb_params += nb_params
+        summary(module = self.UNet_denoiser,input_shape=(3,128,80,112),receptive_field=True)
+        summary(module = self.UNet_pvc,input_shape=(3,128,80,112),receptive_field=True)
+
 
     def plot_losses(self, save, wait, title):
         plots.plot_losses_UNet(unet_losses=self.unet_denoiser_losses, test_mse=[], save=save, wait=True, title=title)

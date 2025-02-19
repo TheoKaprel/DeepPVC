@@ -192,7 +192,8 @@ class UpSamplingBlock(nn.Module):
 
 class UpSamplingBlockBis(nn.Module):
     def __init__(self, input_nc, output_nc,leaky_relu_val=0.2,
-                 norm="batch_norm", use_dropout = False, block="conv-relu-norm", res_unit = False,dim=2,attention=False):
+                 norm="batch_norm", use_dropout = False, block="conv-relu-norm", res_unit = False,dim=2,attention=False,
+                 kernel_size = (3,3), stride = (2,2), padding = 1):
         super(UpSamplingBlockBis, self).__init__()
         sequenceUpBlock = []
         splited_block = block.split('-')
@@ -201,8 +202,6 @@ class UpSamplingBlockBis(nn.Module):
             self.dim = 2
             conv = nn.Conv2d
             convT = nn.ConvTranspose2d
-            kernel_size = (3,3)
-            stride=(2,2)
             stride_one = (1,1)
             padd = (1,1)
             outpadd=(1,1)
@@ -215,8 +214,9 @@ class UpSamplingBlockBis(nn.Module):
         elif dim==3:
             self.dim=3
             conv=nn.Conv3d
-            kernel_size = (3,3,3)
-            padd = (1,1,1)
+            kernel_size = kernel_size+(kernel_size[0],)
+            stride = stride+(stride[0],)
+            padd = (padding,padding,padding)
             outpadd=(1,1,1)
             stride_one = (1,1,1)
             if norm=="batch_norm":
@@ -237,7 +237,7 @@ class UpSamplingBlockBis(nn.Module):
                 self.res_conv = nn.Sequential(*res_conv)
 
         self.up = nn.Upsample(scale_factor=2)
-        self.up_conv = nn.Conv3d(input_nc, input_nc//2,(3,3,3),(1,1,1),(1,1,1))
+        self.up_conv = nn.Conv3d(input_nc, input_nc//2,kernel_size,stride_one,padd)
 
         first = True
         for elmt in splited_block:
@@ -516,7 +516,8 @@ class UNet_symetric(nn.Module):
                  output_channel,nb_ed_layers,generator_activation,
                  use_dropout,leaky_relu, norm, residual_layer=-1, blocks=("downconv-relu-norm", "convT-relu-norm"), ResUnet=False,
                  attention = False,
-                 dim=2,final_2dconv=False, final_2dchannels=0):
+                 dim=2,final_2dconv=False, final_2dchannels=0,
+                 kernel_size = 3):
         super(UNet_symetric, self).__init__()
 
         self.ResUnet = ResUnet
@@ -534,6 +535,13 @@ class UNet_symetric(nn.Module):
         else:
             final_kernel, final_stride, final_padding = (3, 3, 3), (1, 1, 1), (1, 1, 1)
 
+        if kernel_size==3:
+            kernel_pad = 1
+        elif kernel_size==5:
+            kernel_pad = 2
+        elif kernel_size==7:
+            kernel_pad = 3
+
         block_e,block_d = blocks[0], blocks[1]
 
 
@@ -547,10 +555,12 @@ class UNet_symetric(nn.Module):
         k = 1
         for el in range(self.nb_ed_layers+1):
             if el < nb_ed_layers:
-                down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim))
+                down_layers.append(DownSamplingBlock(k * ngc,2 * k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim,
+                                                     kernel_size = (kernel_size,kernel_size), padding=kernel_pad))
                 k = 2 * k
             else:
-                down_layers.append(DownSamplingBlock(k * ngc,2*k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim, last=True))
+                down_layers.append(DownSamplingBlock(k * ngc,2*k * ngc, norm = norm,leaky_relu_val=leaky_relu, block=block_e, res_unit=self.ResUnet, dim=dim, last=True,
+                                                     kernel_size = (kernel_size,kernel_size), padding=kernel_pad))
 
 
         self.down_layers = nn.Sequential(*down_layers)
@@ -561,7 +571,8 @@ class UNet_symetric(nn.Module):
             up_layers.append(UpSamplingBlockBis(k*ngc*2,k*ngc,
                                                 norm=norm, use_dropout=use_dropout,
                                                 leaky_relu_val=leaky_relu, block=block_d,
-                                                res_unit=self.ResUnet, dim=dim,attention = attention))
+                                                res_unit=self.ResUnet, dim=dim,attention = attention,
+                                                kernel_size = (kernel_size,kernel_size), padding=kernel_pad))
             k = k//2
         self.up_layers = nn.Sequential(*up_layers)
         self.final_feature = conv(ngc, output_channel, kernel_size=final_kernel, stride=final_stride, padding = final_padding)

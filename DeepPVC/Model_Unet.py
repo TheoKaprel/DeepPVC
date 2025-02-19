@@ -158,7 +158,7 @@ class UNetModel(ModelBase):
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
                                       norm=self.layer_norm, residual_layer=self.residual_channel, blocks=self.ed_blocks,
-                                      ResUnet=self.ResUnet,AttentionUnet=False,
+                                      ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths,
                                       final_feature_kernel=self.final_feature_kernel).to(device=self.device)

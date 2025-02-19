@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from DeepPVC import helpers,helpers_params, Model_instance
 from tabulate import tabulate
+from torchscan import summary
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -37,6 +38,7 @@ def show_pth(lpth, losses, legend):
         model.switch_device("cpu")
         model.switch_eval()
         model.show_infos()
+        summary(module = model.UNet_denoiser,input_shape=(3,128,80,112),receptive_field=True)
 
         params['nb_params']= model.nb_params
         lparams.append(params)
@@ -46,7 +48,7 @@ def show_pth(lpth, losses, legend):
             dict_test[ref]=model.test_error
             dict_val[ref]=model.val_error_MSE
             dict_val[ref]=model.val_error_MAE
-            dict_train[ref]=model.unet_pvc_losses
+            # dict_train[ref]=model.unet_pvc_losses
             print(model.val_error_MSE)
 
     params_keys=list(lparams[-1].keys())

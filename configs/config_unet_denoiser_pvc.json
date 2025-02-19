@@ -58,7 +58,8 @@
 
   "DCNN": false,
   "init_feature_kernel": 3,
-  "final_feature_kernel": 1,
+  "final_feature_kernel": 3,
+  "kernel_size": 5,
   "nb_ed_layers": 2,
   "hidden_channels_unet":8,
   "unet_activation": "relu",
