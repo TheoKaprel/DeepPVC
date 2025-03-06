@@ -4,6 +4,7 @@ import time
 import itk
 import torch
 from torch import optim
+from torchscan import summary
 
 from . import networks, losses, helpers_data_parallelism, plots,networks_attention
 from torch.cuda.amp import autocast, GradScaler
@@ -34,6 +35,7 @@ class UNetModel(ModelBase):
             self.ed_blocks = "conv-relu-norm"
 
         self.final_feature_kernel = params['final_feature_kernel'] if "final_feature_kernel" in params else 3
+        self.kernel_size = params['kernel_size'] if "kernel_size" in params else 3
 
         self.with_rec_fp = params['with_rec_fp']
         self.with_PVCNet_rec = params["with_PVCNet_rec"] if "with_PVCNet_rec" in params else False
@@ -153,7 +155,7 @@ class UNetModel(ModelBase):
                                       final_feature_kernel=self.final_feature_kernel).to(device=self.device)
         elif self.archi=="unet_sym":
             self.UNet = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
-                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,
+                                      dim=self.dim,init_feature_kernel=self.init_feature_kernel,final_feature_kernel=self.final_feature_kernel,
                                       nb_ed_layers=self.nb_ed_layers,
                                       output_channel=self.output_channels, generator_activation=self.unet_activation,
                                       use_dropout=self.use_dropout, leaky_relu=self.leaky_relu,
@@ -161,7 +163,8 @@ class UNetModel(ModelBase):
                                       ResUnet=self.ResUnet,
                                       final_2dconv=self.final_2dconv, final_2dchannels=2*self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                       paths=self.paths,
-                                      final_feature_kernel=self.final_feature_kernel).to(device=self.device)
+                                    kernel_size=self.kernel_size
+                                      ).to(device=self.device)
 
         elif (self.archi=="big3dunet" or self.archi=="chatgpt3dunet"):
             self.UNet = networks.Big3DUnet(params=self.params, input_channels=self.input_channels).to(self.device)
@@ -184,7 +187,7 @@ class UNetModel(ModelBase):
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
-            self.double_optimizer = optim.Adam(self.UNet.parameters(), lr=self.learning_rate)
+            self.double_optimizer = optim.Adam(self.UNet.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         elif self.optimizer =="AdamW":
             self.double_optimizer = optim.AdamW(self.UNet.parameters(), lr=self.learning_rate)
         elif self.optimizer =="SGD":
@@ -342,38 +345,10 @@ class UNetModel(ModelBase):
 
         self.normalize_data()
 
-        if self.with_rec_fp:
-            # ----------------------------
-            if self.dim==2:
-                input = torch.concat((self.truePVE_noisy, self.true_rec_fp), dim=1)
-            elif self.dim==3:
-                if self.with_att:
-                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
-                else:
-                    input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.true_rec_fp[:,None,:,:,:]),dim=1)
-        else:
-            if self.dim==2:
-                input = batch[0]
-            elif self.dim==3:
-                if self.with_PVCNet_rec:
-                    if self.with_att:
-                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
-                    else:
-                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:],self.PVCNet_rec[:,None,:,:,:]),dim=1)
-                else:
-                    if self.with_att:
-                        input = torch.concat((self.truePVE_noisy[:,None,:,:,:], self.attmap_fp[:,None,:,:,:]),dim=1)
-                    else:
-                        input = self.truePVE_noisy[:,None,:,:,:]
-
-        with autocast(enabled=self.amp,dtype=torch.float16):
-            self.fakePVfree = self.UNet(input)
-            self.denormalize_data()
-
-        if self.dim==2:
-            return self.fakePVfree
-        elif self.dim==3:
-            return self.fakePVfree[:,0,:,:,:]
+        with autocast(enabled=self.amp, dtype=torch.float16):
+            self.forward_unet()
+        self.fakePVfree = self.fakePVfree[:, 0, :, :, :]
+        return self.fakePVfree
 
 
     def optimize_parameters(self):
@@ -522,6 +497,8 @@ class UNetModel(ModelBase):
             print('loss : ')
             print(self.losses)
             print('*' * 80)
+        summary(module = self.UNet,input_shape=(3,128,80,112),receptive_field=True)
+
 
 
     def plot_losses(self, save, wait, title):
