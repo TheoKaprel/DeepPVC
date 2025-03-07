@@ -9,7 +9,6 @@ from . import networks, losses, helpers_data_parallelism, networks_diff, plots,n
 from torch.cuda.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
-from torchscan import summary
 
 class UNet_Denoiser_PVC(ModelBase):
     def __init__(self, params, from_pth=None, resume_training=False, device=None):
