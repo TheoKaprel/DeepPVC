@@ -4,7 +4,7 @@ import time
 import itk
 import torch
 from torch import optim
-from torchscan import summary
+
 
 from . import networks, losses, helpers_data_parallelism, plots,networks_attention
 from torch.cuda.amp import autocast, GradScaler
@@ -497,7 +497,9 @@ class UNetModel(ModelBase):
             print('loss : ')
             print(self.losses)
             print('*' * 80)
-        summary(module = self.UNet,input_shape=(3,128,80,112),receptive_field=True)
+        if self.params['jean_zay']==False:
+            from torchscan import summary
+            summary(module = self.UNet,input_shape=(3,128,80,112),receptive_field=True)
 
 
 
