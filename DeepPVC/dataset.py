@@ -176,7 +176,8 @@ class ProjToProjDataset(BaseDataset):
 
             if self.with_rec_fp:
                 if not self.sino:
-                    rec_fp = np.array(data['rec_fp_att'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
+                    # rec_fp = np.array(data['rec_fp_att'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
+                    rec_fp = np.array(data['rc_fp'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
                 else:
                 #sino
                     rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = self.dtype).transpose((1,0,2))
@@ -357,8 +358,8 @@ class SinoToSinoDataset(BaseDataset):
 
 
             if self.with_rec_fp:
-                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
-                # data_inputs['rec_fp'] = np.array(data['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
+                # data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
+                data_inputs['rec_fp'] = np.array(data['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
 
             if (self.with_lesion and not self.test):
                 data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,:,:], dtype=self.dtype).astype(bool)
