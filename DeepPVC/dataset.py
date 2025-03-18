@@ -180,7 +180,7 @@ class ProjToProjDataset(BaseDataset):
                     rec_fp = np.array(data['rc_fp'][channels[id],48:208,16:240], dtype=self.dtype)[invid]
                 else:
                 #sino
-                    rec_fp = np.array(data['rec_fp'][:,proj_i:proj_i+1,:], dtype = self.dtype).transpose((1,0,2))
+                    rec_fp = np.array(data['rec_fp_att'][:,proj_i:proj_i+1,:], dtype = self.dtype).transpose((1,0,2))
                     rec_fp = self.pad(torch.from_numpy(rec_fp[None, :, :, :]))[0, :, :, :]
                 #end sino
 
@@ -358,8 +358,8 @@ class SinoToSinoDataset(BaseDataset):
 
 
             if self.with_rec_fp:
-                # data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
-                data_inputs['rec_fp'] = np.array(data['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
+                data_inputs['rec_fp'] = np.array(data['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
+                # data_inputs['rec_fp'] = np.array(data['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
 
             if (self.with_lesion and not self.test):
                 data_targets['lesion_mask']=np.array(data['lesion_mask_fp'][:,:,:], dtype=self.dtype).astype(bool)
@@ -582,7 +582,7 @@ class DoubleDomainDataset(BaseDataset):
             data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if ('noise' in self.list_transforms and not self.test) else np.array(
                 data_sino[self.key_PVE_noisy][:, :, :], dtype=self.dtype)
             if self.with_rec_fp:
-                data_inputs['rec_fp'] = np.array(data_sino['rec_fp'][:,:,:], dtype=self.dtype) # (120,256,256)
+                data_inputs['rec_fp'] = np.array(data_sino['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
             if self.with_att:
                 # (forward_projected) attenuation
                 data_inputs['attmap_fp'] = np.array(data_sino['attmap_fp'][:,:,:], dtype=self.dtype)
