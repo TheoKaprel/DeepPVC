@@ -527,20 +527,16 @@ class UNet_symetric(nn.Module):
 
         self.dim=3
         conv = nn.Conv3d
-        init_feature_kernel_size,init_feature_stride,init_feature_padding = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel)),(1,1, 1), int(init_feature_kernel / 2)
-        if final_feature_kernel == 3:
-            final_kernel,final_stride,final_padding = (3,3,3), (1,1,1), (1,1,1)
-        elif final_feature_kernel==1:
-            final_kernel, final_stride,final_padding = (1,1,1), (1,1,1), (0,0,0)
-        else:
-            final_kernel, final_stride, final_padding = (3, 3, 3), (1, 1, 1), (1, 1, 1)
 
-        if kernel_size==3:
-            kernel_pad = 1
-        elif kernel_size==5:
-            kernel_pad = 2
-        elif kernel_size==7:
-            kernel_pad = 3
+        init_feature_kernel_size = (int(init_feature_kernel), int(init_feature_kernel), int(init_feature_kernel))
+        init_feature_stride = (1,1,1)
+        init_feature_padding = init_feature_kernel//2
+
+        final_kernel = (final_feature_kernel,final_feature_kernel,final_feature_kernel)
+        final_stride = (1,1,1)
+        final_padding = (final_feature_kernel//2,final_feature_kernel//2,final_feature_kernel//2)
+
+        kernel_pad = kernel_size //2
 
         block_e,block_d = blocks[0], blocks[1]
 
