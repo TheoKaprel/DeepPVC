@@ -73,7 +73,7 @@ def eval_error(lpth,dataset_path,output_folder):
             with torch.no_grad():
                 fakePVfree = DeepPVEModel.forward(batch_inputs)
 
-            np.save(os.path.join(output_folder, ref+"_"+pth_ref+".npy"), fakePVfree[0,:,:,:].detach().cpu().numpy())
+            np.save(os.path.join(output_folder, ref[0]+"_"+pth_ref+".npy"), fakePVfree[0,:,:,:].detach().cpu().numpy())
 
             ground_truth=batch_targets['PVfree'] if (DeepPVEModel.params['inputs'] == "full_sino") else batch_targets['src_4mm']
 
