@@ -99,7 +99,7 @@ def show_pth(lpth, losses, legend):
         fig_test,ax_test=plt.subplots()
         # cm = plt.get_cmap('gist_rainbow')
         # NUM_COLORS=len(dict_test.items())
-        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet", 'grey', 'magenta']
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
@@ -113,8 +113,8 @@ def show_pth(lpth, losses, legend):
         ax_test.set_ylabel("Test Loss (L1)", fontsize = 18)
 
         fig_train_test,ax_train_test=plt.subplots()
-        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
-        colors = ['orange', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
+        # colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
+        # colors = ['orange', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_train_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=f'Validation',

@@ -403,8 +403,11 @@ class SinoToSinoDataset(BaseDataset):
                 data_targets[key_targets] = data_targets[key_targets][:, self.fovi1:self.fovi2, self.fovj1:self.fovj2]
 
         # data_inputs['ref'] = self.keys[src_i]
-
-        return data_inputs,data_targets
+        if self.test:
+            data_ref = self.keys[src_i]
+            return data_ref, data_inputs,data_targets
+        else:
+            return data_inputs,data_targets
 
     def __len__(self):
         return self.len_dataset
