@@ -671,10 +671,10 @@ class UNet_Denoiser_PVC(ModelBase):
             print('*' * 80)
         self.nb_params += nb_params
 
-        if self.params['jean_zay']==False:
-            from torchscan import summary
-            summary(module = self.UNet_denoiser,input_shape=(3,128,80,112),receptive_field=True)
-            summary(module = self.UNet_pvc,input_shape=(3,128,80,112),receptive_field=True)
+        # if self.params['jean_zay']==False:
+            # from torchscan import summary
+            # summary(module = self.UNet_denoiser,input_shape=(3,128,80,112),receptive_field=True)
+            # summary(module = self.UNet_pvc,input_shape=(3,128,80,112),receptive_field=True)
 
 
     def plot_losses(self, save, wait, title):

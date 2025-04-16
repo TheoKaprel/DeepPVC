@@ -14,15 +14,16 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--pth', 'lpth', multiple = True)
 @click.option('--dataset','dataset_path', help='h5 dataset to eval pth and calc errors',required=True)
 @click.option('--output_folder', '-f', help='Output folder ',required=True)
-def train_onclick(lpth,dataset_path, output_folder):
-    train(lpth=lpth,dataset_path=dataset_path,output_folder=output_folder)
+def eval_error_onclick(lpth,dataset_path, output_folder):
+    eval_error(lpth=lpth,dataset_path=dataset_path,output_folder=output_folder)
 
-def train(lpth,dataset_path,output_folder):
+def eval_error(lpth,dataset_path,output_folder):
     device = helpers.get_auto_device("auto")
 
     for pth in lpth:
 
-        pth_NRMSE = []
+        pth_NRMSE_1 = []
+        pth_NRMSE_2 = []
         pth_NMAE = []
 
         checkpoint = torch.load(pth, map_location=device)
@@ -74,16 +75,20 @@ def train(lpth,dataset_path,output_folder):
 
             ground_truth=batch_targets['PVfree'] if (DeepPVEModel.params['inputs'] == "full_sino") else batch_targets['src_4mm']
 
-            NRMSE_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.sqrt(torch.mean(ground_truth**2))
-            pth_NRMSE.append(NRMSE_batch.item())
+            NRMSE_1_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.sqrt(torch.mean(ground_truth**2))
+            NRMSE_2_batch = torch.sqrt(torch.mean((fakePVfree - ground_truth) ** 2)) / torch.mean(ground_truth)
+            pth_NRMSE_1.append(NRMSE_1_batch.item())
+            pth_NRMSE_2.append(NRMSE_2_batch.item())
 
-            NMAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))/ torch.mean(torch.abs(ground_truth))
+            NMAE_batch = torch.mean(torch.abs(fakePVfree - ground_truth))/ torch.mean(ground_truth)
             pth_NMAE.append(NMAE_batch.item())
 
-        pth_NRMSE = np.array(pth_NRMSE)
+        pth_NRMSE_1 = np.array(pth_NRMSE_1)
+        pth_NRMSE_2 = np.array(pth_NRMSE_2)
         pth_NMAE = np.array(pth_NMAE)
 
-        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NRMSE.npy')),pth_NRMSE)
+        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NRMSE_1.npy')),pth_NRMSE_1)
+        np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NRMSE_2.npy')),pth_NRMSE_2)
         np.save(os.path.join(output_folder,(pth.split('/')[-1]).replace('.pth', '_NMAE.npy')),pth_NMAE)
 
 
@@ -123,6 +128,6 @@ if __name__ == '__main__':
         rank = 0
         on_jz = False
 
-    train_onclick()
+    eval_error_onclick()
 
 

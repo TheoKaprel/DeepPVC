@@ -73,7 +73,8 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     train_dataloader, test_dataloader, validation_dataloader, params = dataset.load_data(params)
 
-    DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None))
+    device = helpers.get_auto_device(params["device"])
+    DeepPVEModel = Model_instance.ModelInstance(params=params, from_pth=resume_pth, resume_training=(resume_pth is not None),device = device)
 
     if resume_pth is not None:
         new_lr = None

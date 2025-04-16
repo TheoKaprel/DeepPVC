@@ -38,7 +38,7 @@ def show_pth(lpth, losses, legend):
         model.switch_device("cpu")
         model.switch_eval()
         model.show_infos()
-        summary(module = model.UNet,input_shape=(3,128,80,112),receptive_field=True)
+        # summary(module = model.UNet,input_shape=(3,128,80,112),receptive_field=True)
 
         params['nb_params']= model.nb_params
         lparams.append(params)
