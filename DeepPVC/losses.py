@@ -7,7 +7,14 @@ from torch.cuda.amp import custom_fwd
 from . import helpers
 
 import sys
-sys.path.append("/export/home/tkaprelian/Desktop/eDCCsTorch")
+import os
+host = os.uname()[1]
+if (host !='suillus'):
+    sys.path.append("/linkhome/rech/gencre01/uyo34ub/WORK/PVE/eDCCs_torch")
+else:
+    sys.path.append("/export/home/tkaprelian/Desktop/eDCCsTorch")
+
+
 from exponential_projections_torch import ExponentialProjectionsTorch
 
 
