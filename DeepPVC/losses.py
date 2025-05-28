@@ -1,8 +1,17 @@
+import os.path
+
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch.cuda.amp import custom_fwd
 from . import helpers
+
+import sys
+sys.path.append("/export/home/tkaprelian/Desktop/eDCCsTorch")
+from exponential_projections_torch import ExponentialProjectionsTorch
+
+
+
 
 def get_nn_loss(loss_name):
     if loss_name=="L1":
@@ -26,9 +35,8 @@ def get_nn_loss(loss_name):
     elif loss_name=="conv":
         return nn.L1Loss()
     elif loss_name=="edcc":
-        return fast_eDCC_loss_horiz_and_vert_directions()
-        # return fast_eDCC_loss()
-        # return eDCC_loss()
+        print("eDCCs loss not implemented yet")
+        exit(0)
     elif loss_name=="sure_poisson":
         return SurePoissonLoss()
     else:
@@ -84,132 +92,6 @@ class PoissonLikelihood_loss(nn.Module):
         p_l = -y_true+y_pred*torch.log(y_true + eps)-torch.lgamma(y_pred+1)
         return -torch.mean(p_l)
 
-class eDCC_loss(nn.Module):
-    def __init__(self):
-        super(eDCC_loss, self).__init__()
-        self.device = helpers.get_auto_device("auto")
-        self.spacing = 4.7952
-        self.mu0 = 0.013
-        self.Nprojs = 128
-        self.array_theta = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1]
-        self.size = 112
-        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
-                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
-
-    @custom_fwd
-    def forward(self,_,projs):
-        edcc = torch.tensor([0.]).to(self.device)
-        for i,thetai in enumerate(self.array_theta):
-            j =(i+30)%128
-            thetaj = self.array_theta[j]
-            sigma_ij = self.mu0 * torch.tan((thetai - thetaj) / 2)
-            sigma_ji = self.mu0 * torch.tan((thetai - thetaj) / 2)
-            P_i = torch.matmul(projs[:,i,:,:],torch.exp(sigma_ij*self.linspace)*self.spacing)
-            P_j = torch.matmul(projs[:,j,:,:],torch.exp(sigma_ji*self.linspace)*self.spacing) # N_batch,Nx
-            P_i =P_i.ravel()
-            P_j =P_j.ravel()
-            mask = (P_i*P_j>0)
-            P_i = P_i[mask]
-            P_j = P_j[mask]
-            edcc_li = 2 / self.Nprojs * torch.abs(P_i - P_j) / (P_i + P_j)
-            edcc+= edcc_li.mean() # mean over both batch size and Nx (for lines with >0 values)
-        return edcc
-
-class fast_eDCC_loss(nn.Module):
-    def __init__(self):
-        super(fast_eDCC_loss, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.spacing = 4.7952
-        self.mu0 = 0.013
-        self.Nprojs = 128
-        self.array_theta_i = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1].to(self.device)
-        self.array_theta_j = self.array_theta_i.roll(-30)
-        self.size = 112
-        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
-                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
-
-    @custom_fwd
-    def forward(self,_,projs):
-        sigma_ij =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_j) / 2)
-        x_i = torch.exp(sigma_ij[:,None]*self.linspace[None,:])*self.spacing
-        P_i = (projs * x_i[None, :, None, :]).sum(-1)
-
-        sigma_ji =  self.mu0 * torch.tan((self.array_theta_j - self.array_theta_i) / 2)
-        x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
-        P_j = (projs.roll(-30,dims=1) * x_j[None, :, None, :]).sum(-1)
-
-        P_i_ = P_i[P_i*P_j>0]
-        P_j_ = P_j[P_i*P_j>0]
-        edcc_fast_before_mean = 2 * torch.abs(P_i_ - P_j_) / (P_i_ + P_j_)
-        return edcc_fast_before_mean.mean()
-
-        # edcc_fast_before_mean = 2 * torch.abs(P_i - P_j) / (P_i + P_j)
-        # edcc_fast_before_mean_with_zero_replacing_inf_nans = torch.nan_to_num(edcc_fast_before_mean, nan=0, posinf=0, neginf=0)
-        # return edcc_fast_before_mean_with_zero_replacing_inf_nans.mean()
-
-class fast_eDCC_loss_horiz_and_vert_directions(nn.Module):
-    def __init__(self):
-        super(fast_eDCC_loss_horiz_and_vert_directions, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.spacing = 4.7952
-        self.mu0 = 0.013
-        self.Nprojs = 120
-        self.array_theta_i__ = torch.linspace(0, 2 * torch.pi, self.Nprojs + 1)[:-1]
-
-        self.array_theta_i_ = torch.cat((self.array_theta_i__[-4:],self.array_theta_i__,self.array_theta_i__[:4]),dim=0)
-        self.id_i = torch.arange(0, 128)
-        self.id_j = torch.cat((self.id_i.flip(0).roll(69)[:64],self.id_i.flip(0).roll(61)[64:]),0)
-        self.id_k = torch.cat((self.id_i[8:9], self.id_i.flip(0).roll(1)[1:]), 0)
-
-
-        self.id_j[self.array_theta_i_==0.] = (self.id_i[self.array_theta_i_==0.]+30)%128
-        self.id_j[self.array_theta_i_==torch.pi/2] = (self.id_i[self.array_theta_i_==torch.pi/2]+30)%128
-        self.id_j[self.array_theta_i_==torch.pi] = (self.id_i[self.array_theta_i_==torch.pi]+30)%128
-        self.id_j[self.array_theta_i_==3*torch.pi/2] = (self.id_i[self.array_theta_i_==3*torch.pi/2]+30)%128
-
-        self.id_k[self.array_theta_i_==0.] = (self.id_i[self.array_theta_i_==0.]+30)%128
-        self.id_k[self.array_theta_i_==torch.pi/2] = (self.id_i[self.array_theta_i_==torch.pi/2]+30)%128
-        self.id_k[self.array_theta_i_==torch.pi] = (self.id_i[self.array_theta_i_==torch.pi]+30)%128
-        self.id_k[self.array_theta_i_==3*torch.pi/2] = (self.id_i[self.array_theta_i_==3*torch.pi/2]+30)%128
-
-        self.array_theta_i = self.array_theta_i_[self.id_i].to(self.device)
-        self.array_theta_j = self.array_theta_i_[self.id_j].to(self.device)
-        self.array_theta_k = self.array_theta_i_[self.id_k].to(self.device)
-
-        self.size = 112
-        self.linspace = torch.linspace((-self.size*self.spacing+self.spacing)/2,
-                                        (self.size*self.spacing-self.spacing)/2,self.size).to(self.device)
-
-
-    @custom_fwd
-    def forward(self,_,projs):
-        sigma_ij =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_j) / 2)
-        x_i = torch.exp(sigma_ij[:,None]*self.linspace[None,:])*self.spacing
-        projs_i = projs[:, self.id_i, :, :]
-        P_i = (projs_i * x_i[None, :, None, :]).sum(-1)
-        sigma_ji =  self.mu0 * torch.tan((self.array_theta_j - self.array_theta_i) / 2)
-        x_j = torch.exp(sigma_ji[:,None]*self.linspace[None,:])*self.spacing
-        projs_j = projs[:,self.id_j,:,:]
-        P_j = (projs_j * x_j[None, :, None, :]).sum(-1)
-        non_zero = P_i*P_j!=0
-        P_i_ = P_i[non_zero]
-        P_j_ = P_j[non_zero]
-        edcc_fast_before_mean_i_j = 2 * torch.abs(P_i_ - P_j_) / (P_i_ + P_j_)
-
-        sigma_ik =  self.mu0 * torch.tan((self.array_theta_i - self.array_theta_k) / 2)
-        x_i = torch.exp(sigma_ik[:,None]*self.linspace[None,:])*self.spacing
-        P_i = (projs_i * x_i[None, :, None, :]).sum(-1)
-        sigma_ki =  self.mu0 * torch.tan((self.array_theta_k - self.array_theta_i) / 2)
-        x_k = torch.exp(sigma_ki[:,None]*self.linspace[None,:])*self.spacing
-        projs_k = projs[:,self.id_k,:,:]
-        P_k = (projs_k * x_k[None, :, None, :]).sum(-1)
-        non_zero = P_i*P_k!=0
-        P_i_ = P_i[non_zero]
-        P_k_ = P_k[non_zero]
-        edcc_fast_before_mean_i_k = 2 * torch.abs(P_i_ - P_k_) / (P_i_ + P_k_)
-
-        return 0.5 * (edcc_fast_before_mean_i_j.mean() + edcc_fast_before_mean_i_k.mean())
-
 
 class gradient_penalty(nn.Module):
     # cf https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/wgan_gp/wgan_gp.py
@@ -260,7 +142,19 @@ class Model_Loss(nn.Module):
         self.loss_name, self.recon_loss,self.lambdas=[],[],[]
         if type(losses_params['recon_loss'])==list:
             for (loss,lbda) in zip(losses_params['recon_loss'],losses_params['lambda_recon']):
-                self.recon_loss.append(get_nn_loss(loss_name=loss))
+                if loss=="edcc":
+                    edccs_data_folder = losses_params["edccs_data_folder"]
+                    exp_projections = ExponentialProjectionsTorch(projs_fn=os.path.join(edccs_data_folder, "projs_rtk.mha"),
+                                                                  attmap_fn=os.path.join(edccs_data_folder, "attmap.mha"),
+                                                                  kregion_fn=os.path.join(edccs_data_folder, "background.mha"),
+                                                                  conversion_factor_fn=os.path.join(edccs_data_folder, "conversion_factor.mha"),
+                                                                  geometry_fn=os.path.join(edccs_data_folder, "geom_280.xml"),
+                                                                  device_name="gpu")
+                    em_slice = [32, 95]
+                    edcc_loss = lambda p : exp_projections.compute_edcc_vectorized_input_proj(em_slice=em_slice,projections_tensor=p,del_mask=True,compute_var=True).mean()
+                    self.recon_loss.append(edcc_loss)
+                else:
+                    self.recon_loss.append(get_nn_loss(loss_name=loss))
                 self.lambdas.append(lbda)
                 self.loss_name.append(loss)
         else:
@@ -268,7 +162,7 @@ class Model_Loss(nn.Module):
             self.lambdas=[1]
             self.loss_name = [losses_params['recon_loss']]
 
-        self.device = losses_params['device']
+        self.device = helpers.get_auto_device(losses_params['device'])
 
     def extra_repr(self):
         extra_repr_str=''
@@ -333,6 +227,9 @@ class UNetLosses(Model_Loss):
                 unet_loss+=lbda * loss(output,target)
             elif loss_name=="sure_poisson":
                 unet_loss+=lbda*loss(p_noisy=input_raw, p_output=output, model=model)
+            elif loss_name=="edcc":
+                # unet_loss+=lbda*loss(output)
+                unet_loss+=lbda*torch.mean(torch.tensor([loss(output[k,:,:,:]) for k in range(output.shape[0])],device=output.device))
             else:
                 # unet_loss+= lbda * loss(target, output)
                 unet_loss+= lbda * loss(output, target)

@@ -63,9 +63,11 @@ def eval_error(lpth,dataset_path,output_folder):
 
         DeepPVEModel.switch_eval()
         pth_ref = (pth.split('/')[-1]).replace('.pth', '')
-        for step, (ref, batch_inputs, batch_targets) in enumerate(test_dataloader):
-            ref = str(ref[0])[2:7]
-            print(ref)
+        # for step, (ref, batch_inputs, batch_targets) in enumerate(test_dataloader):
+        for step, (batch_inputs, batch_targets) in enumerate(test_dataloader):
+            # ref = str(ref[0])[2:7]
+            # print(ref)
+            print(step)
             for key_inputs in batch_inputs.keys():
                 batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
             for key_targets in batch_targets.keys():
@@ -74,7 +76,7 @@ def eval_error(lpth,dataset_path,output_folder):
             with torch.no_grad():
                 fakePVfree = DeepPVEModel.forward(batch_inputs)
 
-            np.save(os.path.join(output_folder, ref+"_"+pth_ref+".npy"), fakePVfree[0,:,:,:].detach().cpu().numpy())
+            # np.save(os.path.join(output_folder, ref+"_"+pth_ref+".npy"), fakePVfree[0,:,:,:].detach().cpu().numpy())
 
             ground_truth=batch_targets['PVfree'] if (DeepPVEModel.params['inputs'] == "full_sino") else batch_targets['src_4mm']
 

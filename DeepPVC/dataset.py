@@ -294,8 +294,10 @@ class SinoToSinoDataset(BaseDataset):
             self.fovi1,self.fovi2 = 48,208
             self.fovj1,self.fovj2 = 16,240
         elif ((self.nb_pix_x==128) and (self.nb_pix_y==128)):
-            self.fovi1,self.fovi2 = 24,104
-            self.fovj1,self.fovj2 = 8,120
+            # self.fovi1,self.fovi2 = 24,104
+            # self.fovj1,self.fovj2 = 8,120
+            self.fovi1,self.fovi2 = 0,128
+            self.fovj1,self.fovj2 = 0,128
         else:
             print(f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({self.nb_pix_x}x{self.nb_pix_y})")
             exit(0)
@@ -644,7 +646,7 @@ def load_data(params):
                                   num_workers=params['num_workers'],
                                   pin_memory=True,
                                   sampler=train_sampler)
-
+    params["max_nb_data"]=10
     test_dataset = get_dataset(params=params, paths=params['test_dataset_path'],test=True)
     test_batchsize = params['test_batchsize']
 

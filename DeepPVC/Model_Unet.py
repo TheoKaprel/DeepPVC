@@ -224,9 +224,9 @@ class UNetModel(ModelBase):
         else:
             self.conv_psf = None
 
-        self.losses_params = {'recon_loss': self.params['recon_loss'],
-                              'lambda_recon': self.params['lambda_recon'], 'device': self.device}
-        self.losses = losses.UNetLosses(self.losses_params)
+        # self.losses_params = {'recon_loss': self.params['recon_loss'],
+        #                       'lambda_recon': self.params['lambda_recon'], 'device': self.device}
+        self.losses = losses.UNetLosses(self.params)
 
     def input_data(self, batch_inputs, batch_targets):
         self.truePVE_noisy = batch_inputs['PVE_noisy'] if (self.img_to_img == False) else batch_inputs['rec']
@@ -493,7 +493,7 @@ class UNetModel(ModelBase):
 
         if hasattr(self, "losses"):
             print('Losses : ')
-            print(self.losses_params)
+            # print(self.losses_params)
             print('loss : ')
             print(self.losses)
             print('*' * 80)
