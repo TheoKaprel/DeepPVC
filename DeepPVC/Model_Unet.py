@@ -499,7 +499,7 @@ class UNetModel(ModelBase):
             print('*' * 80)
 
         # if self.params['jean_zay']==False:
-            from torchscan import summary
+        #     from torchscan import summary
 
             # summary(module = self.UNet,input_shape=(3,128,80,112),receptive_field=True)
 
