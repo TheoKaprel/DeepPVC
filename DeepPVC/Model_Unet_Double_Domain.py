@@ -27,7 +27,7 @@ class UNet_Double_Domain(ModelBase):
     def __init__(self, params, from_pth=None, resume_training=False, device=None):
         assert (params['network'] == 'double_domain')
         super().__init__(params, resume_training, device=device)
-        self.network_type = 'unet'
+        self.network_type = 'double_domain'
         self.verbose = params['verbose']
 
         if "dim" in params:
