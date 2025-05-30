@@ -161,7 +161,8 @@ class UNet_Double_Domain(ModelBase):
         spect_data_folder = self.params["spect_data_folder"]
         self.spect_model = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
                                    like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
-                                   fbprojectors="Joseph",
+                                   fbprojectors="JosephAttenuated",
+                                   attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
                                    nsubsets=1)
         self.spect_model.set_geometry(0)
         self.spect_model.get_bp_ones()
@@ -225,7 +226,7 @@ class UNet_Double_Domain(ModelBase):
         #                                                                   self.true_src.shape[3]))
         # self.rec = torch.nn.functional.interpolate(self.fakePVfree, size=(104, 64, 104))
 
-        rec_k = torch.ones_like(self.true_src[0,:,:,:], device = self.device)
+        rec_k = torch.ones_like(self.bp_ones, device = self.device)
         for k in range(2):
             rec_k = rec_k / self.bp_ones * self.rtk_back_projection(
                 self.fakePVfree[0,0,:,:,:] / (self.rtk_forward_projection(rec_k)+1e-8))
