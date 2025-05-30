@@ -3,7 +3,7 @@ from . import helpers_data
 import torch.distributed as dist
 
 def validation_errors(test_dataloader, model, do_NRMSE=True, do_NMAE=True):
-    img = (model.params['inputs'] == "imgs")
+    img = (model.params['inputs'] == "imgs" or model.params['inputs']=="double_domain")
 
     device = model.device
     nb_testing_data = len(test_dataloader.dataset)

@@ -48,7 +48,7 @@ def show_pth(lpth, losses, legend):
             dict_test[ref]=model.test_error
             dict_val[ref]=model.val_error_MSE
             dict_val[ref]=model.val_error_MAE
-            # dict_train[ref]=model.unet_pvc_losses
+            dict_train[ref]=model.unet_losses
             print(model.val_error_MSE)
 
     params_keys=list(lparams[-1].keys())
@@ -95,6 +95,17 @@ def show_pth(lpth, losses, legend):
             legend = list(dict_test.keys())
         else:
             legend = legend.split(",")
+
+        fig_train,ax_train=plt.subplots()
+        colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet", 'grey', 'magenta']
+        for i,(ref_i,train_i) in enumerate(dict_train.items()):
+            ax_train.plot(train_i,label=legend[i],
+                         color=colors[i], linewidth = 2)
+        ax_train.legend(fontsize = 18)
+        ax_train.set_title('Training loss', fontsize = 18)
+        ax_train.set_xlabel("Epochs", fontsize = 18)
+        ax_train.set_ylabel("Training Losses", fontsize = 18)
+
 
         fig_test,ax_test=plt.subplots()
         # cm = plt.get_cmap('gist_rainbow')

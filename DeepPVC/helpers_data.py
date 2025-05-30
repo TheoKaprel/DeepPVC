@@ -406,6 +406,11 @@ def get_dataset_for_eval(params,input_PVE_noisy_array, input_rec_fp_array=None, 
 
         return data_inputs
 
+    elif params['inputs']=="double_domain":
+        data_PVE_noisy = torch.Tensor(input_PVE_noisy_array[None,:,:,:])
+        data_inputs = {}
+        data_inputs['PVE_noisy'] = data_PVE_noisy
+        return data_inputs
 
 def back_to_input_format(params,output, initial_shape= None):
     if params['inputs']=="projs":
@@ -423,6 +428,8 @@ def back_to_input_format(params,output, initial_shape= None):
             unpad = pvc_dataset.ZeroUNPadImgs(pad_size=128,inital_shape=initial_shape)
             output_array = unpad(output_array)
         output_array = output_array.cpu().numpy()
+    elif params['inputs']=="double_domain":
+        output_array = output.cpu().numpy().squeeze()
 
     return output_array
 

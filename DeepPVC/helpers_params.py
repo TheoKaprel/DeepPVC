@@ -92,7 +92,7 @@ def check_params(params, fatal_on_unknown=False):
     assert (params["datatype"] in ["mhd", "mha", "npy", "pt", "h5"])
     # assert (type(params['with_noise'])==bool)
 
-    assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc', 'diffusion'])
+    assert (params['network'] in ['pix2pix', 'unet', 'unet_denoiser_pvc', 'gan_denoiser_pvc', 'diffusion', "double_domain"])
 
 
     int_param_list =  ['training_batchsize', 'test_batchsize','n_epochs', 'input_eq_angles','save_every_n_epoch', 'show_every_n_epoch', 'test_every_n_epoch']

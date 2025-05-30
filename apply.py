@@ -96,14 +96,15 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
         elif params['inputs']=="full_sino":
             output = torch.zeros((input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[2]))
-            fakePVE = torch.zeros((input_PVE_noisy_array.shape[0], input_PVE_noisy_array.shape[1], input_PVE_noisy_array.shape[2]))
 
             if (input_PVE_noisy_array.shape[1]==256):
                 fovi1, fovi2 = 48, 208
                 fovj1, fovj2 = 16, 240
             elif (input_PVE_noisy_array.shape[1]==128):
-                fovi1, fovi2 = 24, 104
-                fovj1, fovj2 = 8, 120
+                # fovi1, fovi2 = 24, 104
+                # fovj1, fovj2 = 8, 120
+                fovi1, fovi2 = 0, 128
+                fovj1, fovj2 = 0, 128
             else:
                 print(
                     f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({input_PVE_noisy_array.shape[1]}x{input_PVE_noisy_array.shape[2]})")
@@ -130,6 +131,9 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                     batch[key] = batch[key][:, :, fovi1:fovi2, fovj1:fovj2]
                 output[:,fovi1:fovi2,fovj1:fovj2] = model.forward(batch)
         elif params['inputs']=="imgs":
+            output=model.forward(data_input)
+
+        elif params['inputs']=="double_domain":
             output=model.forward(data_input)
 
         # output = helpers_data.denormalize_eval(dataset_or_img=output,

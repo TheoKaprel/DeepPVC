@@ -515,39 +515,16 @@ class ImgToImgDataset(BaseDataset):
 class DoubleDomainDataset(BaseDataset):
     def __init__(self, params, paths, filetype=None, merged=None, test=False):
         super().__init__(params, paths, filetype, merged, test)
-        if params['pad_sino']=='circular':
-            self.pad_sino = CircularPadSino(4)
-        else:
-            self.pad_sino = torch.nn.Identity()
-        if params['pad_img']=="zero":
-            self.pad_img = ZeroPadImgs(128)
-        else:
-            self.pad_img = torch.nn.Identity()
-        assert(self.params['dim']=="3d")
-
         self.dim=3
-
-        if "finetuning" in params and params['finetuning']:
-            self.key_PVE_noisy = "gagarf_SC"
-        else:
-            self.key_PVE_noisy = "PVE_att_noisy"
-
+        self.key_PVE_noisy = "PVE_att_noisy"
         self.init_h5()
 
     def init_h5(self):
-        self.dataset_sino_fn = self.dataset_path[0]
-        self.dataset_imgs_fn = self.dataset_path[1]
-        self.dataset_sino_h5 = h5py.File(self.dataset_sino_fn, 'r')
-        self.dataset_img_h5 = h5py.File(self.dataset_imgs_fn, 'r')
-        self.keys_sino = np.array(sorted(list(self.dataset_sino_h5.keys()))).astype(np.string_)
-        self.keys_img = np.array(sorted(list(self.dataset_sino_h5.keys()))).astype(np.string_)
+        self.datasetfn = self.dataset_path[0]
+        self.dataseth5 = h5py.File(self.datasetfn, 'r')
+        self.keys = np.array(sorted(list(self.dataseth5.keys()))).astype(np.string_)
 
-        self.keys = []
-        for k in self.keys_sino:
-            if k in self.keys_img:
-                self.keys.append(k)
-
-        first_data = np.array(self.dataset_sino_h5[self.keys[0]][self.key_PVE_noisy],dtype=self.dtype)
+        first_data = np.array(self.dataseth5[self.keys[0]][self.key_PVE_noisy],dtype=self.dtype)
         self.nb_projs_per_img, self.nb_pix_x, self.nb_pix_y = first_data.shape[0], first_data.shape[1], \
                                                               first_data.shape[2]
 
@@ -555,13 +532,22 @@ class DoubleDomainDataset(BaseDataset):
             self.fovi1,self.fovi2 = 48,208
             self.fovj1,self.fovj2 = 16,240
         elif ((self.nb_pix_x==128) and (self.nb_pix_y==128)):
-            self.fovi1,self.fovi2 = 24,104
-            self.fovj1,self.fovj2 = 8,120
+            # self.fovi1,self.fovi2 = 24,104
+            # self.fovj1,self.fovj2 = 8,120
+            self.fovi1,self.fovi2 = 0,128
+            self.fovj1,self.fovj2 = 0,128
         else:
             print(f"ERROR : invalid number of pixel. Expected nb of pixel in detector to be either (128x128) or (256x256) but found ({self.nb_pix_x}x{self.nb_pix_y})")
             exit(0)
 
         print(f"fov pixels : {[[self.fovi1,self.fovi2], [self.fovj1,self.fovj2]]}")
+
+        # if self.patches:
+        #     self.patch_size=(32,64,64)
+        #     first_data=self.pad(torch.from_numpy(first_data))[None,:,:,:]
+        #     first_data_patches = first_data.unfold(1, self.patch_size[0], self.patch_size[0]).unfold(2, self.patch_size[1], self.patch_size[1]).unfold(3, self.patch_size[2], self.patch_size[2])
+        #     self.unfold_shape=first_data_patches.size()
+        #     self.tile_shape=(self.unfold_shape[1],self.unfold_shape[2],self.unfold_shape[3])
 
         if (self.max_nb_data > 0 and len(self.keys)> self.max_nb_data):
             self.keys = self.keys[:int(self.max_nb_data)]
@@ -573,50 +559,41 @@ class DoubleDomainDataset(BaseDataset):
         if self.verbose > 1:
             print(f'First : {self.keys[0]}')
             print(f'Shape : {first_data.shape}')
-
         self.nb_src = len(self.keys)
+
         self.len_dataset = self.nb_src
 
+        self.dataseth5.close()
+
     def get_item_h5_full_sino(self, item):
-        src_i = item
-        data_inputs, data_targets = {}, {}
+        src_i=item
 
-        with h5py.File(self.dataset_sino_fn, 'r') as f_sino:
-            data_sino = f_sino[self.keys[src_i]]
-            data_targets['PVfree'] = np.array(data_sino['PVfree_att'][:,:,:],dtype=self.dtype)
-            data_PVE = np.array(data_sino['PVE_att'][:,:,:], dtype=self.dtype)
-            data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if ('noise' in self.list_transforms and not self.test) else np.array(
-                data_sino[self.key_PVE_noisy][:, :, :], dtype=self.dtype)
-            if self.with_rec_fp:
-                data_inputs['rec_fp'] = np.array(data_sino['rec_fp_att'][:,:,:], dtype=self.dtype) # (120,256,256)
-            if self.with_att:
-                # (forward_projected) attenuation
-                data_inputs['attmap_fp'] = np.array(data_sino['attmap_fp'][:,:,:], dtype=self.dtype)
+        with h5py.File(self.datasetfn, 'r') as f:
+            data = f[self.keys[src_i]]
 
-        for key_inputs in data_inputs.keys():
-            data_inputs[key_inputs] = self.pad_sino(torch.from_numpy(data_inputs[key_inputs]))
-        for key_targets in data_targets.keys():
-            data_targets[key_targets] = self.pad_sino(torch.from_numpy(data_targets[key_targets]))
+            data_inputs, data_targets={}, {}
+
+            data_targets['PVfree'] = np.array(data['PVfree_att'][:,:,:],dtype=self.dtype)
+
+            data_PVE = np.array(data['PVE_att'][:, :, :], dtype=self.dtype)
+            data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if ('noise' in self.list_transforms and not self.test)\
+                else np.array(data[self.key_PVE_noisy][:, :, :], dtype=self.dtype)
+
+            data_targets['src_4mm'] = np.array(data['src_4mm'][:,:,:], dtype=self.dtype)
+
 
         for key_inputs in data_inputs.keys():
-            data_inputs[key_inputs] = data_inputs[key_inputs][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
+            data_inputs[key_inputs] = torch.from_numpy(data_inputs[key_inputs])
         for key_targets in data_targets.keys():
-            data_targets[key_targets] = data_targets[key_targets][:,self.fovi1:self.fovi2,self.fovj1:self.fovj2]
+            data_targets[key_targets] = torch.from_numpy(data_targets[key_targets])
 
-        with h5py.File(self.dataset_imgs_fn, 'r') as f_img:
-            data_imgs = f_img[self.keys[src_i]]
-            data_inputs['rec'] = self.pad_img(torch.from_numpy(np.array(data_imgs['rec'],dtype=self.dtype)))
-            data_inputs['attmap_4mm'] = self.pad_img(torch.from_numpy(np.array(data_imgs['attmap_4mm'],dtype=self.dtype)))
-            data_targets['src_4mm'] = self.pad_img(torch.from_numpy(np.array(data_imgs['src_4mm'],dtype=self.dtype)))
-
-        return data_inputs,data_targets
+        return data_inputs, data_targets
 
     def __len__(self):
         return self.len_dataset
 
     def __getitem__(self, item):
         return self.get_item_h5_full_sino(item)
-
 
 
 def get_dataset(params, paths,filetype=None,merged=None,test=False):
@@ -646,7 +623,6 @@ def load_data(params):
                                   num_workers=params['num_workers'],
                                   pin_memory=True,
                                   sampler=train_sampler)
-    params["max_nb_data"]=10
     test_dataset = get_dataset(params=params, paths=params['test_dataset_path'],test=True)
     test_batchsize = params['test_batchsize']
 
