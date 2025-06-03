@@ -221,6 +221,7 @@ class UNetLosses(Model_Loss):
 
     def get_unet_loss(self, target, output, lesion_mask=None, conv_psf=None, input_rec=None, input_raw = None,model=None):
         unet_loss = torch.tensor([0.], device=self.device)
+        loss_val = 0
         for (loss_name,loss,lbda) in zip(self.loss_name,self.recon_loss,self.lambdas):
             if loss_name=="lesion":
                 unet_loss+= lbda * loss(target[lesion_mask], output[lesion_mask])
@@ -236,8 +237,12 @@ class UNetLosses(Model_Loss):
                 unet_loss+=lbda*loss(p_noisy=input_raw, p_output=output, model=model)
             elif loss_name=="edcc":
                 # unet_loss+=lbda*loss(output)
-                unet_loss+=lbda*torch.mean(torch.tensor([loss(output[k,:,:,:]) for k in range(output.shape[0])],device=output.device))
+                loss_val = torch.mean(torch.tensor([loss(output[k,:,:,:]) for k in range(output.shape[0])],device=output.device))
+                unet_loss+= lbda*loss_val
             else:
                 # unet_loss+= lbda * loss(target, output)
-                unet_loss+= lbda * loss(output, target)
+                loss_val = loss(output, target)
+                unet_loss+= lbda * loss_val
+
+            # print(f"{loss_name}: {loss_val}")
         return unet_loss

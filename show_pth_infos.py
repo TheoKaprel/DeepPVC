@@ -111,13 +111,14 @@ def show_pth(lpth, losses, legend):
         # cm = plt.get_cmap('gist_rainbow')
         # NUM_COLORS=len(dict_test.items())
         colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet", 'grey', 'magenta']
+        legend = ["L1", "L1 + 0.1 eDCC", "L1 + 0.5 eDCC"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],
                          color=colors[i], linewidth = 2)
-        for i,(ref_i,val_i) in enumerate(dict_val.items()):
-            ax_test.plot([e[0] for e in  val_i],[e[1] for e in  val_i],label=f'{legend[i]} (val)',
-                         color=colors[i], linewidth = 1, linestyle="dashed")
+        # for i,(ref_i,val_i) in enumerate(dict_val.items()):
+        #     ax_test.plot([e[0] for e in  val_i],[e[1] for e in  val_i],label=f'{legend[i]} (val)',
+        #                  color=colors[i], linewidth = 1, linestyle="dashed")
         ax_test.legend(fontsize = 18)
         ax_test.set_title('Test loss', fontsize = 18)
         ax_test.set_xlabel("Epochs", fontsize = 18)

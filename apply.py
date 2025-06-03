@@ -14,11 +14,15 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--input', '-i')
 @click.option('--input_rec_fp')
 @click.option('--attmap_fp')
+@click.option('--like')
 @click.option('--output', '-o', help = 'Output filename (mhd)')
 @click.option("--device", default = "cpu")
-def apply_click(pth,input,input_rec_fp,attmap_fp, output, device):
+def apply_click(pth,input,input_rec_fp,attmap_fp,like, output, device):
     output_image = apply(pth, input,input_rec_fp,attmap_fp, device=device)
 
+    if like is not None:
+        like_img = itk.imread(like)
+        output_image.CopyInformation(like_img)
     itk.imwrite(output_image, output)
     print(f'Done! output at : {output}')
 
@@ -30,6 +34,9 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
     pth_file = torch.load(pth, map_location=device)
     params = pth_file['params']
     helpers_params.check_params(params)
+
+    if params['network']=="double_domain":
+        params["spect_data_folder"] = "/export/home/tkaprelian/Desktop/PVE/datasets/eDCCs_training_data/data"
 
     params['jean_zay']=False
 
@@ -61,7 +68,7 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
 
 def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
 
-    input_PVE_noisy_array = itk.array_from_image(itk.imread(input))
+    input_PVE_noisy_array = itk.array_from_image(itk.imread(input)).astype(np.float32)
     input_rec_fp_array = itk.array_from_image(itk.imread(input_rec_fp)) if ((input_rec_fp is not None) and (params['with_rec_fp'] or params['with_PVCNet_rec'])) else None
     attmap_fp_array = itk.array_from_image(itk.imread(attmap_fp)) if (attmap_fp is not None) else None
 

@@ -159,18 +159,36 @@ class UNet_Double_Domain(ModelBase):
 
     def init_spect_recons(self):
         spect_data_folder = self.params["spect_data_folder"]
+        self.nsubsets = self.params["nsubsets"]
         self.spect_model = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
                                    like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
                                    fbprojectors="JosephAttenuated",
                                    attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
-                                   nsubsets=1)
-        self.spect_model.set_geometry(0)
-        self.spect_model.get_bp_ones()
-        self.bp_ones = torch.tensor(self.spect_model.bp_ones_array, device = self.device)
+                                   nsubsets=self.nsubsets)
+        if "nosem" in self.params:
+            self.nosem = self.params["nosem"]
+        else:
+            self.nosem = 2
+
+        # print("###############################################################################")
+        # print("###############################################################################")
+        # self.rtk_back_projection = lambda input_projs: BackProjection.apply(input_projs, self.spect_model)
+        # check = torch.autograd.gradcheck(self.rtk_back_projection,
+        #                                            100*torch.rand(self.spect_model.projection_array[self.spect_model.subset_ids,:,:].shape,dtype=torch.double,requires_grad=True),
+        #                                            fast_mode = True)
+        #
+        # print(f"GRAD CHEKC FOR BACKPROJ: {check}")
+        # print("###############################################################################")
+        # print("###############################################################################")
+
+        self.bp_ones = []
+        for subset in range(self.nsubsets):
+            self.spect_model.set_geometry(subset)
+            self.bp_ones.append(torch.tensor(self.spect_model.get_bp_ones(), device = self.device))
 
 
-        self.rtk_forward_projection = lambda input_img : ForwardProjection.apply(input_img, self.spect_model)
-        self.rtk_back_projection = lambda input_projs : BackProjection.apply(input_projs, self.spect_model)
+        # self.rtk_forward_projection = lambda input_img : ForwardProjection.apply(input_img, self.spect_model)
+        # self.rtk_back_projection = lambda input_projs : BackProjection.apply(input_projs, self.spect_model)
 
 
     def init_optimization(self):
@@ -226,13 +244,22 @@ class UNet_Double_Domain(ModelBase):
         #                                                                   self.true_src.shape[3]))
         # self.rec = torch.nn.functional.interpolate(self.fakePVfree, size=(104, 64, 104))
 
-        rec_k = torch.ones_like(self.bp_ones, device = self.device)
-        for k in range(2):
-            rec_k = rec_k / self.bp_ones * self.rtk_back_projection(
-                self.fakePVfree[0,0,:,:,:] / (self.rtk_forward_projection(rec_k)+1e-8))
+        rec_k = torch.ones_like(self.bp_ones[0], device = self.device, requires_grad=True)
+
+        for k in range(self.nosem):
+            for subset in range(self.nsubsets):
+                self.spect_model.set_geometry(subset)
+
+                self.rtk_forward_projection = lambda input_img : ForwardProjection.apply(input_img, self.spect_model)
+                self.rtk_back_projection = lambda input_projs : BackProjection.apply(input_projs, self.spect_model)
+
+                rec_k_fp = self.rtk_forward_projection(rec_k)
+                rec_k = rec_k / (self.bp_ones[subset]+1e-8) * self.rtk_back_projection(
+                    self.fakePVfree[0,0,self.spect_model.subset_ids,:,:] / (rec_k_fp+1e-8))
+
+        itk.imwrite(itk.image_from_array(rec_k.detach().cpu().numpy()),"/export/home/tkaprelian/temp/rec_k.mha")
 
         self.rec = rec_k[None,None,:,:,:]
-
 
     def normalize_img(self):
         self.norm_rec = self.rec.sum((1, 2, 3,4))
