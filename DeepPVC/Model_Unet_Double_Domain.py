@@ -257,8 +257,6 @@ class UNet_Double_Domain(ModelBase):
                 rec_k = rec_k / (self.bp_ones[subset]+1e-8) * self.rtk_back_projection(
                     self.fakePVfree[0,0,self.spect_model.subset_ids,:,:] / (rec_k_fp+1e-8))
 
-        itk.imwrite(itk.image_from_array(rec_k.detach().cpu().numpy()),"/export/home/tkaprelian/temp/rec_k.mha")
-
         self.rec = rec_k[None,None,:,:,:]
 
     def normalize_img(self):
