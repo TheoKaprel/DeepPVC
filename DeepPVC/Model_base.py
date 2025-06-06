@@ -59,8 +59,12 @@ class ModelBase(torch.nn.Module):
             self.output_channels = self.output_channels_denoiser = 1
 
 
-        self.with_lesion=("lesion" in params['recon_loss'])
-        self.with_conv_loss = ("conv" in params['recon_loss'])
+        if "recon_loss" in params:
+            self.with_lesion=("lesion" in params["recon_loss"])
+            self.with_conv_loss = ("conv" in params['recon_loss'])
+        else:
+            self.with_lesion = ("lesion" in params["img_loss"]) or ("lesion" in params["sino_loss"])
+            self.with_conv_loss = ("conv" in params["img_loss"]) or ("conv" in params["sino_loss"])
 
         self.use_dropout = params['use_dropout'] if 'use_dropout' in params else None
         self.leaky_relu = params['leaky_relu'] if 'leaky_relu' in params else None

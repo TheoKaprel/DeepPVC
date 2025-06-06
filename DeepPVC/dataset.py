@@ -26,7 +26,11 @@ class BaseDataset(Dataset):
 
         self.with_att = params['with_att']
 
-        self.with_lesion=("lesion" in params["recon_loss"])
+
+        if "recon_loss" in params:
+            self.with_lesion=("lesion" in params["recon_loss"])
+        else:
+            self.with_lesion = ("lesion" in params["img_loss"]) or ("lesion" in params["sino_loss"])
 
         self.dtype=self.get_dtype(params['dtype'])
         print(f"DTYPE : {self.dtype} ")

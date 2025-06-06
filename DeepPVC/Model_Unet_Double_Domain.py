@@ -155,6 +155,7 @@ class UNet_Double_Domain(ModelBase):
             self.UNet_img = torch.compile(self.UNet_img)
             self.UNet_sino = torch.compile(self.UNet_sino)
 
+
         self.init_spect_recons()
 
     def init_spect_recons(self):
@@ -214,8 +215,14 @@ class UNet_Double_Domain(ModelBase):
             self.update_lr_every = 1
 
     def init_losses(self):
-        self.losses = [torch.nn.L1Loss(), torch.nn.L1Loss()]
-        self.lambdas = [1,0.5]
+        # self.losses = [torch.nn.L1Loss(), torch.nn.L1Loss()]
+        # self.lambdas = [1,0.5]
+
+        self.losses_img = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["img_loss"]]
+        self.losses_sino = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["sino_loss"]]
+
+        self.losses_img_lambdas = self.params["img_loss_lambda"]
+        self.losses_sino_lambdas = self.params["sino_loss_lambda"]
 
     def input_data(self, batch_inputs, batch_targets):
         self.truePVE_noisy = batch_inputs['PVE_noisy']
@@ -272,8 +279,14 @@ class UNet_Double_Domain(ModelBase):
         self.denormalize_img()
 
     def compute_losses(self):
-        self.unet_loss = self.lambdas[0] * self.losses[0](self.true_src, self.fake_src[:,0,:,:,:]) + \
-                         self.lambdas[1] * self.losses[1](self.truePVfree, self.fakePVfree[:,0,:,:,:])
+        # self.unet_loss = self.lambdas[0] * self.losses[0](self.true_src, self.fake_src[:,0,:,:,:]) + \
+        #                  self.lambdas[1] * self.losses[1](self.truePVfree, self.fakePVfree[:,0,:,:,:])
+
+        self.unet_loss = sum([lbda * loss(self.true_src, self.fake_src[:,0,:,:,:])
+                              for lbda,loss in zip(self.losses_img_lambdas,self.losses_img)])
+
+        self.unet_loss += sum([lbda * loss(self.truePVfree, self.fakePVfree[:,0,:,:,:])
+                              for lbda, loss in zip(self.losses_sino_lambdas, self.losses_sino)])
 
     def backward(self):
         if self.amp:
@@ -435,14 +448,20 @@ class UNet_Double_Domain(ModelBase):
         self.nb_params = nb_params
         print(f'NUMBER OF PARAMERS : {nb_params}')
 
-
+        print("*************************************************")
         if hasattr(self, "losses"):
             print('Losses : ')
             # print(self.losses_params)
             print('loss : ')
             print(self.losses)
             print('*' * 80)
+        elif hasattr(self, "losses_img"):
+            print("Losses: ")
+            print(f"image-domain loss: {self.losses_img_lambdas} {self.losses_img}")
+            print(f"sinogram-domain loss: {self.losses_sino_lambdas} {self.losses_sino}")
 
+            
+        print("*************************************************")
         # if self.params['jean_zay']==False:
         #     from torchscan import summary
 
