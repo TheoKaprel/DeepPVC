@@ -51,7 +51,7 @@ def show_pth(lpth, losses, legend):
             dict_train[ref]=model.unet_losses
             print(model.val_error_MSE)
 
-    params_keys=list(lparams[-1].keys())
+    params_keys=list(lparams[0].keys())
 
     params_with_differences=[]
     for key in params_keys:
@@ -111,7 +111,7 @@ def show_pth(lpth, losses, legend):
         # cm = plt.get_cmap('gist_rainbow')
         # NUM_COLORS=len(dict_test.items())
         colors = ['red', 'blue', 'orange', 'green', 'grey', 'violet', 'black', 'pink', "cyan", "gold", "blueviolet", 'grey', 'magenta']
-        legend = ["L1", "L1 + 0.1 eDCC", "L1 + 0.5 eDCC", "L1 + 1 eDCC"]
+        # legend = ["L1", "L1 + 0.1 eDCC", "L1 + 0.5 eDCC", "L1 + 1 eDCC"]
         for i,(ref_i,test_i) in enumerate(dict_test.items()):
             print(test_i)
             ax_test.plot([e[0] for e in  test_i],[e[1] for e in  test_i],label=legend[i],

@@ -72,6 +72,11 @@ class UNet_Double_Domain(ModelBase):
 
         self.paths = params['paths'] if "paths" in params else False
 
+        if len(params["sino_loss"])==1 and (params["sino_loss"][0]=="consistency"):
+            self.img_to_img = True
+        else:
+            self.img_to_img = False
+
         if from_pth:
             self.for_training = False
             self.init_model()
@@ -83,6 +88,8 @@ class UNet_Double_Domain(ModelBase):
             self.init_model()
             self.init_optimization()
             self.init_losses()
+
+            self.init_spect_recons()
 
             self.unet_losses = []
             self.test_error = []
@@ -116,11 +123,11 @@ class UNet_Double_Domain(ModelBase):
                                                norm=self.layer_norm, residual_layer=self.residual_channel,
                                                blocks=self.ed_blocks,
                                                ResUnet=self.ResUnet,
-                                               final_2dconv=self.final_2dconv, final_2dchannels=2 * self.params[
-                    'nb_adj_angles'] if self.final_2dconv else 0,
+                                               final_2dconv=self.final_2dconv, final_2dchannels=2 * self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                                paths=self.paths,
                                                kernel_size=self.kernel_size
-                                               ).to(device=self.device)
+                                               ).to(device=self.device) if not self.img_to_img else torch.nn.Identity()
+
             self.UNet_img = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                                dim=self.dim, init_feature_kernel=self.init_feature_kernel,
                                                final_feature_kernel=self.final_feature_kernel,
@@ -131,8 +138,7 @@ class UNet_Double_Domain(ModelBase):
                                                norm=self.layer_norm, residual_layer=self.residual_channel,
                                                blocks=self.ed_blocks,
                                                ResUnet=self.ResUnet,
-                                               final_2dconv=self.final_2dconv, final_2dchannels=2 * self.params[
-                    'nb_adj_angles'] if self.final_2dconv else 0,
+                                               final_2dconv=self.final_2dconv, final_2dchannels=2 * self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                                paths=self.paths,
                                                kernel_size=self.kernel_size
                                                ).to(device=self.device)
@@ -155,21 +161,23 @@ class UNet_Double_Domain(ModelBase):
             self.UNet_img = torch.compile(self.UNet_img)
             self.UNet_sino = torch.compile(self.UNet_sino)
 
-
-        self.init_spect_recons()
-
     def init_spect_recons(self):
         spect_data_folder = self.params["spect_data_folder"]
-        self.nsubsets = self.params["nsubsets"]
-        self.spect_model = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
-                                   like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
-                                   fbprojectors="JosephAttenuated",
-                                   attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
-                                   nsubsets=self.nsubsets)
-        if "nosem" in self.params:
-            self.nosem = self.params["nosem"]
-        else:
-            self.nosem = 2
+        if not self.img_to_img:
+            self.nsubsets = self.params["nsubsets"]
+            self.spect_model = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
+                                       like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
+                                       fbprojectors="JosephAttenuated",
+                                       attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
+                                       nsubsets=self.nsubsets)
+            if "nosem" in self.params:
+                self.nosem = self.params["nosem"]
+            else:
+                self.nosem = 2
+            self.bp_ones = []
+            for subset in range(self.nsubsets):
+                self.spect_model.set_geometry(subset)
+                self.bp_ones.append(torch.tensor(self.spect_model.get_bp_ones(), device = self.device))
 
         # print("###############################################################################")
         # print("###############################################################################")
@@ -182,15 +190,14 @@ class UNet_Double_Domain(ModelBase):
         # print("###############################################################################")
         # print("###############################################################################")
 
-        self.bp_ones = []
-        for subset in range(self.nsubsets):
-            self.spect_model.set_geometry(subset)
-            self.bp_ones.append(torch.tensor(self.spect_model.get_bp_ones(), device = self.device))
 
-
-        # self.rtk_forward_projection = lambda input_img : ForwardProjection.apply(input_img, self.spect_model)
-        # self.rtk_back_projection = lambda input_projs : BackProjection.apply(input_projs, self.spect_model)
-
+        if "consistency" in self.losses_sino_names:
+            self.spect_model_for_consistency = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
+                                   like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
+                                   fbprojectors="Zeng",
+                                   attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
+                                   nsubsets=1)
+            self.rtk_forward_projection_for_consistency = lambda input_img: ForwardProjection.apply(input_img, self.spect_model_for_consistency)
 
     def init_optimization(self):
         if self.optimizer == 'Adam':
@@ -220,13 +227,19 @@ class UNet_Double_Domain(ModelBase):
 
         self.losses_img = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["img_loss"]]
         self.losses_sino = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["sino_loss"]]
+        self.losses_sino_names = self.params["sino_loss"]
 
         self.losses_img_lambdas = self.params["img_loss_lambda"]
         self.losses_sino_lambdas = self.params["sino_loss_lambda"]
 
     def input_data(self, batch_inputs, batch_targets):
         self.truePVE_noisy = batch_inputs['PVE_noisy']
-        self.truePVfree = batch_targets['PVfree']
+
+        if self.img_to_img:
+            self.rec = batch_inputs["rec"][:,None,:,:,:]
+        else:
+            self.truePVfree = batch_targets['PVfree']
+
         self.true_src = batch_targets['src_4mm']
 
     def normalize_sino(self):
@@ -279,14 +292,21 @@ class UNet_Double_Domain(ModelBase):
         self.denormalize_img()
 
     def compute_losses(self):
-        # self.unet_loss = self.lambdas[0] * self.losses[0](self.true_src, self.fake_src[:,0,:,:,:]) + \
-        #                  self.lambdas[1] * self.losses[1](self.truePVfree, self.fakePVfree[:,0,:,:,:])
+        if "consistency" in self.losses_sino_names:
+            fp_fake_src = self.rtk_forward_projection_for_consistency(self.fake_src[0,0,:,:,:])[None,:,:,:]
+        else:
+            fp_fake_src = None
 
+        # img domain losses
         self.unet_loss = sum([lbda * loss(self.true_src, self.fake_src[:,0,:,:,:])
                               for lbda,loss in zip(self.losses_img_lambdas,self.losses_img)])
 
-        self.unet_loss += sum([lbda * loss(self.truePVfree, self.fakePVfree[:,0,:,:,:])
-                              for lbda, loss in zip(self.losses_sino_lambdas, self.losses_sino)])
+        # sino domain losses
+        self.unet_loss += sum([lbda * loss(self.truePVfree, self.fakePVfree[:,0,:,:,:]) if name!="consistency" else
+                               lbda * loss(fp_fake_src, self.truePVE_noisy)
+                              for name,lbda, loss in zip(self.losses_sino_names,self.losses_sino_lambdas, self.losses_sino)])
+
+
 
     def backward(self):
         if self.amp:
@@ -300,11 +320,15 @@ class UNet_Double_Domain(ModelBase):
             self.double_optimizer.zero_grad(set_to_none=True)
 
     def forward(self, batch):
-        self.truePVE_noisy = batch['PVE_noisy']
+        if self.img_to_img:
+            self.rec = batch["rec"][:, None, :, :, :]
+        else:
+            self.truePVE_noisy = batch['PVE_noisy']
 
         with autocast(enabled=self.amp, dtype=torch.float16):
-            self.forward_sino()
-            self.recons()
+            if not self.img_to_img:
+                self.forward_sino()
+                self.recons()
             self.forward_img()
         self.fake_src = self.fake_src[:, 0, :, :, :]
         return self.fake_src
@@ -317,8 +341,9 @@ class UNet_Double_Domain(ModelBase):
         self.set_requires_grad(self.UNet_img, requires_grad=True)
 
         with autocast(enabled=self.amp, dtype=torch.float16):
-            self.forward_sino()
-            self.recons()
+            if not self.img_to_img:
+                self.forward_sino()
+                self.recons()
             self.forward_img()
             self.compute_losses()
         self.backward()
@@ -329,8 +354,12 @@ class UNet_Double_Domain(ModelBase):
 
     def del_variables(self):
         del self.truePVE_noisy
-        del self.truePVfree
-        del self.fakePVfree
+        del self.rec
+        del self.fake_src
+
+        if not self.img_to_img:
+            del self.fakePVfree
+            del self.truePVfree
 
     def update_epoch(self):
         self.unet_losses.append(self.mean_unet_loss / self.current_iteration)
@@ -460,7 +489,7 @@ class UNet_Double_Domain(ModelBase):
             print(f"image-domain loss: {self.losses_img_lambdas} {self.losses_img}")
             print(f"sinogram-domain loss: {self.losses_sino_lambdas} {self.losses_sino}")
 
-            
+
         print("*************************************************")
         # if self.params['jean_zay']==False:
         #     from torchscan import summary

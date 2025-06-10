@@ -25,9 +25,7 @@ def get_nn_loss(loss_name):
         return nn.L1Loss()
     elif loss_name=="L2":
         return nn.MSELoss()
-    elif loss_name=="Poisson":
-        return nn.PoissonNLLLoss(log_input=False,full=False)
-    elif loss_name=="poisson":
+    elif loss_name in ["Poisson", "poisson", "consistency"]:
         return nn.PoissonNLLLoss(log_input=False,full=False)
     elif loss_name=='BCE':
         return nn.BCEWithLogitsLoss()
