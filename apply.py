@@ -78,6 +78,10 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                                                        input_rec_fp_array=input_rec_fp_array,
                                                        attmap_fp_array=attmap_fp_array)
 
+        data_input = {}
+        data_input['rec'] = torch.from_numpy(input_PVE_noisy_array)[None,:,:,:]
+
+
         for key in data_input.keys():
             data_input[key] = data_input[key].to(device)
 

@@ -522,8 +522,8 @@ class DoubleDomainDataset(BaseDataset):
         self.dim=3
         self.key_PVE_noisy = "PVE_att_noisy"
 
-        self.img_to_img = (len(params["sino_loss"])==1 and (params["sino_loss"][0]=="consistency"))
-
+        self.img_to_img = (len(params["sino_loss"]) == 0) or (len(params["sino_loss"])==1 and (params["sino_loss"][0]=="consistency"))
+        self.null_space = (len(params["sino_loss"]) == 0 and len(params["img_loss"]) == 1 and params["img_loss"][0] == "null_space")
         self.init_h5()
 
     def init_h5(self):
@@ -585,7 +585,7 @@ class DoubleDomainDataset(BaseDataset):
             data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if ('noise' in self.list_transforms and not self.test)\
                 else np.array(data[self.key_PVE_noisy][:, :, :], dtype=self.dtype)
 
-            if self.img_to_img:
+            if (self.img_to_img or self.null_space):
                 data_inputs['rec'] = np.array(data['rec_5n_8ss'][:,:,:], dtype=self.dtype)
             else:
                 data_targets['PVfree'] = np.array(data['PVfree_att'][:, :, :], dtype=self.dtype)

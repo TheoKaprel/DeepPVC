@@ -5,7 +5,7 @@ import itk
 import torch
 from torch import optim
 
-from . import networks, losses, helpers_data_parallelism, plots, networks_attention
+from . import networks, losses, helpers_data_parallelism, plots
 from torch.cuda.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
@@ -72,14 +72,15 @@ class UNet_Double_Domain(ModelBase):
 
         self.paths = params['paths'] if "paths" in params else False
 
-        if len(params["sino_loss"])==1 and (params["sino_loss"][0]=="consistency"):
-            self.img_to_img = True
-        else:
-            self.img_to_img = False
+        self.img_to_img = (len(params["sino_loss"]) == 0) or (len(params["sino_loss"])==1 and (params["sino_loss"][0]=="consistency"))
+        self.null_space = (len(params["sino_loss"]) == 0 and len(params["img_loss"]) == 1 and params["img_loss"][0] == "null_space")
+
 
         if from_pth:
             self.for_training = False
             self.init_model()
+            self.init_losses()
+            self.init_spect_recons()
             if self.verbose > 1:
                 print(
                     'normalement self.load_model(from_pth) mais là non, on le fait juste apres l initialisation des gpus etc')
@@ -98,10 +99,7 @@ class UNet_Double_Domain(ModelBase):
             self.start_epoch = 1
 
         self.current_iteration = 0
-        # self.mean_unet_denoiser_loss, self.mean_unet_pvc_loss = torch.tensor([0], device=self.device, dtype=torch.float64), torch.tensor([0],  device=self.device,  dtype=torch.float64)
         self.mean_unet_loss = 0
-
-        # self.iter_loss=[]
 
         self.amp = self.params['amp']
         if self.amp:
@@ -126,7 +124,7 @@ class UNet_Double_Domain(ModelBase):
                                                final_2dconv=self.final_2dconv, final_2dchannels=2 * self.params['nb_adj_angles'] if self.final_2dconv else 0,
                                                paths=self.paths,
                                                kernel_size=self.kernel_size
-                                               ).to(device=self.device) if not self.img_to_img else torch.nn.Identity()
+                                               ).to(device=self.device) if not (self.img_to_img or self.null_space) else torch.nn.Identity()
 
             self.UNet_img = networks.UNet_symetric(input_channel=self.input_channels, ngc=self.hidden_channels_unet,
                                                dim=self.dim, init_feature_kernel=self.init_feature_kernel,
@@ -191,10 +189,10 @@ class UNet_Double_Domain(ModelBase):
         # print("###############################################################################")
 
 
-        if "consistency" in self.losses_sino_names:
+        if ("consistency" in self.losses_sino_names or self.null_space):
             self.spect_model_for_consistency = SPECT_system_torch(projections_fn=os.path.join(spect_data_folder, "projs_rtk_PVE_noisy.mha"),
                                    like_fn=os.path.join(spect_data_folder, "IEC_BG_attmap_cropped_rot_4mm.mhd"),
-                                   fbprojectors="Zeng",
+                                   fbprojectors="Zeng" if self.img_to_img else "JosephAttenuated",
                                    attmap_fn=os.path.join(spect_data_folder,"IEC_BG_attmap_cropped_rot_4mm.mhd"),
                                    nsubsets=1)
             self.rtk_forward_projection_for_consistency = lambda input_img: ForwardProjection.apply(input_img, self.spect_model_for_consistency)
@@ -222,20 +220,20 @@ class UNet_Double_Domain(ModelBase):
             self.update_lr_every = 1
 
     def init_losses(self):
-        # self.losses = [torch.nn.L1Loss(), torch.nn.L1Loss()]
-        # self.lambdas = [1,0.5]
-
         self.losses_img = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["img_loss"]]
         self.losses_sino = [losses.get_nn_loss(loss_name=loss_name) for loss_name in self.params["sino_loss"]]
+
         self.losses_sino_names = self.params["sino_loss"]
+        self.losses_img_names = self.params["img_loss"]
 
         self.losses_img_lambdas = self.params["img_loss_lambda"]
         self.losses_sino_lambdas = self.params["sino_loss_lambda"]
 
     def input_data(self, batch_inputs, batch_targets):
-        self.truePVE_noisy = batch_inputs['PVE_noisy']
+        if not self.null_space:
+            self.truePVE_noisy = batch_inputs['PVE_noisy']
 
-        if self.img_to_img:
+        if (self.img_to_img or self.null_space):
             self.rec = batch_inputs["rec"][:,None,:,:,:]
         else:
             self.truePVfree = batch_targets['PVfree']
@@ -259,11 +257,6 @@ class UNet_Double_Domain(ModelBase):
         self.denormalize_sino()
 
     def recons(self):
-        # self.rec = torch.nn.functional.interpolate(self.fakePVfree, size=(self.true_src.shape[1],
-        #                                                                   self.true_src.shape[2],
-        #                                                                   self.true_src.shape[3]))
-        # self.rec = torch.nn.functional.interpolate(self.fakePVfree, size=(104, 64, 104))
-
         rec_k = torch.ones_like(self.bp_ones[0], device = self.device, requires_grad=True)
 
         for k in range(self.nosem):
@@ -281,15 +274,47 @@ class UNet_Double_Domain(ModelBase):
 
     def normalize_img(self):
         self.norm_rec = self.rec.sum((1, 2, 3,4))
-        self.rec = self.rec / self.rec.amax((2, 3, 4))[:,:,None, None, None]
+        self.max_rec = self.rec.amax((2, 3, 4))[:,:,None, None, None]
+        self.rec_n = self.rec / self.rec.amax((2, 3, 4))[:,:,None, None, None]
+
+
     def denormalize_img(self):
         self.fake_src = (self.fake_src / self.fake_src.sum((1, 2, 3, 4))[:, None, None, None, None]) * self.norm_rec[:,None,None,None,None]
 
-
     def forward_img(self):
         self.normalize_img()
-        self.fake_src = self.UNet_img(self.rec)
-        self.denormalize_img()
+        self.fake_src = self.UNet_img(self.rec_n)
+        self.fake_src = self.fake_src * self.max_rec
+        # self.denormalize_img()
+        if self.null_space:
+            self.project_to_null_space()
+
+    def project_to_null_space(self):
+        fp_fake_src = self.rtk_forward_projection_for_consistency(self.fake_src[0,0,:,:,:])
+
+        itk.imwrite(itk.image_from_array(self.fake_src[0,0,:,:,:].detach().cpu().numpy()), f"/export/home/tkaprelian/temp/null_space/x_theta_{self.current_epoch}.mha")
+
+        rec_k = torch.ones_like(self.bp_ones[0], device = self.device, requires_grad=True)
+        for k in range(self.nosem):
+            for subset in range(self.nsubsets):
+                self.spect_model.set_geometry(subset)
+
+                self.rtk_forward_projection = lambda input_img : ForwardProjection.apply(input_img, self.spect_model)
+                self.rtk_back_projection = lambda input_projs : BackProjection.apply(input_projs, self.spect_model)
+
+                rec_k_fp = self.rtk_forward_projection(rec_k)
+                rec_k = rec_k / (self.bp_ones[subset]+1e-8) * self.rtk_back_projection(
+                    fp_fake_src[self.spect_model.subset_ids,:,:] / (rec_k_fp+1e-8))
+
+        self.fake_src = torch.nn.functional.relu(self.rec[0,0,:,:,:] + self.fake_src[0,0,:,:,:] - rec_k)
+        # self.fake_src = self.fake_src[0,0,:,:,:]
+
+        itk.imwrite(itk.image_from_array(self.rec[0,0,:,:,:].detach().cpu().numpy()), f"/export/home/tkaprelian/temp/null_space/x_rec_{self.current_epoch}.mha")
+        itk.imwrite(itk.image_from_array(rec_k[:,:,:].detach().cpu().numpy()), f"/export/home/tkaprelian/temp/null_space/x_rec_x_theta_{self.current_epoch}.mha")
+        # if self.current_epoch%10==0:
+        itk.imwrite(itk.image_from_array(self.fake_src.detach().cpu().numpy()), f"/export/home/tkaprelian/temp/null_space/fake_src_{self.current_epoch}.mha")
+
+        self.fake_src = self.fake_src[None,None,:,:,:]
 
     def compute_losses(self):
         if "consistency" in self.losses_sino_names:
@@ -298,13 +323,13 @@ class UNet_Double_Domain(ModelBase):
             fp_fake_src = None
 
         # img domain losses
-        self.unet_loss = sum([lbda * loss(self.true_src, self.fake_src[:,0,:,:,:])
+        self.unet_loss = sum([lbda * loss(self.fake_src[:,0,:,:,:],self.true_src)
                               for lbda,loss in zip(self.losses_img_lambdas,self.losses_img)])
 
         # sino domain losses
         self.unet_loss += sum([lbda * loss(self.truePVfree, self.fakePVfree[:,0,:,:,:]) if name!="consistency" else
-                               lbda * loss(fp_fake_src, self.truePVE_noisy)
-                              for name,lbda, loss in zip(self.losses_sino_names,self.losses_sino_lambdas, self.losses_sino)])
+                           lbda * loss(fp_fake_src, self.truePVE_noisy)
+                          for name,lbda,loss in zip(self.losses_sino_names,self.losses_sino_lambdas, self.losses_sino)])
 
 
 
@@ -341,7 +366,7 @@ class UNet_Double_Domain(ModelBase):
         self.set_requires_grad(self.UNet_img, requires_grad=True)
 
         with autocast(enabled=self.amp, dtype=torch.float16):
-            if not self.img_to_img:
+            if (not self.img_to_img and not self.null_space):
                 self.forward_sino()
                 self.recons()
             self.forward_img()
@@ -353,11 +378,12 @@ class UNet_Double_Domain(ModelBase):
         self.del_variables()
 
     def del_variables(self):
-        del self.truePVE_noisy
+        if not self.null_space:
+            del self.truePVE_noisy
         del self.rec
         del self.fake_src
 
-        if not self.img_to_img:
+        if (not self.img_to_img and not self.null_space):
             del self.fakePVfree
             del self.truePVfree
 
@@ -393,7 +419,7 @@ class UNet_Double_Domain(ModelBase):
 
         torch.save({'saving_date': time.asctime(),
                     'epoch': self.current_epoch,
-                    'unet_sino': self.UNet_sino.module.state_dict() if jean_zay else self.UNet_sino.state_dict(),
+                    'unet_sino': self.UNet_sino.module.state_dict() if hasattr(self.UNet_sino, 'module') else self.UNet_sino.state_dict(),
                     'unet_img': self.UNet_img.module.state_dict() if jean_zay else self.UNet_img.state_dict(),
                     'double_optimizer': self.double_optimizer.state_dict(),
                     'unet_losses': self.unet_losses,
