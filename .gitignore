@@ -1,17 +1,11 @@
-**.pth
 .idea/
 **/__pycache__/
 build/
 dist/
 Pix2Pix.egg-info/
 
-
 **.mhd
 **.raw
 **.backup
 **.html
 **.png
-
-reformat.py
-brouillon.py
-melsm.py

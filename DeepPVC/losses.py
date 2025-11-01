@@ -8,14 +8,14 @@ from . import helpers
 
 import sys
 import os
-host = os.uname()[1]
-if (host !='suillus'):
-    sys.path.append("/linkhome/rech/gencre01/uyo34ub/WORK/PVE/eDCCs_torch")
-else:
-    sys.path.append("/export/home/tkaprelian/Desktop/eDCCsTorch")
-
-
-from exponential_projections_torch import ExponentialProjectionsTorch
+# host = os.uname()[1]
+# if (host !='suillus'):
+#     sys.path.append("/linkhome/rech/gencre01/uyo34ub/WORK/PVE/eDCCs_torch")
+# else:
+#     sys.path.append("/export/home/tkaprelian/Desktop/eDCCsTorch")
+#
+#
+# from exponential_projections_torch import ExponentialProjectionsTorch
 
 
 
@@ -169,7 +169,7 @@ class Model_Loss(nn.Module):
             self.lambdas=[1]
             self.loss_name = [losses_params['recon_loss']]
 
-        self.device = helpers.get_auto_device(losses_params['device'])
+        self.device = losses_params['device']
 
     def extra_repr(self):
         extra_repr_str=''

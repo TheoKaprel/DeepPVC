@@ -22,7 +22,7 @@
   "finetuning": false,
 
   "max_nb_data": 8,
-  "training_batchsize":4,
+  "training_batchsize":1,
   "test_batchsize":1,
   "data_augmentation": ["noise"],
   "data_normalisation": "sino_sum",
@@ -30,7 +30,8 @@
   "amp": true,
   "verbose": 2,
 
-  "network": "unet_denoiser_pvc",
+  "network": "unet",
+
   "archi": "unet_sym",
 
   "n_epochs":3,

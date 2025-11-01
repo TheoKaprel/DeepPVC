@@ -62,7 +62,6 @@
   "hidden_channels_unet":64,
   "unet_activation": "relu",
   "recon_loss":["L1"],
-  "lambda_recon":[1],
-  "psf": "/export/home/tkaprelian/Desktop/PVE/datasets/PATIENTS_MC/IEC_LU/psf.mhd"
+  "lambda_recon":[1]
 }
 

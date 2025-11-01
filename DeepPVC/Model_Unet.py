@@ -7,7 +7,7 @@ from torch import optim
 
 
 from . import networks, losses, helpers_data_parallelism, plots,networks_attention
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 
 from .Model_base import ModelBase
 
@@ -93,7 +93,7 @@ class UNetModel(ModelBase):
 
         self.amp = self.params['amp']
         if self.amp:
-            self.scaler = GradScaler()
+            self.scaler = GradScaler("cuda")
         self.autocat_losses = self.amp
 
     def init_model(self):
@@ -345,7 +345,7 @@ class UNetModel(ModelBase):
 
         self.normalize_data()
 
-        with autocast(enabled=self.amp, dtype=torch.float16):
+        with autocast(device_type="cuda",enabled=self.amp, dtype=torch.float16):
             self.forward_unet()
         self.fakePVfree = self.fakePVfree[:, 0, :, :, :]
         return self.fakePVfree
@@ -357,7 +357,7 @@ class UNetModel(ModelBase):
         # Unet denoiser update
         self.set_requires_grad(self.UNet, requires_grad=True)
 
-        with autocast(enabled=self.amp, dtype=torch.float16):
+        with autocast(device_type="cuda",enabled=self.amp, dtype=torch.float16):
             self.forward_unet()
             self.losses_unet()
         self.backward_unet()

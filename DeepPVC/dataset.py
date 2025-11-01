@@ -483,10 +483,10 @@ class ImgToImgDataset(BaseDataset):
             data_inputs['attmap_4mm'] = np.array(data['attmap_4mm'], dtype=self.dtype)
 
             if self.params["with_PVCNet_rec"]:
-                data_inputs['PVCNet_rec'] = np.array(data['PVCNet_751113_rec_noRM'], dtype=self.dtype)
+                data_inputs['PVCNet_rec'] = np.array(data['PVCNet_rec'], dtype=self.dtype)
             data_targets['src_4mm'] = np.array(data['src_4mm'], dtype=self.dtype)
 
-        # initial_shape = list(data_targets['src_4mm'].shape)
+
 
         if ("vol" in self.list_transforms and (not self.test)):
             augmentation = self.get_augmentation(data_inputs['rec'].shape)
@@ -580,7 +580,8 @@ class DoubleDomainDataset(BaseDataset):
             data_inputs, data_targets={}, {}
 
 
-            data_PVE = np.array(data['PVE_att'][:, :, :], dtype=self.dtype)
+            if "PVE_att" in data.keys():
+                data_PVE = np.array(data['PVE_att'][:, :, :], dtype=self.dtype)
             data_inputs['PVE_noisy'] = self.apply_noise(data_PVE) if ('noise' in self.list_transforms and not self.test)\
                 else np.array(data[self.key_PVE_noisy][:, :, :], dtype=self.dtype)
 

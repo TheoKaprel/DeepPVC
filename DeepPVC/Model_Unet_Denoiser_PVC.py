@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import optim
 
-from . import networks, losses, helpers_data_parallelism, networks_diff, plots,networks_attention
-from torch.cuda.amp import autocast, GradScaler
+from . import networks, losses, helpers_data_parallelism, plots,networks_attention
 
 from .Model_base import ModelBase
 
@@ -86,8 +85,7 @@ class UNet_Denoiser_PVC(ModelBase):
 
         self.amp = self.params['amp']
         if self.amp:
-            self.scaler = GradScaler()
-        self.autocat_losses = self.amp
+            self.scaler = torch.amp.GradScaler("cuda")
 
     def init_model(self):
         if self.verbose > 0:
@@ -249,10 +247,12 @@ class UNet_Denoiser_PVC(ModelBase):
 
     def init_losses(self):
         self.losses_params_denoiser = {'recon_loss': self.params['loss_denoiser'],
-                              'lambda_recon': self.params['lambda_denoiser'], 'device': self.device}
+                                        'lambda_recon': self.params['lambda_denoiser'],
+                                        'device': self.device}
 
         self.losses_params_pvc = {'recon_loss': self.params['loss_pvc'],
-                              'lambda_recon': self.params['lambda_pvc'], 'device': self.device}
+                                    'lambda_recon': self.params['lambda_pvc'],
+                                    'device': self.device}
 
         self.losses_denoiser = losses.UNetLosses(self.losses_params_denoiser)
         self.losses_pvc = losses.UNetLosses(self.losses_params_pvc)
@@ -423,35 +423,21 @@ class UNet_Denoiser_PVC(ModelBase):
     def losses_unet_pvc(self):
         self.unet_pvc_loss = self.losses_pvc.get_unet_loss(target=self.truePVfree,output=self.fakePVfree if self.dim==2 else self.fakePVfree[:,0,:,:,:], lesion_mask=self.lesion_mask_fp)
 
-    def backward_unet_denoiser(self):
-        if self.amp:
-            self.scaler.scale(self.unet_denoiser_loss).backward(retain_graph=True)
-            self.scaler.step(self.unet_denoiser_optimizer)
-        else:
-            self.unet_denoiser_loss.backward(retain_graph=True)
-            self.unet_denoiser_optimizer.step()
-
-    def backward_unet_pvc(self):
-        if self.amp:
-            self.scaler.scale(self.unet_pvc_loss).backward()
-            self.scaler.step(self.unet_pvc_optimizer)
-        else:
-            self.unet_pvc_loss.backward()
-            self.unet_pvc_optimizer.step()
-
     def backward_double_unet(self):
-        # double_loss = self.unet_denoiser_loss + self.unet_pvc_loss
         if self.amp:
             if self.denoise:
-                self.scaler.scale(self.unet_denoiser_loss + self.unet_pvc_loss).backward()
+                print(self.unet_denoiser_loss, self.unet_pvc_loss)
+                self.scaler.scale(self.unet_denoiser_loss).backward(retain_graph=True)
+                self.scaler.scale(self.unet_pvc_loss).backward()
+
             else:
                 self.scaler.scale(self.unet_pvc_loss).backward()
 
             # GRADIENT CLIPPING
             # Unscales the gradients of optimizer's assigned params in-place
-            self.scaler.unscale_(self.double_optimizer)
+            # self.scaler.unscale_(self.double_optimizer)
             # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-            torch.nn.utils.clip_grad_norm_(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), 1)
+            # torch.nn.utils.clip_grad_norm_(list(self.UNet_denoiser.parameters())+list(self.UNet_pvc.parameters()), 1)
 
             self.scaler.step(self.double_optimizer)
             self.scaler.update()
@@ -472,32 +458,17 @@ class UNet_Denoiser_PVC(ModelBase):
             self.attmap_fp = batch['attmap_fp']
 
         self.normalize_data()
-        with autocast(enabled=self.amp, dtype=torch.float16):
+        with torch.autocast(device_type="cuda",enabled=self.amp, dtype=torch.float16):
             self.forward_unet_denoiser()
             self.forward_unet_pvc()
         self.fakePVfree = self.fakePVfree[:, 0, :, :, :]
         return self.fakePVfree
 
     def optimize_parameters(self):
-        # Unet denoiser update
         self.set_requires_grad(self.UNet_denoiser, requires_grad=True)
         self.set_requires_grad(self.UNet_pvc, requires_grad=True)
-        # self.double_optimizer.zero_grad(set_to_none=True)
-        # self.unet_denoiser_optimizer.zero_grad(set_to_none=True)
-        # with autocast(enabled=self.amp):
-            # self.forward_unet_denoiser()
-            # self.losses_unet_denoiser()
-        # self.backward_unet_denoiser()
 
-        # Unet pvc update
-        # self.set_requires_grad(self.UNet_pvc, requires_grad=True)
-        # self.unet_pvc_optimizer.zero_grad(set_to_none=True)
-        # with autocast(enabled=self.amp):
-        #     self.forward_unet_pvc()
-            # self.losses_unet_pvc()
-        # self.backward_unet_pvc()
-
-        with autocast(enabled=self.amp, dtype=torch.float16):
+        with torch.autocast(device_type = "cuda",enabled=self.amp, dtype=torch.float16):
             self.forward_unet_denoiser()
             if self.denoise:
                 self.losses_unet_denoiser()
@@ -509,9 +480,6 @@ class UNet_Denoiser_PVC(ModelBase):
             self.mean_unet_denoiser_loss += self.unet_denoiser_loss.item()
         self.mean_unet_pvc_loss += self.unet_pvc_loss.item()
         self.current_iteration += 1
-
-        # self.iter_loss.append((self.unet_denoiser_loss + self.unet_pvc_loss).item())
-
         self.del_variables()
 
 

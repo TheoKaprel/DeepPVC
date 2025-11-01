@@ -57,11 +57,6 @@ def apply(pth, input,input_rec_fp,attmap_fp, device):
     output_image.SetSpacing(vSpacing)
     output_image.SetOrigin(vOffset)
 
-    # fakePVE_img = itk.image_from_array(fakePVE)
-    # fakePVE_img.SetSpacing(vSpacing)
-    # fakePVE_img.SetOrigin(vOffset)
-    # itk.imwrite(fakePVE_img, "/export/home/tkaprelian/temp/fakePVE2.mhd")
-
     return output_image
 
 
@@ -78,21 +73,14 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
                                                        input_rec_fp_array=input_rec_fp_array,
                                                        attmap_fp_array=attmap_fp_array)
 
-        data_input = {}
-        data_input['rec'] = torch.from_numpy(input_PVE_noisy_array)[None,:,:,:]
+
+        # data_input['rec'] = torch.from_numpy(input_PVE_noisy_array)[None,:,:,:]
 
 
         for key in data_input.keys():
             data_input[key] = data_input[key].to(device)
 
         print(f'input shape :  {[(k, v.shape) for (k,v) in data_input.items()]}')
-
-        # data_normalisation = params['data_normalisation']
-        # norm_input = helpers_data.compute_norm_eval(dataset_or_img=data_input, data_normalisation=data_normalisation)
-        # if (data_normalisation!='none'):
-        #     print(f'norm : {norm_input}')
-        # data_input = helpers_data.normalize_eval(dataset_or_img=data_input, data_normalisation=data_normalisation,
-        #                                              norm=norm_input, params=model.params, to_torch=False)
 
         if params['inputs']=='projs':
             output = np.zeros((data_input['PVE_noisy'].shape[0], data_input['PVE_noisy'].shape[2], data_input['PVE_noisy'].shape[3]))
@@ -154,9 +142,7 @@ def apply_to_input(input, input_rec_fp,attmap_fp, params, device, model):
         print(f'network output shape : {output.shape}')
 
         output_array = helpers_data.back_to_input_format(params=params,output=output, initial_shape = list(input_PVE_noisy_array.shape))
-        # fakePVE = helpers_data.back_to_input_format(params=params,output=fakePVE, initial_shape = list(input_PVE_noisy_array.shape))
         print(f'final output shape : {output_array.shape}')
-
 
         return output_array
 

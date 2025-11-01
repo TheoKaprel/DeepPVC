@@ -1,7 +1,6 @@
 ﻿import matplotlib.pyplot as plt
 import torch
 import time
-import gc
 import json as js
 import os
 import numpy as np
@@ -14,9 +13,6 @@ import tracemalloc
 
 from DeepPVC import dataset, Model_instance
 from DeepPVC import helpers, helpers_params, helpers_functions,helpers_data
-
-# import torch._dynamo
-# torch._dynamo.config.suppress_errors = True
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -62,8 +58,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
     network_architecture = params['network']
 
-    # torch.backends.cudnn.benchmark=True
-    
     output_filename = f"{network_architecture}_{ref}_{start_epoch}_{start_epoch+params['n_epochs']}.pth"
     helpers_params.update_params_user_option(params, user_params=(("ref", ref),("output_folder", output_folder),("output_pth", output_filename)), is_resume=resume_pth)
 
@@ -103,9 +97,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
     if verbose_main_process:
         print('Begining of training .....')
 
-    # if debug:
-    #     torch.autograd.set_detect_anomaly(True)
-
     for epoch in range(1,DeepPVEModel.n_epochs+1):
         if verbose_main_process:
             print(f'Epoch {DeepPVEModel.current_epoch}/{DeepPVEModel.n_epochs+DeepPVEModel.start_epoch- 1}')
@@ -116,7 +107,6 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
         t0_epoch = time.time()
         # Optimisation loop
         DeepPVEModel.switch_train()
-        # print(f"Epoch beggining ", torch.cuda.memory_allocated(device))
 
         for step,(batch_inputs,batch_targets) in enumerate(train_dataloader):
             if debug:
@@ -127,20 +117,11 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
 
                 t_loading+=timer_loading2-timer_loading1
                 timer_preopt1=time.time()
-            # print(f"Step beggining ", torch.cuda.memory_allocated(device))
 
             for key_inputs in batch_inputs.keys():
                 batch_inputs[key_inputs] = batch_inputs[key_inputs].to(device, non_blocking=True)
             for key_targets in batch_targets.keys():
                 batch_targets[key_targets] = batch_targets[key_targets].to(device, non_blocking=True)
-
-            # for key_inputs in batch_inputs.keys():
-            #     batch_inputs[key_inputs] = train_dataloader.dataset.pad(batch_inputs[key_inputs])
-            # for key_targets in batch_targets.keys():
-            #     batch_targets[key_targets] = train_dataloader.dataset.pad(batch_targets[key_targets])
-
-
-            # print(f"After batch->gpu ", torch.cuda.memory_allocated(device))
 
             if debug:
                 t_preopt+=time.time()-timer_preopt1
@@ -175,24 +156,12 @@ def train(json, resume_pth, user_param_str,user_param_float,user_param_int,user_
                             plt.show()
 
             DeepPVEModel.input_data(batch_inputs=batch_inputs, batch_targets=batch_targets)
-            # print(f"After input data ", torch.cuda.memory_allocated(device))
 
             del batch_inputs
             del batch_targets
 
 
             DeepPVEModel.optimize_parameters()
-
-
-
-            # print(f"After empty cache ", torch.cuda.memory_allocated(device))
-
-            # for obj in gc.get_objects():
-            #     try:
-            #         if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-            #             print(type(obj), obj.size())
-            #     except:
-            #         pass
 
             if debug:
                 t_opt += time.time() - timer_opt1
